@@ -1,0 +1,1658 @@
+    0  start
+    1  call_global    UncacheAllDLLs
+    2  call_global    CacheDLL, "omap.rsc"
+    3  set            kOMFontNormal, 0
+    4  set            kOMFontBold, 1
+    5  set            kOMFontItalic, 2
+    6  set            kOMFontUnderlined, 4
+    7  set            kNormalCursor, 25
+    8  set            kHotCursor, 26
+    9  set            kFingerCursor, 27
+   10  set            kOpenHandCursor, 28
+   11  set            kClosedHandCursor, 29
+   12  set            kNorthCursor, 30
+   13  set            kEastCursor, 31
+   14  set            kWestCursor, 32
+   15  set            kSouthCursor, 33
+   16  set            kNorthWestCursor, 34
+   17  set            kNorthEastCursor, 35
+   18  set            kSouthWestCursor, 36
+   19  set            kSouthEastCursor, 37
+   20  set            kHourglassCursor, 38
+   21  set            kCairo1BMusicID, 30515
+   22  set            kCairo2BMusicID, 30516
+   23  set            kCairo3BMusicID, 30517
+   24  set            kOasis1BMusicID, 30518
+   25  set            kOasis2BMusicID, 30519
+   26  set            kOasis3BMusicID, 30520
+   27  set            kPyramid1BMusicID, 30521
+   28  set            kPyramid2BMusicID, 30522
+   29  set            kPyramid3BMusicID, 30523
+   30  set            kPMChooseActButtonID, 5
+   31  set            kBlinkMinTime, 3
+   32  set            kBlinkMaxTime, 5
+   33  set            kFidgetMinTime, 45
+   34  set            kFidgetMaxTime, 60
+   35  set            kTrue, 1
+   36  set            kFalse, 0
+   37  set            kOn, 1
+   38  set            kOff, 0
+   39  set            kScreenWidth, 640
+   40  set            kScreenHeight, 480
+   41  set            kUseAOCoords, 11111
+   42  set            kNumCRounds, 5
+   43  set            kNumItemsPerCRound, 12
+   44  set            kNumCStatueDatasets, 10
+   45  set            kNumORounds, 5
+   46  set            kNumItemsPerORound, 12
+   47  set            kBackpackDef, 1
+   48  set            kMaxItemsInBackpack, 12
+   49  set            kMaxItemsInWS, 6
+   50  set            kMaxItemsInHub, 12
+   51  set            kMaxItemW, 36
+   52  set            kMaxItemH, 28
+   53  set            kCGlyphStart, 1
+   54  set            kCGlyphEnd, 12
+   55  set            kGemStart, 13
+   56  set            kGemEnd, 28
+   57  set            kItemInBPSfxID, 30524
+   58  set            kItemPickUpSfxID, 30525
+   59  set            openBackpack, 0
+   60  set            closedBackpack, 0
+   61  set            closedBackpackName, 0
+   62  set            objectIndex, 1
+   63  set            toBackpackOnly, 1
+
+   64  sub            pInitObjectsAndBackpack@292, toBackpack, backpackName
+   65  loop           i, 1, kMaxItemsInWS
+   66  loop_test      i, 1, kMaxItemsInWS
+   67  jump_if_false  -> 74
+   68  get_prop       gPort, itemPresent, i, objectToDisplay
+   69  if             (objectToDisplay#0)
+   70  jump_if_false  -> 73
+   71  call           pDisplayObject@305, kFalse
+   72  end
+   73  jump           -> 66
+   74  set            toBackpackOnly, toBackpack
+   75  set            closedBackpackName, backpackName
+   76  return
+
+   77  sub            pDisplayObject@305, animate
+   78  if             (objectBoxW>kMaxItemW)
+   79  jump_if_false  -> 83
+   80  call_global    RandomNumber, 1, (objectBoxW-kMaxItemW)
+   81  set            xOff, $result
+   82  jump           -> 85
+   83  end
+   84  set            xOff, 0
+   85  set            ox, (objectBoxX+xOff)
+   86  if             (objectBoxH>kMaxItemH)
+   87  jump_if_false  -> 91
+   88  call_global    RandomNumber, 1, (objectBoxH-kMaxItemH)
+   89  set            yOff, $result
+   90  jump           -> 93
+   91  end
+   92  set            yOff, 0
+   93  set            oy, (objectBoxY+yOff)
+   94  set            object.objectIndex, RAnimation, ox, oy, objectAOIDs.objectToDisplay
+   95  set_prop       object.objectIndex, "z", objectZ
+   96  set_prop       object.objectIndex, userData, (" "+ox+"#"+oy+":"+objectToDisplay)
+   97  set_prop       object.objectIndex, "mouseDown", eObjectPickedUp@362
+   98  set_prop       object.objectIndex, "mouseUp", eObjectDropped@366
+   99  send           object.objectIndex, setAOCursor, kOpenHandCursor, kClosedHandCursor
+  100  if             animate
+  101  jump_if_false  -> 113
+  102  send           object.objectIndex, play
+  103  set            port, RWorldPort, RWorldPort
+  104  get_prop       port, currentLocation, location
+  105  delete         port
+  106  if             ((location="CWS1")+(location="CWS2")+(location="CWS3")+(location="CWS4"))
+  107  jump_if_false  -> 110
+  108  call_global    PlaySound, 1000
+  109  jump           -> 112
+  110  end
+  111  call_global    PlaySound, 11000
+  112  end
+  113  set            objectIndex, (objectIndex+1)
+  114  return
+
+  115  sub            pNewObjectAtLocation@343, newID
+  116  send           gPort, addObject, newID
+  117  set            objectToDisplay, newID
+  118  call           pDisplayObject@305, kTrue
+  119  return
+
+  120  sub            eBackpackOpened@348
+  121  if             (openBackpack=0)
+  122  jump_if_false  -> 130
+  123  set            openBackpack, RBackPack, backpackX, backpackY, backpackZ
+  124  set_prop       openBackpack, closed, eBackpackClosed@359
+  125  if             (toBackpackOnly=0)
+  126  jump_if_false  -> 129
+  127  set_prop       openBackpack, objectDropped, eBackpackObjectDropped
+  128  end
+  129  end
+  130  return
+
+  131  sub            eBackpackClosed@359
+  132  set            openBackpack, 0
+  133  return
+
+  134  sub            eObjectPickedUp@362
+  135  set_prop       $1, "z", 10000
+  136  call_global    PlaySound, kItemPickUpSfxID
+  137  return
+
+  138  sub            eObjectDropped@366
+  139  get_prop       $1, userData, ud
+  140  set            p1, ("#"@ud)
+  141  set            p2, (":"@ud)
+  142  set            t2, (p1-1)
+  143  set            ox, ud|1|t2
+  144  set            t1, (p1+1)
+  145  set            t2, (p2-p1-1)
+  146  set            oy, ud|t1|t2
+  147  set            t1, (p2+1)
+  148  set            id, ud|t1
+  149  set_prop       $1, "z", objectZ
+  150  if             (toBackpackOnly=1)
+  151  jump_if_false  -> 196
+  152  if             (openBackpack#0)
+  153  jump_if_false  -> 177
+  154  call_global    IntersectTest, "RECEIVER", "openBackpack"
+  155  set            test, $result
+  156  if             (test=1)
+  157  jump_if_false  -> 160
+  158  send           openBackpack, addObject, id
+  159  jump           -> 176
+  160  end
+  161  if             (closedBackpack#0)
+  162  jump_if_false  -> 174
+  163  get_prop       closedBackpack, visible, test
+  164  if             (test=1)
+  165  jump_if_false  -> 173
+  166  call_global    IntersectTest, "RECEIVER", "closedBackpack"
+  167  set            test, $result
+  168  if             (test=1)
+  169  jump_if_false  -> 172
+  170  send           openBackpack, addObject, id
+  171  end
+  172  end
+  173  jump           -> 176
+  174  end
+  175  set            test, 0
+  176  jump           -> 195
+  177  end
+  178  if             (closedBackpack#0)
+  179  jump_if_false  -> 193
+  180  get_prop       closedBackpack, visible, test
+  181  if             (test=1)
+  182  jump_if_false  -> 192
+  183  call_global    IntersectTest, "RECEIVER", "closedBackpack"
+  184  set            test, $result
+  185  if             (test=1)
+  186  jump_if_false  -> 191
+  187  set            openBackpack, RBackPack, backpackX, backpackY, backpackZ
+  188  send           openBackpack, addObject, id
+  189  set            openBackpack, 0
+  190  end
+  191  end
+  192  jump           -> 195
+  193  end
+  194  set            test, 0
+  195  jump           -> 198
+  196  end
+  197  set            test, 0
+  198  if             (test=1)
+  199  jump_if_false  -> 208
+  200  get_prop       $1, name, Name
+  201  set            p, (1+"."@Name)
+  202  set            n, Name|p
+  203  delete         object.n
+  204  send           gPort, removeObjectFromLocation, id
+  205  set_prop       gPort, itemPlacedInBackpack, kTrue
+  206  call_global    PlaySound, kItemInBPSfxID
+  207  jump           -> 211
+  208  end
+  209  set_prop       $1, x, ox
+  210  set_prop       $1, y, oy
+  211  return
+
+  212  sub            globalInit@212
+  213  set            gCurLocation, 0
+  214  set            laptrap, 0
+  215  set            gPort, RWorldPort, RWorldPort
+  216  set            gScenePort, RScenePort, RScenePort
+  217  return
+
+  218  sub            globalDispose@218
+  219  delete         gPort
+  220  delete         gScenePort
+  221  return
+
+  222  sub            gOpenLaptrap@222
+  223  if             (laptrap#0)
+  224  jump_if_false  -> 227
+  225  set_prop       laptrap, visible, kFalse
+  226  end
+  227  if             (gCurLocation=0)
+  228  jump_if_false  -> 231
+  229  set            gLaptrap, RLapTrap, 10000
+  230  jump           -> 233
+  231  end
+  232  set            gLaptrap, RLapTrap, 10000, gCurLocation
+  233  set_prop       gLaptrap, closed, gCloseLaptrap@236
+  234  set_prop       gLaptrap, locationSelected, eExitToMapLoc@1576
+  235  return
+
+  236  sub            gCloseLaptrap@236
+  237  if             (laptrap#0)
+  238  jump_if_false  -> 241
+  239  set_prop       laptrap, visible, kTrue
+  240  end
+  241  delete         gLaptrap
+  242  return
+
+  243  sub            gNewGame@243
+  244  call_global    RandomNumber, 1, kNumCStatueDatasets
+  245  set_prop       gPort, CStatueDataset, $result
+  246  return
+
+  247  sub            gGameCompleted@247
+  248  send           gPort, newGame
+  249  get_prop       gPort, CStatueDataset, curDataset
+  250  set            curDataset, (curDataset+1)
+  251  if             (curDataset>kNumCStatueDatasets)
+  252  jump_if_false  -> 255
+  253  set            curDataset, 1
+  254  end
+  255  set_prop       gPort, CStatueDataset, curDataset
+  256  set_prop       gPort, CLOC01StatueUp, 0
+  257  set_prop       gPort, CBA2OpenVisitedCount, 0
+  258  set_prop       gPort, "CMALevel", 0
+  259  set_prop       gPort, "CMASolved", 0
+  260  set_prop       gPort, "PLOC2VisitedCount", 0
+  261  set_prop       gPort, "OMASolved", 0
+  262  set_prop       gPort, "OMAPracModeEntryCount", 0
+  263  set_prop       gPort, "OMALevel", 0
+  264  loop           i, 1, 4
+  265  loop_test      i, 1, 4
+  266  jump_if_false  -> 269
+  267  set_prop       gPort, ("OMAGatorDown"+i), 0
+  268  jump           -> 265
+  269  set_prop       gPort, "PWS2CompletedCount", 0
+  270  set_prop       gPort, "PWS2Round1visits", 0
+  271  set_prop       gPort, "PWS2Round2visits", 0
+  272  set_prop       gPort, "PWS2Round3visits", 0
+  273  set_prop       gPort, "PWS2Round4visits", 0
+  274  return
+  275  set            kBackpackDef, 1
+  276  set            kMaxItemsInBackpack, 12
+  277  set            kMaxItemsInWS, 6
+  278  set            kMaxItemsInHub, 12
+  279  set            kMaxItemW, 36
+  280  set            kMaxItemH, 28
+  281  set            kCGlyphStart, 1
+  282  set            kCGlyphEnd, 12
+  283  set            kGemStart, 13
+  284  set            kGemEnd, 28
+  285  set            kItemInBPSfxID, 30524
+  286  set            kItemPickUpSfxID, 30525
+  287  set            openBackpack, 0
+  288  set            closedBackpack, 0
+  289  set            closedBackpackName, 0
+  290  set            objectIndex, 1
+  291  set            toBackpackOnly, 1
+
+  292  sub            pInitObjectsAndBackpack@292, toBackpack, backpackName
+  293  loop           i, 1, kMaxItemsInWS
+  294  loop_test      i, 1, kMaxItemsInWS
+  295  jump_if_false  -> 302
+  296  get_prop       gPort, itemPresent, i, objectToDisplay
+  297  if             (objectToDisplay#0)
+  298  jump_if_false  -> 301
+  299  call           pDisplayObject@305, kFalse
+  300  end
+  301  jump           -> 294
+  302  set            toBackpackOnly, toBackpack
+  303  set            closedBackpackName, backpackName
+  304  return
+
+  305  sub            pDisplayObject@305, animate
+  306  if             (objectBoxW>kMaxItemW)
+  307  jump_if_false  -> 311
+  308  call_global    RandomNumber, 1, (objectBoxW-kMaxItemW)
+  309  set            xOff, $result
+  310  jump           -> 313
+  311  end
+  312  set            xOff, 0
+  313  set            ox, (objectBoxX+xOff)
+  314  if             (objectBoxH>kMaxItemH)
+  315  jump_if_false  -> 319
+  316  call_global    RandomNumber, 1, (objectBoxH-kMaxItemH)
+  317  set            yOff, $result
+  318  jump           -> 321
+  319  end
+  320  set            yOff, 0
+  321  set            oy, (objectBoxY+yOff)
+  322  set            object.objectIndex, RAnimation, ox, oy, objectAOIDs.objectToDisplay
+  323  set_prop       object.objectIndex, "z", objectZ
+  324  set_prop       object.objectIndex, userData, (" "+ox+"#"+oy+":"+objectToDisplay)
+  325  set_prop       object.objectIndex, "mouseDown", eObjectPickedUp@362
+  326  set_prop       object.objectIndex, "mouseUp", eObjectDropped@366
+  327  send           object.objectIndex, setAOCursor, kOpenHandCursor, kClosedHandCursor
+  328  if             animate
+  329  jump_if_false  -> 341
+  330  send           object.objectIndex, play
+  331  set            port, RWorldPort, RWorldPort
+  332  get_prop       port, currentLocation, location
+  333  delete         port
+  334  if             ((location="CWS1")+(location="CWS2")+(location="CWS3")+(location="CWS4"))
+  335  jump_if_false  -> 338
+  336  call_global    PlaySound, 1000
+  337  jump           -> 340
+  338  end
+  339  call_global    PlaySound, 11000
+  340  end
+  341  set            objectIndex, (objectIndex+1)
+  342  return
+
+  343  sub            pNewObjectAtLocation@343, newID
+  344  send           gPort, addObject, newID
+  345  set            objectToDisplay, newID
+  346  call           pDisplayObject@305, kTrue
+  347  return
+
+  348  sub            eBackpackOpened@348
+  349  if             (openBackpack=0)
+  350  jump_if_false  -> 358
+  351  set            openBackpack, RBackPack, backpackX, backpackY, backpackZ
+  352  set_prop       openBackpack, closed, eBackpackClosed@359
+  353  if             (toBackpackOnly=0)
+  354  jump_if_false  -> 357
+  355  set_prop       openBackpack, objectDropped, eBackpackObjectDropped
+  356  end
+  357  end
+  358  return
+
+  359  sub            eBackpackClosed@359
+  360  set            openBackpack, 0
+  361  return
+
+  362  sub            eObjectPickedUp@362
+  363  set_prop       $1, "z", 10000
+  364  call_global    PlaySound, kItemPickUpSfxID
+  365  return
+
+  366  sub            eObjectDropped@366
+  367  get_prop       $1, userData, ud
+  368  set            p1, ("#"@ud)
+  369  set            p2, (":"@ud)
+  370  set            t2, (p1-1)
+  371  set            ox, ud|1|t2
+  372  set            t1, (p1+1)
+  373  set            t2, (p2-p1-1)
+  374  set            oy, ud|t1|t2
+  375  set            t1, (p2+1)
+  376  set            id, ud|t1
+  377  set_prop       $1, "z", objectZ
+  378  if             (toBackpackOnly=1)
+  379  jump_if_false  -> 424
+  380  if             (openBackpack#0)
+  381  jump_if_false  -> 405
+  382  call_global    IntersectTest, "RECEIVER", "openBackpack"
+  383  set            test, $result
+  384  if             (test=1)
+  385  jump_if_false  -> 388
+  386  send           openBackpack, addObject, id
+  387  jump           -> 404
+  388  end
+  389  if             (closedBackpack#0)
+  390  jump_if_false  -> 402
+  391  get_prop       closedBackpack, visible, test
+  392  if             (test=1)
+  393  jump_if_false  -> 401
+  394  call_global    IntersectTest, "RECEIVER", "closedBackpack"
+  395  set            test, $result
+  396  if             (test=1)
+  397  jump_if_false  -> 400
+  398  send           openBackpack, addObject, id
+  399  end
+  400  end
+  401  jump           -> 404
+  402  end
+  403  set            test, 0
+  404  jump           -> 423
+  405  end
+  406  if             (closedBackpack#0)
+  407  jump_if_false  -> 421
+  408  get_prop       closedBackpack, visible, test
+  409  if             (test=1)
+  410  jump_if_false  -> 420
+  411  call_global    IntersectTest, "RECEIVER", "closedBackpack"
+  412  set            test, $result
+  413  if             (test=1)
+  414  jump_if_false  -> 419
+  415  set            openBackpack, RBackPack, backpackX, backpackY, backpackZ
+  416  send           openBackpack, addObject, id
+  417  set            openBackpack, 0
+  418  end
+  419  end
+  420  jump           -> 423
+  421  end
+  422  set            test, 0
+  423  jump           -> 426
+  424  end
+  425  set            test, 0
+  426  if             (test=1)
+  427  jump_if_false  -> 436
+  428  get_prop       $1, name, Name
+  429  set            p, (1+"."@Name)
+  430  set            n, Name|p
+  431  delete         object.n
+  432  send           gPort, removeObjectFromLocation, id
+  433  set_prop       gPort, itemPlacedInBackpack, kTrue
+  434  call_global    PlaySound, kItemInBPSfxID
+  435  jump           -> 439
+  436  end
+  437  set_prop       $1, x, ox
+  438  set_prop       $1, y, oy
+  439  return
+  440  call           globalInit@212
+  441  call           pInit@444
+  442  call           pStart@590
+  443  call_global    EndTransition
+
+  444  sub            pInit@444
+  445  set            kBackgroundID, 16000
+  446  set            kJoniSetID, 16005
+  447  set            kLeslieSetID, 16008
+  448  set            kOwenSetID, 16007
+  449  set            kSantiagoSetID, 16006
+  450  set            kSocratesSetID, 16009
+  451  set            kLaptrapSetID, 16010
+  452  set            kCrocodileSetID, 16012
+  453  set            kBackpackID, 16011
+  454  set            kJoniExitID, 16091
+  455  set            kSantiagoExitID, 16092
+  456  set            kLeslieExitID, 16093
+  457  set            kOwenExitID, 16094
+  458  set            kLaptrapExitID, 16095
+  459  set            kSocratesExitID, 16090
+  460  set            kRunningRiverID, 16223
+  461  set            kDownButtonID, 16110
+  462  set            kLeftButtonID, 16111
+  463  set            kManButtonID, 16112
+  464  set            kRightButtonID, 16113
+  465  set            kUpButtonID, 16114
+  466  set            kTriggerID, 16115
+  467  set            kRampID, 16120
+  468  set            kMaskID, 16023
+  469  set            kMask2ID, 16030
+  470  set            kCloseSplashID, 16058
+  471  set            kMask2Z, 17
+  472  set            kSantiagoZ, 20
+  473  set            kSocratesZ, 25
+  474  set            kJoniZ, 30
+  475  set            kLeslieZ, 30
+  476  set            kOwenZ, 30
+  477  set            kLaptrapZ, 30
+  478  set            kBackpackZ, 40
+  479  set            backpackZ, 9000
+  480  set            kCrocodileZ, 100
+  481  set            kCloseSplashZ, 16
+  482  set            kCatapultPieceZs.6, 60
+  483  set            kRampZ, 70
+  484  set            kRockSpotZ, 80
+  485  set            kCatapultPieceZs.3, 120
+  486  set            kRockZs.6, 130
+  487  set            kRockZs.7, 140
+  488  set            kRockZs.8, 150
+  489  set            kCatapultPieceZs.2, 160
+  490  set            kRockZs.1, 170
+  491  set            kRockZs.2, 180
+  492  set            kRockZs.3, 190
+  493  set            kRockZs.4, 200
+  494  set            kRockZs.5, 210
+  495  set            kRockPickedUpZ, 8000
+  496  set            kCatapultPieceZs.5, 212
+  497  set            kCatapultZ, 213
+  498  set            kCatapultPieceZs.1, 215
+  499  set            kCatapultPieceZs.4, 220
+  500  set            kLeftButtonZ, 250
+  501  set            kRightButtonZ, 350
+  502  set            kDownButtonZ, 400
+  503  set            kUpButtonZ, 410
+  504  set            kTriggerZ, 420
+  505  set            kMaskZ, 430
+  506  set            kCatapultPrimaryTag, 1
+  507  set            kCatapultRockTag, 2
+  508  set            kRockSpotX, 235
+  509  set            kRockSpotY, 325
+  510  set            kRockSpotW, 150
+  511  set            kRockSpotH, 100
+  512  set            kStartY, 47
+  513  set            kFloorY, (-42)
+  514  set            kCrocHeight, 310
+  515  set            kXx.1, (201/225)
+  516  set            kXx.2, (188/246)
+  517  set            kXx.3, (166/220)
+  518  set            kXx.4, (144/193)
+  519  set            kXx.5, (137/183)
+  520  set            kXx.6, (97/175)
+  521  set            kXx.7, (144/191)
+  522  set            kXx.8, (154/209)
+  523  set            kXx.9, (183/230)
+  524  set            kYx.1, (103/225)
+  525  set            kYx.2, (158/246)
+  526  set            kYx.3, (144/220)
+  527  set            kYx.4, (129/193)
+  528  set            kYx.5, (121/183)
+  529  set            kYx.6, (146/175)
+  530  set            kYx.7, (125/191)
+  531  set            kYx.8, (142/209)
+  532  set            kYx.9, (140/230)
+  533  set            kGravity, 9.8
+  534  set            kVelocityConstant, 100
+  535  set            kXFudge, 40
+  536  set            kTimeConstant, 0.5
+  537  set            kSocFidgID, 16194
+  538  set            kCrocFidg1ID, 16195
+  539  set            kCrocFidg2ID, 16284
+  540  set            kLapFidgID, 16285
+  541  set            kHeadsTurnID, 16248
+  542  set            kCrocEntrySpch1ID, 16350
+  543  set            kCrocEntrySpch2ID, 16357
+  544  set            kCrocEntrySpch3ID, 16413
+  545  set            kCrocEntrySpch4ID, 16358
+  546  set            kJoniEntrySpch1ID, 16351
+  547  set            kJoniEntrySpch2ID, 16356
+  548  set            kLeslieEntrySpch1ID, 16352
+  549  set            kLeslieEntrySpch2ID, 16355
+  550  set            kOwenEntrySpch1ID, 16353
+  551  set            kSantiagoEntrySpch1ID, 16354
+  552  set            kJoniReentrySpchID, 16401
+  553  set            kCrocReentrySpchID, 16406
+  554  set            kSocratesSpch1ID, 16395
+  555  set            kSocratesSpch2ID, 16365
+  556  set            kSocratesSpch3ID, 16366
+  557  set            kSocratesSpch4ID, 16396
+  558  set            kSocratesSpch5ID, 16367
+  559  set            kSocratesSpch6ID, 16368
+  560  set            kSocratesSpch7ID, 16397
+  561  set            kSocratesSpch8ID, 16369
+  562  set            kSocratesSpch9ID, 16370
+  563  set            kSocratesSpch10ID, 16398
+  564  set            kSocratesSpch11ID, 16371
+  565  set            kSocratesSpch12ID, 16372
+  566  set            kSocratesSpch13ID, 16373
+  567  set            kTriggerClickedSpchID, 16359
+  568  set            kIncorrectAnsSpch1ID, 16360
+  569  set            kIncorrectAnsSpch2ID, 16361
+  570  set            kIncorrectAnsSpch3ID, 16362
+  571  set            kIncorrectAnsSpch4ID, 16363
+  572  set            kIncorrectAnsSpch5ID, 16364
+  573  set            kWalkoutSpch1ID, 16384
+  574  set            kWalkoutSpch2ID, 16385
+  575  set            kWalkoutSpch3ID, 16386
+  576  set            kCrocPracSpch1ID, 16412
+  577  set            kCrocPracSpch2ID, 16374
+  578  set            kCrocPracSpch3ID, 16413
+  579  set            kCrocPracSpch4ID, 16358
+  580  set            kButtonPressSfxID, 16000
+  581  set            kTriggerPullSfxID, 16001
+  582  set            kTriggerEmptySfxID, 16003
+  583  set            kTriggerFiredSfxID, 16004
+  584  set            kFarSplashSfxID, 16007
+  585  set            socratesClickCtr, 0
+  586  set            incorrectTriesCtr, 0
+  587  set            crocClickedCtr, 0
+  588  set            crocDownCtr, 0
+  589  return
+
+  590  sub            pStart@590
+  591  call_global    Scene, kBackgroundID
+  592  set_prop       gScenePort, backgroundClicked, pInterruptScene@659
+  593  set_prop       gScenePort, backgroundMusicID, kPyramid2BMusicID
+  594  set_prop       gScenePort, paused, ePauseScene@1550
+  595  set_prop       gScenePort, resumed, eResumeScene@1563
+  596  set            sQueue, RQueue, RQueue
+  597  set_prop       sQueue, finished, eSQueueDone@1277
+  598  set            sQueueFinished, "empty"
+  599  get_prop       gPort, "wsCurrentLevelEntryCount", "OMA", numTimesEntered
+  600  set_prop       gPort, "wsCurrentLevelEntryCount", "OMA", (numTimesEntered+1)
+  601  get_prop       gPort, inGame, "OMA", gameMode
+  602  set            practiceMode, (1-gameMode)
+  603  get_prop       gPort, currentLevel, "OMA", level
+  604  if             gameMode
+  605  jump_if_false  -> 610
+  606  set_prop       gPort, currentLocation, "OMA"
+  607  get_prop       gPort, visitedCount, visit
+  608  set_prop       gPort, visitedCount, (visit+1)
+  609  jump           -> 612
+  610  end
+  611  set            gCurLocation, "OMA"
+  612  if             practiceMode
+  613  jump_if_false  -> 621
+  614  get_prop       gPort, "OMAPracModeEntryCount", practiceVisit
+  615  set_prop       gPort, "OMAPracModeEntryCount", (practiceVisit+1)
+  616  set            activityButton, RCharacter, kPMChooseActButtonID, kLaptrapZ
+  617  set_prop       activityButton, "movable", kFalse
+  618  send           activityButton, setAOCursor, kFingerCursor, kFingerCursor
+  619  set_prop       activityButton, mouseDown, eLaptrapClicked@1329
+  620  jump           -> 643
+  621  end
+  622  set            joni, RCharacter, kJoniSetID, kJoniZ
+  623  set_prop       joni, "movable", kFalse
+  624  set_prop       joni, mouseDown, eKidsClicked@1286
+  625  set            santiago, RCharacter, kSantiagoSetID, kSantiagoZ
+  626  set_prop       santiago, mouseDown, eKidsClicked@1286
+  627  set_prop       santiago, movable, kFalse
+  628  set            owen, RCharacter, kOwenSetID, kOwenZ
+  629  set_prop       owen, "movable", kFalse
+  630  set_prop       owen, mouseDown, eKidsClicked@1286
+  631  set            leslie, RCharacter, kLeslieSetID, kLeslieZ
+  632  set_prop       leslie, "movable", kFalse
+  633  set_prop       leslie, mouseDown, eKidsClicked@1286
+  634  set            laptrap, RCharacter, kLaptrapSetID, kLaptrapZ
+  635  set_prop       laptrap, mouseDown, eLaptrapClicked@1329
+  636  set_prop       laptrap, movable, kFalse
+  637  set_prop       laptrap, animateSettled, kTrue
+  638  set            backpack, RHotSpot, 48, 344, 64, 367
+  639  set_prop       backpack, mouseDown, eBackpackOpened@348
+  640  set_prop       backpack, movable, kFalse
+  641  set_prop       backpack, z, kBackpackZ
+  642  call           pInitObjectsAndBackpack@292, 1, "backpack"
+  643  set            socrates, RCharacter, kSocratesSetID, kSocratesZ
+  644  set_prop       socrates, mouseDown, eSocratesClicked@1291
+  645  set_prop       socrates, movable, kFalse
+  646  set            crocodile, RCharacter, kCrocodileSetID, kCrocodileZ
+  647  set_prop       crocodile, mouseDown, eCrocodileClicked@1366
+  648  set_prop       crocodile, movable, kFalse
+  649  set_prop       crocodile, animateSettled, kTrue
+  650  set            river, RAnimation, kRunningRiverID
+  651  set_prop       river, touchy, kFalse
+  652  send           river, forever
+  653  call           pAddCharSpeechAnims@688
+  654  call           pRandomActions@712
+  655  call           pAddFidgets@700
+  656  call           pSetupPuzzle@768
+  657  call           pEntrySpeech@723
+  658  return
+
+  659  sub            pInterruptScene@659
+  660  set            sceneInterrupted, kTrue
+  661  set            stopInterruptingScene, kFalse
+  662  get_prop       sQueue, actionCount, numActions
+  663  loop           (numActions>0)
+  664  loop_test      (numActions>0)
+  665  jump_if_false  -> 687
+  666  if             stopInterruptingScene
+  667  jump_if_false  -> 671
+  668  set            sceneInterrupted, kFalse
+  669  jump           -> 687
+  670  end
+  671  send           sQueue, halt
+  672  get_prop       sQueue, isActive, active
+  673  if             active
+  674  jump_if_false  -> 678
+  675  set            sceneInterrupted, kFalse
+  676  jump           -> 687
+  677  end
+  678  send           sQueue, clear
+  679  if             (sQueueFinished#"empty")
+  680  jump_if_false  -> 685
+  681  set            finishedEvent, sQueueFinished
+  682  set            sQueueFinished, "empty"
+  683  call           finishedEvent
+  684  end
+  685  get_prop       sQueue, actionCount, numActions
+  686  jump           -> 664
+  687  return
+
+  688  sub            pAddCharSpeechAnims@688
+  689  if             gameMode
+  690  jump_if_false  -> 697
+  691  send           joni, addSpeechAnim, 16036
+  692  send           leslie, addSpeechAnim, 16037
+  693  send           owen, addSpeechAnim, 16038
+  694  send           santiago, addSpeechAnim, 16039
+  695  send           laptrap, addSpeechAnim, 16041
+  696  end
+  697  send           socrates, addSpeechAnim, 16040
+  698  send           crocodile, addSpeechAnim, 16035
+  699  return
+
+  700  sub            pAddFidgets@700
+  701  send           crocodile, addFidgetGroup, 1, kFidgetMinTime, kFidgetMaxTime
+  702  send           crocodile, addFidget, 1, kCrocFidg1ID
+  703  send           crocodile, addFidget, 1, kCrocFidg2ID
+  704  if             gameMode
+  705  jump_if_false  -> 709
+  706  send           laptrap, addFidgetGroup, 1, kFidgetMinTime, kFidgetMaxTime
+  707  send           laptrap, addFidget, 1, kLapFidgID
+  708  end
+  709  send           socrates, addFidgetGroup, 1, kFidgetMinTime, kFidgetMaxTime
+  710  send           socrates, addFidget, 1, kSocFidgID
+  711  return
+
+  712  sub            pRandomActions@712
+  713  if             gameMode
+  714  jump_if_false  -> 719
+  715  set            kidsClickedSpeech, RRandomAction, kTrue, kTrue
+  716  send           kidsClickedSpeech, add, CharacterSpeechAction, "owen", kKidsClickedSpchID.1
+  717  send           kidsClickedSpeech, add, CharacterSpeechAction, "joni", kKidsClickedSpchID.2
+  718  end
+  719  set            incorrectPositionSpeech, RRandomAction, kTrue, kTrue
+  720  send           incorrectPositionSpeech, add, CharacterSpeechAction, "socrates", kIncorrectAnsSpch1ID, kTrue
+  721  send           incorrectPositionSpeech, add, CharacterSpeechAction, "crocodile", kCrocClickedSpchID.2, kTrue
+  722  return
+
+  723  sub            pEntrySpeech@723
+  724  if             practiceMode
+  725  jump_if_false  -> 733
+  726  send           sQueue, add, CharacterSpeechAction, "crocodile", kCrocPracSpch1ID, kTrue
+  727  send           sQueue, add, CharacterSpeechAction, "crocodile", kCrocPracSpch2ID, kTrue
+  728  send           sQueue, add, CharacterSpeechAction, "crocodile", kCrocPracSpch3ID, kTrue
+  729  send           sQueue, add, CharacterSpeechAction, "crocodile", kCrocPracSpch4ID, kTrue
+  730  set            practiceModeEntryCtr, ((practiceVisit%3)+1)
+  731  send           sQueue, add, CharacterSpeechAction, "crocodile", kCrocPracSpeechID.practiceModeEntryCtr, kTrue
+  732  jump           -> 752
+  733  end
+  734  if             (visit=0)
+  735  jump_if_false  -> 750
+  736  set            crocSpchNHeadsTurn, RCompositeAction, 1
+  737  send           crocSpchNHeadsTurn, add, CharacterSpeechAction, "crocodile", kCrocEntrySpch2ID, kTrue
+  738  send           crocSpchNHeadsTurn, add, AnimAction, kHeadsTurnID, kHeadsTurnZ, 1, kTrue
+  739  send           sQueue, add, CharacterSpeechAction, "crocodile", kCrocEntrySpch1ID, kTrue
+  740  send           sQueue, add, CharacterSpeechAction, "joni", kJoniEntrySpch1ID, kTrue
+  741  send           sQueue, add, CharacterSpeechAction, "leslie", kLeslieEntrySpch1ID, kTrue
+  742  send           sQueue, add, CharacterSpeechAction, "owen", kOwenEntrySpch1ID, kTrue
+  743  send           sQueue, add, CharacterSpeechAction, "santiago", kSantiagoEntrySpch1ID, kTrue
+  744  send           sQueue, add, CharacterSpeechAction, "leslie", kLeslieEntrySpch2ID, kTrue
+  745  send           sQueue, add, CharacterSpeechAction, "joni", kJoniEntrySpch2ID, kTrue
+  746  send           sQueue, add, "crocSpchNHeadsTurn"
+  747  send           sQueue, add, CharacterSpeechAction, "crocodile", kCrocEntrySpch3ID, kTrue
+  748  send           sQueue, add, CharacterSpeechAction, "crocodile", kCrocEntrySpch4ID, kTrue
+  749  jump           -> 752
+  750  end
+  751  call           pReentrySpeech@754
+  752  send           sQueue, start
+  753  return
+
+  754  sub            pReentrySpeech@754
+  755  if             (crocDownCtr=4)
+  756  jump_if_false  -> 759
+  757  send           sQueue, add, CharacterSpeechAction, "joni", kJoniReentrySpchID, kTrue
+  758  jump           -> 767
+  759  end
+  760  set            reentryCtr, (visit%2)
+  761  if             reentryCtr
+  762  jump_if_false  -> 765
+  763  send           sQueue, add, CharacterSpeechAction, "joni", kJoniReentrySpchID, kTrue
+  764  jump           -> 767
+  765  end
+  766  send           sQueue, add, CharacterSpeechAction, "crocodile", kCrocReentrySpchID, kTrue
+  767  return
+
+  768  sub            pSetupPuzzle@768
+  769  loop           i, 1, 4
+  770  loop_test      i, 1, 4
+  771  jump_if_false  -> 788
+  772  get_prop       gPort, ("OMAGatorDown"+i), crocDown
+  773  if             (crocDown*gameMode)
+  774  jump_if_false  -> 778
+  775  set            croc.i, RCharacter, kCrocSetDownIDs.level.i, kCrocZs.i
+  776  set_prop       croc.i, touchy, kFalse
+  777  jump           -> 780
+  778  end
+  779  set            croc.i, RCharacter, kCrocSetUpIDs.level.i, kCrocZs.i
+  780  if             (crocDown*gameMode)
+  781  jump_if_false  -> 784
+  782  set            crocDownCtr, (crocDownCtr+1)
+  783  end
+  784  set_prop       croc.i, movable, kFalse
+  785  set_prop       croc.i, userData, i
+  786  set_prop       croc.i, mouseDown, eCrocodileClicked@1366
+  787  jump           -> 770
+  788  loop           i, 1, 6
+  789  loop_test      i, 1, 6
+  790  jump_if_false  -> 797
+  791  set            pieces.i, RAnimation, kCatapultPieceIDs.i
+  792  set_prop       pieces.i, movable, kFalse
+  793  set_prop       pieces.i, touchy, kFalse
+  794  set_prop       pieces.i, z, kCatapultPieceZs.i
+  795  send           pieces.i, setAOCursor, kNormalCursor, kNormalCursor
+  796  jump           -> 789
+  797  set_prop       pieces.5, frame, 2
+  798  set            downButton, RPButton, kDownButtonID
+  799  set_prop       downButton, hit, eDownButtonPressed@1376
+  800  set_prop       downButton, movable, kFalse
+  801  set_prop       downButton, z, kDownButtonZ
+  802  set            upButton, RPButton, kUpButtonID
+  803  set_prop       upButton, hit, eUpButtonPressed@1390
+  804  set_prop       upButton, movable, kFalse
+  805  set_prop       upButton, z, kUpButtonZ
+  806  set            leftButton, RPButton, kLeftButtonID
+  807  set_prop       leftButton, hit, eLeftButtonPressed@1404
+  808  set_prop       leftButton, movable, kFalse
+  809  set_prop       leftButton, z, kLeftButtonZ
+  810  set            rightButton, RPButton, kRightButtonID
+  811  set_prop       rightButton, hit, eRightButtonPressed@1407
+  812  set_prop       rightButton, movable, kFalse
+  813  set_prop       rightButton, z, kRightButtonZ
+  814  loop           i, 1, 9
+  815  loop_test      i, 1, 9
+  816  jump_if_false  -> 823
+  817  set            littleMan.i, RAnimation, kLittleManXs.i, kLittleManYs.i, kManButtonID
+  818  set_prop       littleMan.i, mouseDown, eLittleManButtonPressed@1410
+  819  set_prop       littleMan.i, movable, kFalse
+  820  set_prop       littleMan.i, z, kLittleManButtonZs.i
+  821  send           littleMan.i, setAOCursor, kFingerCursor, kFingerCursor
+  822  jump           -> 815
+  823  set            trigger, RTrigger, kTriggerID, kTriggerZ
+  824  set_prop       trigger, framePixelDelta, 8
+  825  set_prop       trigger, movable, kFalse
+  826  set_prop       trigger, fired, eLaunchCatapult@1467
+  827  set_prop       trigger, clicked, eTriggerClicked@1494
+  828  set_prop       trigger, sfxID, kTriggerPullSfxID
+  829  set            ramp, RAnimation, kRampID
+  830  set_prop       ramp, movable, kFalse
+  831  set_prop       ramp, z, kRampZ
+  832  set            mask2, RAnimation, kMask2ID
+  833  set_prop       mask2, movable, kFalse
+  834  set_prop       mask2, touchy, kFalse
+  835  set_prop       mask2, z, kMask2Z
+  836  loop           i, 1, 8
+  837  loop_test      i, 1, 8
+  838  jump_if_false  -> 850
+  839  set            rock.i, RAnimation, kRockIDs.i
+  840  set_prop       rock.i, z, kRockZs.i
+  841  get_prop       rock.i, x, xx
+  842  get_prop       rock.i, y, yy
+  843  set_prop       rock.i, userData, (" "+xx+"#"+yy)
+  844  set_prop       rock.i, mouseDown, eRockPickedUp@1431
+  845  set_prop       rock.i, mouseUp, eRockDropped@1449
+  846  send           rock.i, setAOCursor, kOpenHandCursor, kClosedHandCursor
+  847  get_prop       rock.i, frameCount, fc
+  848  set            rockFrames.i, (fc-1)
+  849  jump           -> 837
+  850  set            rockspot, RHotSpot, kRockSpotX, kRockSpotY, (kRockSpotX+kRockSpotW), (kRockSpotY+kRockSpotH), kRockSpotZ
+  851  set_prop       rockspot, touchy, kFalse
+  852  set            catapult, OMMultiTrinket, OMMultiTrinket
+  853  set_prop       catapult, z, kCatapultZ
+  854  set_prop       catapult, movable, kFalse
+  855  set_prop       catapult, touchy, kFalse
+  856  send           catapult, addTrinket, "pieces.5", (kCatapultPieceZs.5-kCatapultZ), kCatapultPrimaryTag
+  857  send           catapult, addTrinket, "pieces.4", (kCatapultPieceZs.4-kCatapultZ), kCatapultPrimaryTag
+  858  send           catapult, addTrinket, "ramp", (kRampZ-kCatapultZ), kCatapultPrimaryTag
+  859  set            catapultPosition, 1
+  860  set_prop       leftButton, enabled, kFalse
+  861  set_prop       littleMan.catapultPosition, frame, 2
+  862  set            rampPosition, 1
+  863  set_prop       downButton, enabled, kFalse
+  864  send           catapult, offset, (-22), 4
+  865  send           trigger, offset, (-22), 4
+  866  send           downButton, offset, (-22), 4
+  867  send           upButton, offset, (-22), 4
+  868  send           downButton, offset, (-22), 4
+  869  send           rockspot, offset, (-22), 4
+  870  get_prop       downButton, x, xx
+  871  get_prop       downButton, y, yy
+  872  send           downButton, place, (xx-22), (yy+4)
+  873  get_prop       upButton, x, xx
+  874  get_prop       upButton, y, yy
+  875  send           upButton, place, (xx-22), (yy+4)
+  876  set            activeRock, 0
+  877  set            animTrigger, RAnimationTrigger, 8
+  878  set_prop       animTrigger, newFrame, eMoveRock@1499
+  879  if             (crocDownCtr=4)
+  880  jump_if_false  -> 919
+  881  if             gameMode
+  882  jump_if_false  -> 891
+  883  set            exitSpot, RHotSpot, 400, 0, 640, 230
+  884  send           exitSpot, setAOCursor, kNorthEastCursor
+  885  set_prop       exitSpot, mouseDown, pWalkOut@1236
+  886  set_prop       joni, mouseDown, pWalkOut@1236
+  887  set_prop       santiago, mouseDown, pWalkOut@1236
+  888  set_prop       leslie, mouseDown, pWalkOut@1236
+  889  set_prop       owen, mouseDown, pWalkOut@1236
+  890  end
+  891  set_prop       socrates, mouseDown, pWalkOut@1236
+  892  set_prop       crocodile, mouseDown, pWalkOut@1236
+  893  loop           i, 1, 4
+  894  loop_test      i, 1, 4
+  895  jump_if_false  -> 898
+  896  set_prop       croc.i, mouseDown, pWalkOut@1236
+  897  jump           -> 894
+  898  if             gameMode
+  899  jump_if_false  -> 902
+  900  set_prop       backpack, touchy, kFalse
+  901  end
+  902  set_prop       trigger, touchy, kFalse
+  903  set_prop       upButton, touchy, kFalse
+  904  set_prop       downButton, touchy, kFalse
+  905  set_prop       rightButton, touchy, kFalse
+  906  set_prop       leftButton, touchy, kFalse
+  907  set_prop       catapult, touchy, kFalse
+  908  loop           i, 1, 8
+  909  loop_test      i, 1, 8
+  910  jump_if_false  -> 913
+  911  set_prop       rock.i, touchy, kFalse
+  912  jump           -> 909
+  913  loop           i, 1, 9
+  914  loop_test      i, 1, 9
+  915  jump_if_false  -> 918
+  916  set_prop       littleMan.i, touchy, kFalse
+  917  jump           -> 914
+  918  end
+  919  return
+
+  920  sub            pReset@920
+  921  call           pResetSpeech@932
+  922  call           pRaiseCrocs@1268
+  923  set            crocDownCtr, 0
+  924  loop           i, 1, 4
+  925  loop_test      i, 1, 4
+  926  jump_if_false  -> 929
+  927  set            pracCrocHit.i, kFalse
+  928  jump           -> 925
+  929  set            sQueueFinished, "pSetupPuzzle"
+  930  send           sQueue, start
+  931  return
+
+  932  sub            pResetSpeech@932
+  933  call           pInterruptScene@659
+  934  set            resetCtr, (resetCtr+1)
+  935  if             (resetCtr>3)
+  936  jump_if_false  -> 939
+  937  set            resetCtr, 1
+  938  end
+  939  send           sQueue, add, CharacterSpeechAction, "crocodile", kCrocPracSpeechID.resetCtr, kTrue
+  940  return
+
+  941  sub            pMoveCatapultLeft@941
+  942  call           pInterruptScene@659
+  943  call_global    PlaySound, kButtonPressSfxID
+  944  set_prop       littleMan.catapultPosition, frame, 1
+  945  set            offsetX, (0-kCatapultOffsetsX.catapultPosition)
+  946  set            offsetY, (0-kCatapultOffsetsY.catapultPosition)
+  947  set            catapultPosition, (catapultPosition-1)
+  948  set_prop       littleMan.catapultPosition, frame, 2
+  949  send           catapult, offset, offsetX, offsetY
+  950  get_prop       downButton, x, xx
+  951  get_prop       downButton, y, yy
+  952  send           downButton, place, (xx+offsetX), (yy+offsetY)
+  953  get_prop       upButton, x, xx
+  954  get_prop       upButton, y, yy
+  955  send           upButton, place, (xx+offsetX), (yy+offsetY)
+  956  send           trigger, offset, offsetX, offsetY
+  957  send           rockspot, offset, offsetX, offsetY
+  958  if             (activeRock#0)
+  959  jump_if_false  -> 962
+  960  send           rock.activeRock, offset, offsetX, offsetY
+  961  end
+  962  if             (catapultPosition=1)
+  963  jump_if_false  -> 966
+  964  set_prop       leftButton, enabled, 0
+  965  end
+  966  set_prop       rightButton, enabled, 1
+  967  return
+
+  968  sub            pMoveCatapultRight@968
+  969  call_global    PlaySound, kButtonPressSfxID
+  970  call           pInterruptScene@659
+  971  set_prop       littleMan.catapultPosition, frame, 1
+  972  set            catapultPosition, (catapultPosition+1)
+  973  set_prop       littleMan.catapultPosition, frame, 2
+  974  set            offsetX, kCatapultOffsetsX.catapultPosition
+  975  set            offsetY, kCatapultOffsetsY.catapultPosition
+  976  send           catapult, offset, offsetX, offsetY
+  977  get_prop       downButton, x, xx
+  978  get_prop       downButton, y, yy
+  979  send           downButton, place, (xx+offsetX), (yy+offsetY)
+  980  get_prop       upButton, x, xx
+  981  get_prop       upButton, y, yy
+  982  send           upButton, place, (xx+offsetX), (yy+offsetY)
+  983  send           trigger, offset, offsetX, offsetY
+  984  send           rockspot, offset, offsetX, offsetY
+  985  if             (activeRock#0)
+  986  jump_if_false  -> 989
+  987  send           rock.activeRock, offset, offsetX, offsetY
+  988  end
+  989  if             (catapultPosition=9)
+  990  jump_if_false  -> 993
+  991  set_prop       rightButton, enabled, 0
+  992  end
+  993  set_prop       leftButton, enabled, 1
+  994  return
+
+  995  sub            pSendRockHome@995
+  996  set            whichRock, activeRock
+  997  set            activeRock, 0
+  998  call           pInterruptScene@659
+  999  if             (failedIntersect=kFalse)
+ 1000  jump_if_false  -> 1005
+ 1001  send           sQueue, add, AnimAction, kBouncingRockID.whichRock, kRockZs.whichRock, 1, kTrue
+ 1002  set            sQueueFinished, "pReplaceBall"
+ 1003  send           sQueue, start
+ 1004  jump           -> 1008
+ 1005  end
+ 1006  set            failedIntersect, kFalse
+ 1007  call           pReplaceBall@1009
+ 1008  return
+
+ 1009  sub            pReplaceBall@1009
+ 1010  get_prop       rock.whichRock, userData, ud
+ 1011  set            p1, (("#"@ud)+1)
+ 1012  set            oy, ud|p1
+ 1013  set_prop       rock.whichRock, z, kRockZs.whichRock
+ 1014  set_prop       rock.whichRock, frame, 1
+ 1015  send           rock.whichRock, place, ud, oy
+ 1016  set_prop       rock.whichRock, visible, kTrue
+ 1017  loop           i, 1, 8
+ 1018  loop_test      i, 1, 8
+ 1019  jump_if_false  -> 1022
+ 1020  set_prop       rock.i, touchy, kTrue
+ 1021  jump           -> 1018
+ 1022  set_prop       trigger, touchy, kTrue
+ 1023  return
+
+ 1024  sub            pUdateRockFrame@1024
+ 1025  set            rockFrame, ((currentX-kStartXs.catapultPosition)*rockFrames.activeRock/(-2*kStartXs.catapultPosition)+1)
+ 1026  if             (rockFrame>rockFrames.activeRock)
+ 1027  jump_if_false  -> 1030
+ 1028  set            rockFrame, rockFrames.activeRock
+ 1029  end
+ 1030  if             (rockFrame<1)
+ 1031  jump_if_false  -> 1034
+ 1032  set            rockFrame, 1
+ 1033  end
+ 1034  set_prop       rock.activeRock, frame, rockFrame
+ 1035  return
+
+ 1036  sub            pRockHitWater@1036
+ 1037  send           animTrigger, stop
+ 1038  set            incorrectTriesCtr, (incorrectTriesCtr+1)
+ 1039  if             ((currentX>0)+((realY+1)>kOriginYs.catapultPosition))
+ 1040  jump_if_false  -> 1057
+ 1041  get_prop       rock.activeRock, x, xx
+ 1042  get_prop       rock.activeRock, y, yy
+ 1043  send           sQueue, add, AnimAction, kCloseSplashID, xx, yy, kCloseSplashZ, 1, kFalse
+ 1044  if             ((incorrectTriesCtr=1))
+ 1045  jump_if_false  -> 1054
+ 1046  if             (rightPosition*(crocDown=kFalse))
+ 1047  jump_if_false  -> 1051
+ 1048  send           sQueue, add, CharacterSpeechAction, "socrates", kIncorrectAnsSpch4ID, kTrue
+ 1049  send           sQueue, add, CharacterSpeechAction, "socrates", kIncorrectAnsSpch5ID, kTrue
+ 1050  jump           -> 1053
+ 1051  end
+ 1052  call           pIncorrectPositionDialog@1232
+ 1053  jump           -> 1056
+ 1054  end
+ 1055  set            incorrectTriesCtr, 0
+ 1056  jump           -> 1071
+ 1057  end
+ 1058  send           sQueue, add, SoundAction, kFarSplashSfxID, kFalse, kTrue
+ 1059  if             ((incorrectTriesCtr=1))
+ 1060  jump_if_false  -> 1069
+ 1061  if             (rightPosition*(crocDown=kFalse))
+ 1062  jump_if_false  -> 1066
+ 1063  send           sQueue, add, CharacterSpeechAction, "socrates", kIncorrectAnsSpch2ID, kTrue
+ 1064  send           sQueue, add, CharacterSpeechAction, "socrates", kIncorrectAnsSpch3ID, kTrue
+ 1065  jump           -> 1068
+ 1066  end
+ 1067  call           pIncorrectPositionDialog@1232
+ 1068  jump           -> 1071
+ 1069  end
+ 1070  set            incorrectTriesCtr, 0
+ 1071  set_prop       upButton, touchy, kTrue
+ 1072  set_prop       downButton, touchy, kTrue
+ 1073  set_prop       leftButton, touchy, kTrue
+ 1074  set_prop       rightButton, touchy, kTrue
+ 1075  if             (rampPosition=1)
+ 1076  jump_if_false  -> 1079
+ 1077  set_prop       downButton, enabled, kFalse
+ 1078  end
+ 1079  if             (rampPosition=7)
+ 1080  jump_if_false  -> 1083
+ 1081  set_prop       upButton, enabled, kFalse
+ 1082  end
+ 1083  loop           i, 1, 9
+ 1084  loop_test      i, 1, 9
+ 1085  jump_if_false  -> 1088
+ 1086  set_prop       littleMan.i, touchy, kTrue
+ 1087  jump           -> 1084
+ 1088  set_prop       rock.activeRock, visible, kFalse
+ 1089  set            sQueueFinished, "pSendRockHome"
+ 1090  send           sQueue, start
+ 1091  return
+
+ 1092  sub            pRockHitStatue@1092
+ 1093  send           animTrigger, stop
+ 1094  set_prop       rock.activeRock, visible, kFalse
+ 1095  set            rockBreakup, RAnimation, realX, realY, kRockCracksUpID.activeRock
+ 1096  set_prop       rockBreakup, touchy, kFalse
+ 1097  set_prop       rockBreakup, z, kRockZs.activeRock
+ 1098  set_prop       rockBreakup, paused, pRockHitLocation@1101
+ 1099  send           rockBreakup, play
+ 1100  return
+
+ 1101  sub            pRockHitLocation@1101
+ 1102  call           pInterruptScene@659
+ 1103  set_prop       rockBreakup, visible, kFalse
+ 1104  delete         rockBreakup
+ 1105  if             (((kTargetYs.catapultPosition-kYFudge.level)<realY)*(realY<(kTargetYs.catapultPosition+kYFudge.level)))
+ 1106  jump_if_false  -> 1120
+ 1107  set            whichCroc, (catapultPosition/2)
+ 1108  send           croc.whichCroc, playAnim, kCrocFallIDs.level.whichCroc
+ 1109  set_prop       croc.whichCroc, settlePoseID, kCrocSetDownIDs.level.whichCroc
+ 1110  set_prop       croc.whichCroc, touchy, kFalse
+ 1111  if             gameMode
+ 1112  jump_if_false  -> 1115
+ 1113  set_prop       gPort, ("OMAGatorDown"+whichCroc), kTrue
+ 1114  jump           -> 1117
+ 1115  end
+ 1116  set            pracCrocHit.whichCroc, kTrue
+ 1117  set            crocDownCtr, (crocDownCtr+1)
+ 1118  send           sQueue, add, CharacterSpeechAction, "crocodile", kCorrectAnsSpch.crocDownCtr, kTrue
+ 1119  jump           -> 1131
+ 1120  end
+ 1121  set            incorrectTriesCtr, (incorrectTriesCtr+1)
+ 1122  if             ((incorrectTriesCtr=1))
+ 1123  jump_if_false  -> 1129
+ 1124  if             (rightPosition=kFalse)
+ 1125  jump_if_false  -> 1128
+ 1126  call           pIncorrectPositionDialog@1232
+ 1127  end
+ 1128  jump           -> 1131
+ 1129  end
+ 1130  set            incorrectTriesCtr, 0
+ 1131  set_prop       upButton, touchy, kTrue
+ 1132  set_prop       downButton, touchy, kTrue
+ 1133  set_prop       leftButton, touchy, kTrue
+ 1134  set_prop       rightButton, touchy, kTrue
+ 1135  if             (rampPosition=1)
+ 1136  jump_if_false  -> 1139
+ 1137  set_prop       downButton, enabled, kFalse
+ 1138  end
+ 1139  if             (rampPosition=7)
+ 1140  jump_if_false  -> 1143
+ 1141  set_prop       upButton, enabled, kFalse
+ 1142  end
+ 1143  loop           i, 1, 9
+ 1144  loop_test      i, 1, 9
+ 1145  jump_if_false  -> 1148
+ 1146  set_prop       littleMan.i, touchy, kTrue
+ 1147  jump           -> 1144
+ 1148  set_prop       rock.activeRock, visible, kFalse
+ 1149  if             (crocDownCtr=4)
+ 1150  jump_if_false  -> 1183
+ 1151  set_prop       trigger, touchy, kFalse
+ 1152  set_prop       catapult, touchy, kFalse
+ 1153  send           gPort, autoLevel, "OMA"
+ 1154  if             practiceMode
+ 1155  jump_if_false  -> 1158
+ 1156  call           pReset@920
+ 1157  jump           -> 1182
+ 1158  end
+ 1159  set            exitSpot, RHotSpot, 400, 0, 640, 230
+ 1160  send           exitSpot, setAOCursor, kNorthEastCursor
+ 1161  set_prop       exitSpot, mouseDown, pWalkOut@1236
+ 1162  set_prop       joni, mouseDown, pWalkOut@1236
+ 1163  set_prop       santiago, mouseDown, pWalkOut@1236
+ 1164  set_prop       leslie, mouseDown, pWalkOut@1236
+ 1165  set_prop       owen, mouseDown, pWalkOut@1236
+ 1166  set_prop       socrates, mouseDown, pWalkOut@1236
+ 1167  set_prop       crocodile, mouseDown, pWalkOut@1236
+ 1168  loop           i, 1, 4
+ 1169  loop_test      i, 1, 4
+ 1170  jump_if_false  -> 1174
+ 1171  set_prop       croc.i, mouseDown, pWalkOut@1236
+ 1172  set_prop       croc.i, touchy, kTrue
+ 1173  jump           -> 1169
+ 1174  send           sQueue, add, CharacterSpeechAction, "owen", kWalkoutSpch1ID, kTrue
+ 1175  send           sQueue, add, CharacterSpeechAction, "joni", kWalkoutSpch2ID, kTrue
+ 1176  send           sQueue, add, CharacterSpeechAction, "laptrap", kWalkoutSpch3ID, kTrue
+ 1177  set_prop       backpack, touchy, kFalse
+ 1178  set_prop       trigger, touchy, kFalse
+ 1179  set_prop       catapult, touchy, kFalse
+ 1180  set            sQueueFinished, "pSendRockHome"
+ 1181  send           sQueue, start
+ 1182  jump           -> 1192
+ 1183  end
+ 1184  get_prop       sQueue, actionCount, actions
+ 1185  if             actions
+ 1186  jump_if_false  -> 1190
+ 1187  set            sQueueFinished, "pSendRockHome"
+ 1188  send           sQueue, start
+ 1189  jump           -> 1192
+ 1190  end
+ 1191  call           pSendRockHome@995
+ 1192  return
+
+ 1193  sub            pRockStraightUp@1193
+ 1194  send           animTrigger, stop
+ 1195  get_prop       rockspot, x, xx
+ 1196  get_prop       rockspot, y, yy
+ 1197  get_prop       rock.activeRock, width, w
+ 1198  get_prop       rock.activeRock, height, h
+ 1199  send           rock.activeRock, place, (xx+((kRockSpotW-w)/2)), (yy+kRockSpotH-h)
+ 1200  set            incorrectTriesCtr, (incorrectTriesCtr+1)
+ 1201  if             ((incorrectTriesCtr=1)*(rightPosition=kFalse))
+ 1202  jump_if_false  -> 1207
+ 1203  call           pIncorrectPositionDialog@1232
+ 1204  set            sQueueFinished, "pResetTrigger"
+ 1205  send           sQueue, start
+ 1206  jump           -> 1210
+ 1207  end
+ 1208  set            incorrectTriesCtr, 0
+ 1209  call           pResetTrigger@1211
+ 1210  return
+
+ 1211  sub            pResetTrigger@1211
+ 1212  set_prop       upButton, touchy, kTrue
+ 1213  set_prop       downButton, touchy, kTrue
+ 1214  set_prop       leftButton, touchy, kTrue
+ 1215  set_prop       rightButton, touchy, kTrue
+ 1216  set_prop       rock.activeRock, touchy, kTrue
+ 1217  if             (rampPosition=1)
+ 1218  jump_if_false  -> 1221
+ 1219  set_prop       downButton, enabled, kFalse
+ 1220  end
+ 1221  if             (rampPosition=7)
+ 1222  jump_if_false  -> 1225
+ 1223  set_prop       upButton, enabled, kFalse
+ 1224  end
+ 1225  loop           i, 1, 9
+ 1226  loop_test      i, 1, 9
+ 1227  jump_if_false  -> 1230
+ 1228  set_prop       littleMan.i, touchy, kTrue
+ 1229  jump           -> 1226
+ 1230  set_prop       trigger, touchy, kTrue
+ 1231  return
+
+ 1232  sub            pIncorrectPositionDialog@1232
+ 1233  call           pInterruptScene@659
+ 1234  send           sQueue, add, "incorrectPositionSpeech"
+ 1235  return
+
+ 1236  sub            pWalkOut@1236
+ 1237  set_prop       exitSpot, mouseDown
+ 1238  set_prop       trigger, touchy, kFalse
+ 1239  set_prop       catapult, touchy, kFalse
+ 1240  set_prop       joni, touchy, kFalse
+ 1241  set_prop       santiago, touchy, kFalse
+ 1242  set_prop       owen, touchy, kFalse
+ 1243  set_prop       leslie, touchy, kFalse
+ 1244  set_prop       socrates, touchy, kFalse
+ 1245  set_prop       backpack, touchy, kFalse
+ 1246  set_prop       laptrap, touchy, kFalse
+ 1247  set_prop       crocodile, touchy, kFalse
+ 1248  loop           i, 1, 4
+ 1249  loop_test      i, 1, 4
+ 1250  jump_if_false  -> 1253
+ 1251  set_prop       croc.i, touchy, kFalse
+ 1252  jump           -> 1249
+ 1253  call           pInterruptScene@659
+ 1254  set            walkout, RCompositeAction, RCompositeAction
+ 1255  if             gameMode
+ 1256  jump_if_false  -> 1262
+ 1257  send           walkout, add, CharacterAnimAction, "santiago", kSantiagoExitID, 1, kFalse, kTrue
+ 1258  send           walkout, add, CharacterAnimAction, "joni", kJoniExitID, 1, kFalse, kTrue
+ 1259  send           walkout, add, CharacterAnimAction, "leslie", kLeslieExitID, 1, kFalse, kTrue
+ 1260  send           walkout, add, CharacterAnimAction, "owen", kOwenExitID, 1, kFalse, kTrue
+ 1261  end
+ 1262  send           walkout, add, CharacterAnimAction, "laptrap", kLaptrapExitID, 1, kFalse, kTrue
+ 1263  send           walkout, add, CharacterAnimAction, "socrates", kSocratesExitID, 1, kFalse, kTrue
+ 1264  send           sQueue, add, "walkout"
+ 1265  set            sQueueFinished, "eExit"
+ 1266  send           sQueue, start
+ 1267  return
+
+ 1268  sub            pRaiseCrocs@1268
+ 1269  set            crocDownCtr, 0
+ 1270  set            raiseCrocs, RCompositeAction, RCompositeAction
+ 1271  send           raiseCrocs, add, CharacterAnimAction, "croc.1", kRaiseCrocsID.level.1, kTrue, kTrue
+ 1272  send           raiseCrocs, add, CharacterAnimAction, "croc.2", kRaiseCrocsID.level.2, kTrue, kTrue
+ 1273  send           raiseCrocs, add, CharacterAnimAction, "croc.3", kRaiseCrocsID.level.3, kTrue, kTrue
+ 1274  send           raiseCrocs, add, CharacterAnimAction, "croc.4", kRaiseCrocsID.level.4, kTrue, kTrue
+ 1275  send           sQueue, add, "raiseCrocs"
+ 1276  return
+
+ 1277  sub            eSQueueDone@1277
+ 1278  send           sQueue, clear
+ 1279  if             (sQueueFinished#"empty")
+ 1280  jump_if_false  -> 1285
+ 1281  set            finishedEvent, sQueueFinished
+ 1282  set            sQueueFinished, "empty"
+ 1283  call           finishedEvent
+ 1284  end
+ 1285  return
+
+ 1286  sub            eKidsClicked@1286
+ 1287  call           pInterruptScene@659
+ 1288  send           sQueue, add, "kidsClickedSpeech"
+ 1289  send           sQueue, start
+ 1290  return
+
+ 1291  sub            eSocratesClicked@1291
+ 1292  call           pInterruptScene@659
+ 1293  set            socratesClickCtr, (socratesClickCtr+1)
+ 1294  if             (socratesClickCtr>5)
+ 1295  jump_if_false  -> 1298
+ 1296  set            socratesClickCtr, 1
+ 1297  end
+ 1298  if             (socratesClickCtr=1)
+ 1299  jump_if_false  -> 1304
+ 1300  send           sQueue, add, CharacterSpeechAction, "socrates", kSocratesSpch1ID, kTrue
+ 1301  send           sQueue, add, CharacterSpeechAction, "socrates", kSocratesSpch2ID, kTrue
+ 1302  send           sQueue, add, CharacterSpeechAction, "socrates", kSocratesSpch3ID, kTrue
+ 1303  jump           -> 1327
+ 1304  end
+ 1305  if             (socratesClickCtr=2)
+ 1306  jump_if_false  -> 1311
+ 1307  send           sQueue, add, CharacterSpeechAction, "socrates", kSocratesSpch4ID, kTrue
+ 1308  send           sQueue, add, CharacterSpeechAction, "socrates", kSocratesSpch5ID, kTrue
+ 1309  send           sQueue, add, CharacterSpeechAction, "socrates", kSocratesSpch6ID, kTrue
+ 1310  jump           -> 1327
+ 1311  end
+ 1312  if             (socratesClickCtr=3)
+ 1313  jump_if_false  -> 1318
+ 1314  send           sQueue, add, CharacterSpeechAction, "socrates", kSocratesSpch7ID, kTrue
+ 1315  send           sQueue, add, CharacterSpeechAction, "socrates", kSocratesSpch8ID, kTrue
+ 1316  send           sQueue, add, CharacterSpeechAction, "socrates", kSocratesSpch9ID, kTrue
+ 1317  jump           -> 1327
+ 1318  end
+ 1319  if             (socratesClickCtr=4)
+ 1320  jump_if_false  -> 1325
+ 1321  send           sQueue, add, CharacterSpeechAction, "socrates", kSocratesSpch10ID, kTrue
+ 1322  send           sQueue, add, CharacterSpeechAction, "socrates", kSocratesSpch11ID, kTrue
+ 1323  send           sQueue, add, CharacterSpeechAction, "socrates", kSocratesSpch12ID, kTrue
+ 1324  jump           -> 1327
+ 1325  end
+ 1326  send           sQueue, add, CharacterSpeechAction, "socrates", kSocratesSpch13ID, kTrue
+ 1327  send           sQueue, start
+ 1328  return
+
+ 1329  sub            eLaptrapClicked@1329
+ 1330  call           pInterruptScene@659
+ 1331  if             (sceneInterrupted=kTrue)
+ 1332  jump_if_false  -> 1337
+ 1333  get_prop       gPort, currentLevel, "OMA", openingLevel
+ 1334  call           gOpenLaptrap@222
+ 1335  set_prop       gLaptrap, closed, eCloseLaptrap@1338
+ 1336  end
+ 1337  return
+
+ 1338  sub            eCloseLaptrap@1338
+ 1339  if             gameMode
+ 1340  jump_if_false  -> 1343
+ 1341  set_prop       laptrap, visible, kTrue
+ 1342  end
+ 1343  delete         gLaptrap
+ 1344  get_prop       gPort, currentLevel, "OMA", closingLevel
+ 1345  if             (openingLevel#closingLevel)
+ 1346  jump_if_false  -> 1365
+ 1347  set            crocDownCtr, 0
+ 1348  if             gameMode
+ 1349  jump_if_false  -> 1356
+ 1350  loop           i, 1, 4
+ 1351  loop_test      i, 1, 4
+ 1352  jump_if_false  -> 1355
+ 1353  set_prop       gPort, ("OMAGatorDown"+i), 0
+ 1354  jump           -> 1351
+ 1355  jump           -> 1362
+ 1356  end
+ 1357  loop           i, 1, 4
+ 1358  loop_test      i, 1, 4
+ 1359  jump_if_false  -> 1362
+ 1360  set            pracCrocHit.i, kFalse
+ 1361  jump           -> 1358
+ 1362  set            level, closingLevel
+ 1363  call           pSetupPuzzle@768
+ 1364  end
+ 1365  return
+
+ 1366  sub            eCrocodileClicked@1366
+ 1367  call           pInterruptScene@659
+ 1368  set            crocClickedCtr, (crocClickedCtr+1)
+ 1369  if             (crocClickedCtr>4)
+ 1370  jump_if_false  -> 1373
+ 1371  set            crocClickedCtr, 1
+ 1372  end
+ 1373  send           sQueue, add, CharacterSpeechAction, "crocodile", kCrocClickedSpchID.crocClickedCtr, kTrue
+ 1374  send           sQueue, start
+ 1375  return
+
+ 1376  sub            eDownButtonPressed@1376
+ 1377  call           pInterruptScene@659
+ 1378  get_prop       pieces.5, frame, frameNum
+ 1379  set_prop       pieces.5, frame, (frameNum-1)
+ 1380  send           sQueue, add, SoundAction, kButtonPressSfxID, kFalse, kTrue
+ 1381  send           sQueue, start
+ 1382  set            rampPosition, (rampPosition-1)
+ 1383  set_prop       ramp, frame, rampPosition
+ 1384  if             (rampPosition=1)
+ 1385  jump_if_false  -> 1388
+ 1386  set_prop       downButton, enabled, kFalse
+ 1387  end
+ 1388  set_prop       upButton, enabled, kTrue
+ 1389  return
+
+ 1390  sub            eUpButtonPressed@1390
+ 1391  call           pInterruptScene@659
+ 1392  get_prop       pieces.5, frame, frameNum
+ 1393  set_prop       pieces.5, frame, (frameNum+1)
+ 1394  send           sQueue, add, SoundAction, kButtonPressSfxID, kFalse, kTrue
+ 1395  send           sQueue, start
+ 1396  set            rampPosition, (rampPosition+1)
+ 1397  set_prop       ramp, frame, rampPosition
+ 1398  if             (rampPosition=7)
+ 1399  jump_if_false  -> 1402
+ 1400  set_prop       upButton, enabled, kFalse
+ 1401  end
+ 1402  set_prop       downButton, enabled, kTrue
+ 1403  return
+
+ 1404  sub            eLeftButtonPressed@1404
+ 1405  call           pMoveCatapultLeft@941
+ 1406  return
+
+ 1407  sub            eRightButtonPressed@1407
+ 1408  call           pMoveCatapultRight@968
+ 1409  return
+
+ 1410  sub            eLittleManButtonPressed@1410
+ 1411  get_prop       $1, name, buttonPressed
+ 1412  set            whichPosition, buttonPressed|11
+ 1413  if             (whichPosition<catapultPosition)
+ 1414  jump_if_false  -> 1421
+ 1415  loop           i, whichPosition, (catapultPosition-1)
+ 1416  loop_test      i, whichPosition, (catapultPosition-1)
+ 1417  jump_if_false  -> 1420
+ 1418  call           pMoveCatapultLeft@941
+ 1419  jump           -> 1416
+ 1420  jump           -> 1430
+ 1421  end
+ 1422  if             (whichPosition>catapultPosition)
+ 1423  jump_if_false  -> 1430
+ 1424  loop           i, catapultPosition, (whichPosition-1)
+ 1425  loop_test      i, catapultPosition, (whichPosition-1)
+ 1426  jump_if_false  -> 1429
+ 1427  call           pMoveCatapultRight@968
+ 1428  jump           -> 1425
+ 1429  end
+ 1430  return
+
+ 1431  sub            eRockPickedUp@1431
+ 1432  call           pInterruptScene@659
+ 1433  get_prop       $1, name, rockName
+ 1434  set            rockNo, rockName|6
+ 1435  if             (rockNo#activeRock)
+ 1436  jump_if_false  -> 1439
+ 1437  set            activeRock, rockNo
+ 1438  end
+ 1439  set_prop       $1, z, kRockPickedUpZ
+ 1440  loop           i, 1, 8
+ 1441  loop_test      i, 1, 8
+ 1442  jump_if_false  -> 1448
+ 1443  if             (i#activeRock)
+ 1444  jump_if_false  -> 1447
+ 1445  set_prop       rock.i, touchy, kFalse
+ 1446  end
+ 1447  jump           -> 1441
+ 1448  return
+
+ 1449  sub            eRockDropped@1449
+ 1450  get_prop       $1, name, rockName
+ 1451  set            rockNo, rockName|6
+ 1452  set_prop       $1, z, kRockZs.rockNo
+ 1453  call_global    IntersectTest, "RECEIVER", "rockspot"
+ 1454  if             (RESULT=1)
+ 1455  jump_if_false  -> 1463
+ 1456  set            activeRock, rockNo
+ 1457  get_prop       rockspot, x, xx
+ 1458  get_prop       rockspot, y, yy
+ 1459  get_prop       rock.activeRock, width, w
+ 1460  get_prop       rock.activeRock, height, h
+ 1461  send           rock.activeRock, place, (xx+((kRockSpotW-w)/2)), (yy+kRockSpotH-h)
+ 1462  jump           -> 1466
+ 1463  end
+ 1464  set            failedIntersect, kTrue
+ 1465  call           pSendRockHome@995
+ 1466  return
+
+ 1467  sub            eLaunchCatapult@1467
+ 1468  call           pInterruptScene@659
+ 1469  if             (activeRock#0)
+ 1470  jump_if_false  -> 1490
+ 1471  call_global    PlaySound, kTriggerFiredSfxID
+ 1472  set_prop       upButton, touchy, kFalse
+ 1473  set_prop       downButton, touchy, kFalse
+ 1474  set_prop       leftButton, touchy, kFalse
+ 1475  set_prop       rightButton, touchy, kFalse
+ 1476  loop           i, 1, 9
+ 1477  loop_test      i, 1, 9
+ 1478  jump_if_false  -> 1481
+ 1479  set_prop       littleMan.i, touchy, kFalse
+ 1480  jump           -> 1477
+ 1481  get_prop       trigger, frame, force
+ 1482  set            force, (force-1)
+ 1483  set            velocity, (force*kVelocityConstant/activeRock)
+ 1484  set            t, (-kTimeConstant)
+ 1485  set_prop       rock.activeRock, touchy, kFalse
+ 1486  set_prop       trigger, touchy, kFalse
+ 1487  send           animTrigger, start
+ 1488  set_prop       rock.activeRock, frame, 2
+ 1489  jump           -> 1492
+ 1490  end
+ 1491  call_global    PlaySound, kTriggerEmptySfxID
+ 1492  set_prop       trigger, frame, 1
+ 1493  return
+
+ 1494  sub            eTriggerClicked@1494
+ 1495  call           pInterruptScene@659
+ 1496  send           sQueue, add, CharacterSpeechAction, "crocodile", kTriggerClickedSpchID, kTrue
+ 1497  send           sQueue, start
+ 1498  return
+
+ 1499  sub            eMoveRock@1499
+ 1500  set            t, (t+kTimeConstant)
+ 1501  set            a, (velocity*t*kSin.rampPosition)
+ 1502  set            currentX, (kStartXs.catapultPosition-velocity*t*kCos.rampPosition)
+ 1503  set            currentY, (kStartY-(kGravity*t*t/2)+(velocity*t*kSin.rampPosition))
+ 1504  get_prop       rock.activeRock, y, realY
+ 1505  get_prop       rock.activeRock, x, realX
+ 1506  if             (currentX<0)
+ 1507  jump_if_false  -> 1510
+ 1508  set_prop       rock.activeRock, z, kRockZeroZs.catapultPosition
+ 1509  end
+ 1510  set            transformedX, (kOriginXs.catapultPosition+currentX*kXx.catapultPosition+currentY*kXy.catapultPosition)
+ 1511  set            transformedY, (kOriginYs.catapultPosition+currentX*kYx.catapultPosition+currentY*kYy.catapultPosition)
+ 1512  get_prop       rock.activeRock, height, hh
+ 1513  set            transformedX, (transformedX-(hh/2))
+ 1514  set            transformedY, (transformedY-hh)
+ 1515  send           rock.activeRock, place, transformedX, transformedY
+ 1516  call           pUdateRockFrame@1024
+ 1517  set            rightPosition, ((catapultPosition=2)+(catapultPosition=4)+(catapultPosition=6)+(catapultPosition=8))
+ 1518  if             rightPosition
+ 1519  jump_if_false  -> 1533
+ 1520  set            crocNum, (catapultPosition\2)
+ 1521  if             gameMode
+ 1522  jump_if_false  -> 1525
+ 1523  get_prop       gPort, ("OMAGatorDown"+crocNum), crocDown
+ 1524  jump           -> 1532
+ 1525  end
+ 1526  if             (pracCrocHit.crocNum=kTrue)
+ 1527  jump_if_false  -> 1530
+ 1528  set            crocDown, kTrue
+ 1529  jump           -> 1532
+ 1530  end
+ 1531  set            crocDown, kFalse
+ 1532  end
+ 1533  if             ((rampPosition=7)*(currentY<kStartY))
+ 1534  jump_if_false  -> 1537
+ 1535  call           pRockStraightUp@1193
+ 1536  jump           -> 1549
+ 1537  end
+ 1538  if             (currentY<kFloorY)
+ 1539  jump_if_false  -> 1542
+ 1540  call           pRockHitWater@1036
+ 1541  jump           -> 1549
+ 1542  end
+ 1543  set            rightY, ((0<currentY)*(currentY<kCrocHeight))
+ 1544  set            rightX, (((-1*kXFudge)<currentX)*(currentX<kXFudge))
+ 1545  if             (rightPosition*rightY*rightX*(crocDown=kFalse))
+ 1546  jump_if_false  -> 1549
+ 1547  call           pRockHitStatue@1092
+ 1548  end
+ 1549  return
+
+ 1550  sub            ePauseScene@1550
+ 1551  send           sQueue, pause
+ 1552  send           socrates, pause
+ 1553  send           crocodile, pause
+ 1554  if             (practiceMode=kFalse)
+ 1555  jump_if_false  -> 1562
+ 1556  send           joni, pause
+ 1557  send           santiago, pause
+ 1558  send           owen, pause
+ 1559  send           leslie, pause
+ 1560  send           laptrap, pause
+ 1561  end
+ 1562  return
+
+ 1563  sub            eResumeScene@1563
+ 1564  send           sQueue, resume
+ 1565  send           socrates, resume
+ 1566  send           crocodile, resume
+ 1567  if             (practiceMode=kFalse)
+ 1568  jump_if_false  -> 1575
+ 1569  send           joni, resume
+ 1570  send           santiago, resume
+ 1571  send           owen, resume
+ 1572  send           leslie, resume
+ 1573  send           laptrap, resume
+ 1574  end
+ 1575  return
+
+ 1576  sub            eExitToMapLoc@1576
+ 1577  get_prop       gLaptrap, selectedLocation, location
+ 1578  call_global    StartTransition
+ 1579  load_script    (location+".mps")
+ 1580  return
+
+ 1581  sub            eExit@1581
+ 1582  set_prop       gScenePort, returnPressed, pStartScript@1588
+ 1583  set_prop       gScenePort, spacebarPressed, pStartScript@1588
+ 1584  set            movie, RSmackerMovie, "Mvocont.smk"
+ 1585  set_prop       movie, finished, pStartScript@1588
+ 1586  send           movie, start
+ 1587  return
+
+ 1588  sub            pStartScript@1588
+ 1589  call_global    StartTransition
+ 1590  delete         movie
+ 1591  load_script    "pba.mps"
+ 1592  return

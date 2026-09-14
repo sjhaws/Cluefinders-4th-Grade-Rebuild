@@ -1,0 +1,107 @@
+    0  start
+    1  call_global    CacheDLL, "bgmusic.rsc", 0, 1, 1
+    2  call_global    CacheDLL, "common.rsc", 0, 1
+    3  call_global    CacheDLL, "ccommon.rsc", 0, 1
+    4  call_global    CacheDLL, "ocommon.rsc", 0, 1
+    5  call_global    CacheDLL, "font.rsc", 0, 1
+    6  set            port, RWorldPort, RWorldPort
+    7  send           port, addIntProperty, "backgroundMusicPlaying"
+    8  send           port, addGlobalIntProperty, "beenToSignInBefore", 0
+    9  send           port, addStringProperty, "previousLocation", 0
+   10  send           port, addIntProperty, "itemPlacedInBackpack"
+   11  send           port, addIntProperty, "CStatueDataset"
+   12  send           port, addIntProperty, "CLOC01StatueUp"
+   13  send           port, addIntProperty, "CCutawayMovieTime"
+   14  send           port, addIntProperty, "CCutawayMoviePlayed"
+   15  send           port, addIntProperty, "OCutawayMovieTime"
+   16  send           port, addIntProperty, "OCutawayMoviePlayed"
+   17  send           port, addIntProperty, "CMALevel"
+   18  loop           i, 1, 12
+   19  loop_test      i, 1, 12
+   20  jump_if_false  -> 26
+   21  send           port, addIntProperty, ("CMAPieceX"+i)
+   22  send           port, addIntProperty, ("CMAPieceY"+i)
+   23  send           port, addIntProperty, ("CMAPieceView"+i)
+   24  send           port, addIntProperty, ("CMAAnchor"+i)
+   25  jump           -> 19
+   26  send           port, addIntProperty, "CMALayout"
+   27  send           port, addIntProperty, "CMAPracticeModeSolutionNumber"
+   28  send           port, addIntProperty, "CBA2OpenVisitedCount"
+   29  send           port, addIntProperty, "CWS3Level1DSRound"
+   30  send           port, addIntProperty, "CWS3Level2DSRound"
+   31  send           port, addIntProperty, "CWS3Level3DSRound"
+   32  send           port, addIntProperty, "CWS3Level4DSRound"
+   33  send           port, addIntProperty, "CWS3Level1StartDS"
+   34  send           port, addIntProperty, "CWS3Level2StartDS"
+   35  send           port, addIntProperty, "CWS3Level3StartDS"
+   36  send           port, addIntProperty, "CWS3Level4StartDS"
+   37  loop           i, 1, 12
+   38  loop_test      i, 1, 12
+   39  jump_if_false  -> 43
+   40  send           port, addIntProperty, ("OHUBSlotGem"+i)
+   41  send           port, addIntProperty, ("OHUBSlotGemAnchored"+i)
+   42  jump           -> 38
+   43  send           port, addIntProperty, "OMAPracModeEntryCount"
+   44  send           port, addIntProperty, "OMALevel"
+   45  loop           i, 1, 4
+   46  loop_test      i, 1, 4
+   47  jump_if_false  -> 50
+   48  send           port, addIntProperty, ("OMAGatorDown"+i)
+   49  jump           -> 46
+   50  send           port, addIntProperty, "PWS2CompletedCount"
+   51  send           port, addIntProperty, "PWS2Round1visits"
+   52  send           port, addIntProperty, "PWS2Round2visits"
+   53  send           port, addIntProperty, "PWS2Round3visits"
+   54  send           port, addIntProperty, "PWS2Round4visits"
+   55  send           port, addIntProperty, "PLOC2VisitedCount"
+   56  set_prop       port, wsAutoLevelingA, "CWS3", 6
+   57  set_prop       port, wsAutoLevelingB, "CWS3", 8
+   58  set_prop       port, wsAutoLevelingX, "CWS3", 4
+   59  set_prop       port, wsAutoLevelingY, "CWS3", 10
+   60  set_prop       port, wsAutoLevelingA, "CWS4", 6
+   61  set_prop       port, wsAutoLevelingB, "CWS4", 8
+   62  set_prop       port, wsAutoLevelingX, "CWS4", 4
+   63  set_prop       port, wsAutoLevelingY, "CWS4", 10
+   64  set_prop       port, wsAutoLevelingA, "PWS1", 3
+   65  set_prop       port, wsAutoLevelingB, "PWS1", 4
+   66  set_prop       port, wsAutoLevelingX, "PWS1", 3
+   67  set_prop       port, wsAutoLevelingY, "PWS1", 8
+   68  delete         port
+   69  set            port, RScenePort, RScenePort
+   70  set_prop       port, backgroundMusicVolume, 20
+   71  call           pLogoMovie@72
+
+   72  sub            pLogoMovie@72
+   73  set_prop       port, spacebarPressed, pTitleMovie@89
+   74  set_prop       port, returnPressed, pOpeningMovie@80
+   75  set            movie, RSmackerMovie, "Logo.smk", 0, 0, 41000
+   76  set_prop       movie, mouseDown, pOpeningMovie@80
+   77  set_prop       movie, finished, pOpeningMovie@80
+   78  send           movie, start
+   79  return
+
+   80  sub            pOpeningMovie@80
+   81  delete         movie
+   82  set_prop       port, spacebarPressed, pTitleMovie@89
+   83  set_prop       port, returnPressed, pTitleMovie@89
+   84  set            movie, RSmackerMovie, "MVOP1.smk", 0, 0, 450000
+   85  set_prop       movie, mouseDown, pTitleMovie@89
+   86  set_prop       movie, finished, pTitleMovie@89
+   87  send           movie, start
+   88  return
+
+   89  sub            pTitleMovie@89
+   90  delete         movie
+   91  set_prop       port, spacebarPressed, pIntroMoviesDone@98
+   92  set_prop       port, returnPressed, pIntroMoviesDone@98
+   93  set            movie, RSmackerMovie, "MVTitle.smk", 0, 0, 41000
+   94  set_prop       movie, mouseDown, pIntroMoviesDone@98
+   95  set_prop       movie, finished, pIntroMoviesDone@98
+   96  send           movie, start
+   97  return
+
+   98  sub            pIntroMoviesDone@98
+   99  delete         movie
+  100  call_global    StartTransition
+  101  load_script    "Signin.mps"
+  102  return

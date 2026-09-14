@@ -1,0 +1,431 @@
+    0  start
+    1  set            kOMFontNormal, 0
+    2  set            kOMFontBold, 1
+    3  set            kOMFontItalic, 2
+    4  set            kOMFontUnderlined, 4
+    5  set            kNormalCursor, 25
+    6  set            kHotCursor, 26
+    7  set            kFingerCursor, 27
+    8  set            kOpenHandCursor, 28
+    9  set            kClosedHandCursor, 29
+   10  set            kNorthCursor, 30
+   11  set            kEastCursor, 31
+   12  set            kWestCursor, 32
+   13  set            kSouthCursor, 33
+   14  set            kNorthWestCursor, 34
+   15  set            kNorthEastCursor, 35
+   16  set            kSouthWestCursor, 36
+   17  set            kSouthEastCursor, 37
+   18  set            kHourglassCursor, 38
+   19  set            kCairo1BMusicID, 30515
+   20  set            kCairo2BMusicID, 30516
+   21  set            kCairo3BMusicID, 30517
+   22  set            kOasis1BMusicID, 30518
+   23  set            kOasis2BMusicID, 30519
+   24  set            kOasis3BMusicID, 30520
+   25  set            kPyramid1BMusicID, 30521
+   26  set            kPyramid2BMusicID, 30522
+   27  set            kPyramid3BMusicID, 30523
+   28  set            kPMChooseActButtonID, 5
+   29  set            kBlinkMinTime, 3
+   30  set            kBlinkMaxTime, 5
+   31  set            kFidgetMinTime, 45
+   32  set            kFidgetMaxTime, 60
+   33  set            kTrue, 1
+   34  set            kFalse, 0
+   35  set            kOn, 1
+   36  set            kOff, 0
+   37  set            kScreenWidth, 640
+   38  set            kScreenHeight, 480
+   39  set            kUseAOCoords, 11111
+   40  set            kNumCRounds, 5
+   41  set            kNumItemsPerCRound, 12
+   42  set            kNumCStatueDatasets, 10
+   43  set            kNumORounds, 5
+   44  set            kNumItemsPerORound, 12
+   45  set            kBackpackDef, 1
+   46  set            kMaxItemsInBackpack, 12
+   47  set            kMaxItemsInWS, 6
+   48  set            kMaxItemsInHub, 12
+   49  set            kMaxItemW, 36
+   50  set            kMaxItemH, 28
+   51  set            kCGlyphStart, 1
+   52  set            kCGlyphEnd, 12
+   53  set            kGemStart, 13
+   54  set            kGemEnd, 28
+   55  set            kItemInBPSfxID, 30524
+   56  set            kItemPickUpSfxID, 30525
+   57  set            openBackpack, 0
+   58  set            closedBackpack, 0
+   59  set            closedBackpackName, 0
+   60  set            objectIndex, 1
+   61  set            toBackpackOnly, 1
+
+   62  sub            pInitObjectsAndBackpack@62, toBackpack, backpackName
+   63  loop           i, 1, kMaxItemsInWS
+   64  loop_test      i, 1, kMaxItemsInWS
+   65  jump_if_false  -> 72
+   66  get_prop       gPort, itemPresent, i, objectToDisplay
+   67  if             (objectToDisplay#0)
+   68  jump_if_false  -> 71
+   69  call           pDisplayObject@75, kFalse
+   70  end
+   71  jump           -> 64
+   72  set            toBackpackOnly, toBackpack
+   73  set            closedBackpackName, backpackName
+   74  return
+
+   75  sub            pDisplayObject@75, animate
+   76  if             (objectBoxW>kMaxItemW)
+   77  jump_if_false  -> 81
+   78  call_global    RandomNumber, 1, (objectBoxW-kMaxItemW)
+   79  set            xOff, $result
+   80  jump           -> 83
+   81  end
+   82  set            xOff, 0
+   83  set            ox, (objectBoxX+xOff)
+   84  if             (objectBoxH>kMaxItemH)
+   85  jump_if_false  -> 89
+   86  call_global    RandomNumber, 1, (objectBoxH-kMaxItemH)
+   87  set            yOff, $result
+   88  jump           -> 91
+   89  end
+   90  set            yOff, 0
+   91  set            oy, (objectBoxY+yOff)
+   92  set            object.objectIndex, RAnimation, ox, oy, objectAOIDs.objectToDisplay
+   93  set_prop       object.objectIndex, "z", objectZ
+   94  set_prop       object.objectIndex, userData, (" "+ox+"#"+oy+":"+objectToDisplay)
+   95  set_prop       object.objectIndex, "mouseDown", eObjectPickedUp@132
+   96  set_prop       object.objectIndex, "mouseUp", eObjectDropped@136
+   97  send           object.objectIndex, setAOCursor, kOpenHandCursor, kClosedHandCursor
+   98  if             animate
+   99  jump_if_false  -> 111
+  100  send           object.objectIndex, play
+  101  set            port, RWorldPort, RWorldPort
+  102  get_prop       port, currentLocation, location
+  103  delete         port
+  104  if             ((location="CWS1")+(location="CWS2")+(location="CWS3")+(location="CWS4"))
+  105  jump_if_false  -> 108
+  106  call_global    PlaySound, 1000
+  107  jump           -> 110
+  108  end
+  109  call_global    PlaySound, 11000
+  110  end
+  111  set            objectIndex, (objectIndex+1)
+  112  return
+
+  113  sub            pNewObjectAtLocation@113, newID
+  114  send           gPort, addObject, newID
+  115  set            objectToDisplay, newID
+  116  call           pDisplayObject@75, kTrue
+  117  return
+
+  118  sub            eBackpackOpened@118
+  119  if             (openBackpack=0)
+  120  jump_if_false  -> 128
+  121  set            openBackpack, RBackPack, backpackX, backpackY, backpackZ
+  122  set_prop       openBackpack, closed, eBackpackClosed@129
+  123  if             (toBackpackOnly=0)
+  124  jump_if_false  -> 127
+  125  set_prop       openBackpack, objectDropped, eBackpackObjectDropped
+  126  end
+  127  end
+  128  return
+
+  129  sub            eBackpackClosed@129
+  130  set            openBackpack, 0
+  131  return
+
+  132  sub            eObjectPickedUp@132
+  133  set_prop       $1, "z", 10000
+  134  call_global    PlaySound, kItemPickUpSfxID
+  135  return
+
+  136  sub            eObjectDropped@136
+  137  get_prop       $1, userData, ud
+  138  set            p1, ("#"@ud)
+  139  set            p2, (":"@ud)
+  140  set            t2, (p1-1)
+  141  set            ox, ud|1|t2
+  142  set            t1, (p1+1)
+  143  set            t2, (p2-p1-1)
+  144  set            oy, ud|t1|t2
+  145  set            t1, (p2+1)
+  146  set            id, ud|t1
+  147  set_prop       $1, "z", objectZ
+  148  if             (toBackpackOnly=1)
+  149  jump_if_false  -> 194
+  150  if             (openBackpack#0)
+  151  jump_if_false  -> 175
+  152  call_global    IntersectTest, "RECEIVER", "openBackpack"
+  153  set            test, $result
+  154  if             (test=1)
+  155  jump_if_false  -> 158
+  156  send           openBackpack, addObject, id
+  157  jump           -> 174
+  158  end
+  159  if             (closedBackpack#0)
+  160  jump_if_false  -> 172
+  161  get_prop       closedBackpack, visible, test
+  162  if             (test=1)
+  163  jump_if_false  -> 171
+  164  call_global    IntersectTest, "RECEIVER", "closedBackpack"
+  165  set            test, $result
+  166  if             (test=1)
+  167  jump_if_false  -> 170
+  168  send           openBackpack, addObject, id
+  169  end
+  170  end
+  171  jump           -> 174
+  172  end
+  173  set            test, 0
+  174  jump           -> 193
+  175  end
+  176  if             (closedBackpack#0)
+  177  jump_if_false  -> 191
+  178  get_prop       closedBackpack, visible, test
+  179  if             (test=1)
+  180  jump_if_false  -> 190
+  181  call_global    IntersectTest, "RECEIVER", "closedBackpack"
+  182  set            test, $result
+  183  if             (test=1)
+  184  jump_if_false  -> 189
+  185  set            openBackpack, RBackPack, backpackX, backpackY, backpackZ
+  186  send           openBackpack, addObject, id
+  187  set            openBackpack, 0
+  188  end
+  189  end
+  190  jump           -> 193
+  191  end
+  192  set            test, 0
+  193  jump           -> 196
+  194  end
+  195  set            test, 0
+  196  if             (test=1)
+  197  jump_if_false  -> 206
+  198  get_prop       $1, name, Name
+  199  set            p, (1+"."@Name)
+  200  set            n, Name|p
+  201  delete         object.n
+  202  send           gPort, removeObjectFromLocation, id
+  203  set_prop       gPort, itemPlacedInBackpack, kTrue
+  204  call_global    PlaySound, kItemInBPSfxID
+  205  jump           -> 209
+  206  end
+  207  set_prop       $1, x, ox
+  208  set_prop       $1, y, oy
+  209  return
+
+  210  sub            globalInit@210
+  211  set            gCurLocation, 0
+  212  set            laptrap, 0
+  213  set            gPort, RWorldPort, RWorldPort
+  214  set            gScenePort, RScenePort, RScenePort
+  215  return
+
+  216  sub            globalDispose@216
+  217  delete         gPort
+  218  delete         gScenePort
+  219  return
+
+  220  sub            gOpenLaptrap@220
+  221  if             (laptrap#0)
+  222  jump_if_false  -> 225
+  223  set_prop       laptrap, visible, kFalse
+  224  end
+  225  if             (gCurLocation=0)
+  226  jump_if_false  -> 229
+  227  set            gLaptrap, RLapTrap, 10000
+  228  jump           -> 231
+  229  end
+  230  set            gLaptrap, RLapTrap, 10000, gCurLocation
+  231  set_prop       gLaptrap, closed, gCloseLaptrap@234
+  232  set_prop       gLaptrap, locationSelected, eExitToMapLoc
+  233  return
+
+  234  sub            gCloseLaptrap@234
+  235  if             (laptrap#0)
+  236  jump_if_false  -> 239
+  237  set_prop       laptrap, visible, kTrue
+  238  end
+  239  delete         gLaptrap
+  240  return
+
+  241  sub            gNewGame@241
+  242  call_global    RandomNumber, 1, kNumCStatueDatasets
+  243  set_prop       gPort, CStatueDataset, $result
+  244  return
+
+  245  sub            gGameCompleted@245
+  246  send           gPort, newGame
+  247  get_prop       gPort, CStatueDataset, curDataset
+  248  set            curDataset, (curDataset+1)
+  249  if             (curDataset>kNumCStatueDatasets)
+  250  jump_if_false  -> 253
+  251  set            curDataset, 1
+  252  end
+  253  set_prop       gPort, CStatueDataset, curDataset
+  254  set_prop       gPort, CLOC01StatueUp, 0
+  255  set_prop       gPort, CBA2OpenVisitedCount, 0
+  256  set_prop       gPort, "CMALevel", 0
+  257  set_prop       gPort, "CMASolved", 0
+  258  set_prop       gPort, "PLOC2VisitedCount", 0
+  259  set_prop       gPort, "OMASolved", 0
+  260  set_prop       gPort, "OMAPracModeEntryCount", 0
+  261  set_prop       gPort, "OMALevel", 0
+  262  loop           i, 1, 4
+  263  loop_test      i, 1, 4
+  264  jump_if_false  -> 267
+  265  set_prop       gPort, ("OMAGatorDown"+i), 0
+  266  jump           -> 263
+  267  set_prop       gPort, "PWS2CompletedCount", 0
+  268  set_prop       gPort, "PWS2Round1visits", 0
+  269  set_prop       gPort, "PWS2Round2visits", 0
+  270  set_prop       gPort, "PWS2Round3visits", 0
+  271  set_prop       gPort, "PWS2Round4visits", 0
+  272  return
+  273  call           pInit@276
+  274  call           pStart@284
+  275  call_global    EndTransition
+
+  276  sub            pInit@276
+  277  set            gPort, RWorldPort, RWorldPort
+  278  set            sQueue, RQueue, 1
+  279  set            kNumLocButtons, 40
+  280  set            kNumGlyphLocs, 4
+  281  set            kNumGemLocs, 4
+  282  call_global    Scene, 12000
+  283  return
+
+  284  sub            pStart@284
+  285  set            y, 10
+  286  set            buttonNumber, 1
+  287  loop           n, 1, 8
+  288  loop_test      n, 1, 8
+  289  jump_if_false  -> 312
+  290  set            x, 10
+  291  loop           i, 1, 6
+  292  loop_test      i, 1, 6
+  293  jump_if_false  -> 306
+  294  set            button.buttonNumber, RPButton, x, y, 12040
+  295  set_prop       button.buttonNumber, mouseDown, callScript@405
+  296  set_prop       button.buttonNumber, movable, 0
+  297  set            btnTxt.buttonNumber, RText, wsName.buttonNumber, 1, (x+30), (y+20), 1
+  298  set_prop       btnTxt.buttonNumber, touchy, 0
+  299  set            x, (x+75)
+  300  set            buttonNumber, (buttonNumber+1)
+  301  if             (buttonNumber>kNumLocButtons)
+  302  jump_if_false  -> 305
+  303  jump           -> 306
+  304  end
+  305  jump           -> 292
+  306  if             (buttonNumber>kNumLocButtons)
+  307  jump_if_false  -> 310
+  308  jump           -> 312
+  309  end
+  310  set            y, (y+50)
+  311  jump           -> 288
+  312  set            glyph, RAnimation, 500, 69, 1007
+  313  send           glyph, setAOCursor, 26, 26
+  314  set_prop       glyph, movable, 0
+  315  set_prop       glyph, mouseDown, eTakeGlyphs@331
+  316  set            gem, RAnimation, 456, 142, 11000
+  317  send           gem, setAOCursor, 26, 26
+  318  set_prop       gem, movable, 0
+  319  set_prop       gem, mouseDown, eTakeGems@368
+  320  return
+
+  321  sub            addNames@321
+  322  delete         hotText
+  323  loop           i, 1, 98
+  324  loop_test      i, 1, 98
+  325  jump_if_false  -> 330
+  326  send           gPort, activatePlayer, i
+  327  set_prop       gPort, inGame, kTrue
+  328  call           gNewGame@241
+  329  jump           -> 324
+  330  return
+
+  331  sub            eTakeGlyphs@331
+  332  send           sQueue, clear
+  333  send           sQueue, add, SoundAction, 1000
+  334  send           sQueue, start
+  335  set            openBackpack, RBackPack, 0, 0, 2
+  336  set            numEmptySpaces, 0
+  337  loop           i, 0, 11
+  338  loop_test      i, 0, 11
+  339  jump_if_false  -> 346
+  340  get_prop       gPort, backpackItemPresent, i, item
+  341  if             (item=0)
+  342  jump_if_false  -> 345
+  343  set            numEmptySpaces, (numEmptySpaces+1)
+  344  end
+  345  jump           -> 338
+  346  loop           i, 1, kNumGlyphLocs
+  347  loop_test      i, 1, kNumGlyphLocs
+  348  jump_if_false  -> 366
+  349  loop           1
+  350  loop_test      1
+  351  jump_if_false  -> 365
+  352  if             (numEmptySpaces=0)
+  353  jump_if_false  -> 356
+  354  jump           -> 365
+  355  end
+  356  get_prop       gPort, wsNextItemInQueue, kGlyphLocs.i, item
+  357  if             (item=0)
+  358  jump_if_false  -> 361
+  359  jump           -> 365
+  360  end
+  361  send           gPort, removeNextObjectFromQueue, kGlyphLocs.i
+  362  send           openBackpack, addObject, item
+  363  set            numEmptySpaces, (numEmptySpaces-1)
+  364  jump           -> 350
+  365  jump           -> 347
+  366  delete         openBackpack
+  367  return
+
+  368  sub            eTakeGems@368
+  369  send           sQueue, clear
+  370  send           sQueue, add, SoundAction, 1000
+  371  send           sQueue, start
+  372  set            openBackpack, RBackPack, 0, 0, 2
+  373  set            numEmptySpaces, 0
+  374  loop           i, 0, 11
+  375  loop_test      i, 0, 11
+  376  jump_if_false  -> 383
+  377  get_prop       gPort, backpackItemPresent, i, item
+  378  if             (item=0)
+  379  jump_if_false  -> 382
+  380  set            numEmptySpaces, (numEmptySpaces+1)
+  381  end
+  382  jump           -> 375
+  383  loop           i, 1, kNumGemLocs
+  384  loop_test      i, 1, kNumGemLocs
+  385  jump_if_false  -> 403
+  386  loop           1
+  387  loop_test      1
+  388  jump_if_false  -> 402
+  389  if             (numEmptySpaces=0)
+  390  jump_if_false  -> 393
+  391  jump           -> 402
+  392  end
+  393  get_prop       gPort, wsNextItemInQueue, kGemLocs.i, item
+  394  if             (item=0)
+  395  jump_if_false  -> 398
+  396  jump           -> 402
+  397  end
+  398  send           gPort, removeNextObjectFromQueue, kGemLocs.i
+  399  send           openBackpack, addObject, item
+  400  set            numEmptySpaces, (numEmptySpaces-1)
+  401  jump           -> 387
+  402  jump           -> 384
+  403  delete         openBackpack
+  404  return
+
+  405  sub            callScript@405
+  406  get_prop       $1, name, rn
+  407  set            index, rn|8
+  408  set            scriptName, (wsName.index+".mps")
+  409  call_global    StartTransition
+  410  load_script    scriptName
+  411  return

@@ -1,0 +1,1703 @@
+    0  start
+    1  call_global    UncacheAllDLLs
+    2  call_global    CacheDLL, "ows1p.rsc"
+    3  set            kOMFontNormal, 0
+    4  set            kOMFontBold, 1
+    5  set            kOMFontItalic, 2
+    6  set            kOMFontUnderlined, 4
+    7  set            kNormalCursor, 25
+    8  set            kHotCursor, 26
+    9  set            kFingerCursor, 27
+   10  set            kOpenHandCursor, 28
+   11  set            kClosedHandCursor, 29
+   12  set            kNorthCursor, 30
+   13  set            kEastCursor, 31
+   14  set            kWestCursor, 32
+   15  set            kSouthCursor, 33
+   16  set            kNorthWestCursor, 34
+   17  set            kNorthEastCursor, 35
+   18  set            kSouthWestCursor, 36
+   19  set            kSouthEastCursor, 37
+   20  set            kHourglassCursor, 38
+   21  set            kCairo1BMusicID, 30515
+   22  set            kCairo2BMusicID, 30516
+   23  set            kCairo3BMusicID, 30517
+   24  set            kOasis1BMusicID, 30518
+   25  set            kOasis2BMusicID, 30519
+   26  set            kOasis3BMusicID, 30520
+   27  set            kPyramid1BMusicID, 30521
+   28  set            kPyramid2BMusicID, 30522
+   29  set            kPyramid3BMusicID, 30523
+   30  set            kPMChooseActButtonID, 5
+   31  set            kBlinkMinTime, 3
+   32  set            kBlinkMaxTime, 5
+   33  set            kFidgetMinTime, 45
+   34  set            kFidgetMaxTime, 60
+   35  set            kTrue, 1
+   36  set            kFalse, 0
+   37  set            kOn, 1
+   38  set            kOff, 0
+   39  set            kScreenWidth, 640
+   40  set            kScreenHeight, 480
+   41  set            kUseAOCoords, 11111
+   42  set            kNumCRounds, 5
+   43  set            kNumItemsPerCRound, 12
+   44  set            kNumCStatueDatasets, 10
+   45  set            kNumORounds, 5
+   46  set            kNumItemsPerORound, 12
+   47  set            kBackpackDef, 1
+   48  set            kMaxItemsInBackpack, 12
+   49  set            kMaxItemsInWS, 6
+   50  set            kMaxItemsInHub, 12
+   51  set            kMaxItemW, 36
+   52  set            kMaxItemH, 28
+   53  set            kCGlyphStart, 1
+   54  set            kCGlyphEnd, 12
+   55  set            kGemStart, 13
+   56  set            kGemEnd, 28
+   57  set            kItemInBPSfxID, 30524
+   58  set            kItemPickUpSfxID, 30525
+   59  set            openBackpack, 0
+   60  set            closedBackpack, 0
+   61  set            closedBackpackName, 0
+   62  set            objectIndex, 1
+   63  set            toBackpackOnly, 1
+
+   64  sub            pInitObjectsAndBackpack@694, toBackpack, backpackName
+   65  loop           i, 1, kMaxItemsInWS
+   66  loop_test      i, 1, kMaxItemsInWS
+   67  jump_if_false  -> 74
+   68  get_prop       gPort, itemPresent, i, objectToDisplay
+   69  if             (objectToDisplay#0)
+   70  jump_if_false  -> 73
+   71  call           pDisplayObject@707, kFalse
+   72  end
+   73  jump           -> 66
+   74  set            toBackpackOnly, toBackpack
+   75  set            closedBackpackName, backpackName
+   76  return
+
+   77  sub            pDisplayObject@707, animate
+   78  if             (objectBoxW>kMaxItemW)
+   79  jump_if_false  -> 83
+   80  call_global    RandomNumber, 1, (objectBoxW-kMaxItemW)
+   81  set            xOff, $result
+   82  jump           -> 85
+   83  end
+   84  set            xOff, 0
+   85  set            ox, (objectBoxX+xOff)
+   86  if             (objectBoxH>kMaxItemH)
+   87  jump_if_false  -> 91
+   88  call_global    RandomNumber, 1, (objectBoxH-kMaxItemH)
+   89  set            yOff, $result
+   90  jump           -> 93
+   91  end
+   92  set            yOff, 0
+   93  set            oy, (objectBoxY+yOff)
+   94  set            object.objectIndex, RAnimation, ox, oy, objectAOIDs.objectToDisplay
+   95  set_prop       object.objectIndex, "z", objectZ
+   96  set_prop       object.objectIndex, userData, (" "+ox+"#"+oy+":"+objectToDisplay)
+   97  set_prop       object.objectIndex, "mouseDown", eObjectPickedUp@764
+   98  set_prop       object.objectIndex, "mouseUp", eObjectDropped@768
+   99  send           object.objectIndex, setAOCursor, kOpenHandCursor, kClosedHandCursor
+  100  if             animate
+  101  jump_if_false  -> 113
+  102  send           object.objectIndex, play
+  103  set            port, RWorldPort, RWorldPort
+  104  get_prop       port, currentLocation, location
+  105  delete         port
+  106  if             ((location="CWS1")+(location="CWS2")+(location="CWS3")+(location="CWS4"))
+  107  jump_if_false  -> 110
+  108  call_global    PlaySound, 1000
+  109  jump           -> 112
+  110  end
+  111  call_global    PlaySound, 11000
+  112  end
+  113  set            objectIndex, (objectIndex+1)
+  114  return
+
+  115  sub            pNewObjectAtLocation@745, newID
+  116  send           gPort, addObject, newID
+  117  set            objectToDisplay, newID
+  118  call           pDisplayObject@707, kTrue
+  119  return
+
+  120  sub            eBackpackOpened@750
+  121  if             (openBackpack=0)
+  122  jump_if_false  -> 130
+  123  set            openBackpack, RBackPack, backpackX, backpackY, backpackZ
+  124  set_prop       openBackpack, closed, eBackpackClosed@761
+  125  if             (toBackpackOnly=0)
+  126  jump_if_false  -> 129
+  127  set_prop       openBackpack, objectDropped, eBackpackObjectDropped
+  128  end
+  129  end
+  130  return
+
+  131  sub            eBackpackClosed@761
+  132  set            openBackpack, 0
+  133  return
+
+  134  sub            eObjectPickedUp@764
+  135  set_prop       $1, "z", 10000
+  136  call_global    PlaySound, kItemPickUpSfxID
+  137  return
+
+  138  sub            eObjectDropped@768
+  139  get_prop       $1, userData, ud
+  140  set            p1, ("#"@ud)
+  141  set            p2, (":"@ud)
+  142  set            t2, (p1-1)
+  143  set            ox, ud|1|t2
+  144  set            t1, (p1+1)
+  145  set            t2, (p2-p1-1)
+  146  set            oy, ud|t1|t2
+  147  set            t1, (p2+1)
+  148  set            id, ud|t1
+  149  set_prop       $1, "z", objectZ
+  150  if             (toBackpackOnly=1)
+  151  jump_if_false  -> 196
+  152  if             (openBackpack#0)
+  153  jump_if_false  -> 177
+  154  call_global    IntersectTest, "RECEIVER", "openBackpack"
+  155  set            test, $result
+  156  if             (test=1)
+  157  jump_if_false  -> 160
+  158  send           openBackpack, addObject, id
+  159  jump           -> 176
+  160  end
+  161  if             (closedBackpack#0)
+  162  jump_if_false  -> 174
+  163  get_prop       closedBackpack, visible, test
+  164  if             (test=1)
+  165  jump_if_false  -> 173
+  166  call_global    IntersectTest, "RECEIVER", "closedBackpack"
+  167  set            test, $result
+  168  if             (test=1)
+  169  jump_if_false  -> 172
+  170  send           openBackpack, addObject, id
+  171  end
+  172  end
+  173  jump           -> 176
+  174  end
+  175  set            test, 0
+  176  jump           -> 195
+  177  end
+  178  if             (closedBackpack#0)
+  179  jump_if_false  -> 193
+  180  get_prop       closedBackpack, visible, test
+  181  if             (test=1)
+  182  jump_if_false  -> 192
+  183  call_global    IntersectTest, "RECEIVER", "closedBackpack"
+  184  set            test, $result
+  185  if             (test=1)
+  186  jump_if_false  -> 191
+  187  set            openBackpack, RBackPack, backpackX, backpackY, backpackZ
+  188  send           openBackpack, addObject, id
+  189  set            openBackpack, 0
+  190  end
+  191  end
+  192  jump           -> 195
+  193  end
+  194  set            test, 0
+  195  jump           -> 198
+  196  end
+  197  set            test, 0
+  198  if             (test=1)
+  199  jump_if_false  -> 208
+  200  get_prop       $1, name, Name
+  201  set            p, (1+"."@Name)
+  202  set            n, Name|p
+  203  delete         object.n
+  204  send           gPort, removeObjectFromLocation, id
+  205  set_prop       gPort, itemPlacedInBackpack, kTrue
+  206  call_global    PlaySound, kItemInBPSfxID
+  207  jump           -> 211
+  208  end
+  209  set_prop       $1, x, ox
+  210  set_prop       $1, y, oy
+  211  return
+
+  212  sub            globalInit@212
+  213  set            gCurLocation, 0
+  214  set            laptrap, 0
+  215  set            gPort, RWorldPort, RWorldPort
+  216  set            gScenePort, RScenePort, RScenePort
+  217  return
+
+  218  sub            globalDispose@218
+  219  delete         gPort
+  220  delete         gScenePort
+  221  return
+
+  222  sub            gOpenLaptrap@222
+  223  if             (laptrap#0)
+  224  jump_if_false  -> 227
+  225  set_prop       laptrap, visible, kFalse
+  226  end
+  227  if             (gCurLocation=0)
+  228  jump_if_false  -> 231
+  229  set            gLaptrap, RLapTrap, 10000
+  230  jump           -> 233
+  231  end
+  232  set            gLaptrap, RLapTrap, 10000, gCurLocation
+  233  set_prop       gLaptrap, closed, gCloseLaptrap@236
+  234  set_prop       gLaptrap, locationSelected, eExitToMapLoc@1546
+  235  return
+
+  236  sub            gCloseLaptrap@236
+  237  if             (laptrap#0)
+  238  jump_if_false  -> 241
+  239  set_prop       laptrap, visible, kTrue
+  240  end
+  241  delete         gLaptrap
+  242  return
+
+  243  sub            gNewGame@243
+  244  call_global    RandomNumber, 1, kNumCStatueDatasets
+  245  set_prop       gPort, CStatueDataset, $result
+  246  return
+
+  247  sub            gGameCompleted@247
+  248  send           gPort, newGame
+  249  get_prop       gPort, CStatueDataset, curDataset
+  250  set            curDataset, (curDataset+1)
+  251  if             (curDataset>kNumCStatueDatasets)
+  252  jump_if_false  -> 255
+  253  set            curDataset, 1
+  254  end
+  255  set_prop       gPort, CStatueDataset, curDataset
+  256  set_prop       gPort, CLOC01StatueUp, 0
+  257  set_prop       gPort, CBA2OpenVisitedCount, 0
+  258  set_prop       gPort, "CMALevel", 0
+  259  set_prop       gPort, "CMASolved", 0
+  260  set_prop       gPort, "PLOC2VisitedCount", 0
+  261  set_prop       gPort, "OMASolved", 0
+  262  set_prop       gPort, "OMAPracModeEntryCount", 0
+  263  set_prop       gPort, "OMALevel", 0
+  264  loop           i, 1, 4
+  265  loop_test      i, 1, 4
+  266  jump_if_false  -> 269
+  267  set_prop       gPort, ("OMAGatorDown"+i), 0
+  268  jump           -> 265
+  269  set_prop       gPort, "PWS2CompletedCount", 0
+  270  set_prop       gPort, "PWS2Round1visits", 0
+  271  set_prop       gPort, "PWS2Round2visits", 0
+  272  set_prop       gPort, "PWS2Round3visits", 0
+  273  set_prop       gPort, "PWS2Round4visits", 0
+  274  return
+  275  set            kFontName, "Chicago"
+  276  set            kFontSize, 14
+  277  set            kFontStyle, kOMFontNormal
+  278  set            kBlockColorIndex, 1
+  279  set            kProblemColorIndex, 11
+  280  set            kDatasetCount, 396
+  281  set            columnHeight.1, 9
+  282  set            columnHeight.2, 9
+  283  set            columnHeight.3, 9
+  284  set            columnHeight.4, 7
+  285  set            columnHeight.5, 7
+  286  set            columnHeight.6, 7
+  287  set            columnHeight.7, 8
+  288  set            columnHeight.8, 8
+  289  set            columnHeight.9, 8
+  290  set            columnHeight.10, 7
+  291  set            columnHeight.11, 7
+  292  set            columnHeight.12, 7
+  293  set            columnHeight.13, 5
+  294  set            columnHeight.14, 5
+  295  set            columnHeight.15, 5
+  296  set            columnHeight.16, 6
+  297  set            columnHeight.17, 6
+  298  set            columnHeight.18, 6
+  299  set            columnHeight.19, 8
+  300  set            columnHeight.20, 8
+  301  set            columnHeight.21, 8
+  302  set            columnHeight.22, 6
+  303  set            columnHeight.23, 6
+  304  set            columnHeight.24, 6
+  305  set            columnHeight.25, 5
+  306  set            columnHeight.26, 5
+  307  set            columnHeight.27, 5
+  308  set            columnHeight.28, 7
+  309  set            columnHeight.29, 7
+  310  set            columnHeight.30, 7
+  311  set            columnHeight.31, 6
+  312  set            columnHeight.32, 6
+  313  set            columnHeight.33, 6
+  314  set            columnHeight.34, 5
+  315  set            columnHeight.35, 5
+  316  set            columnHeight.36, 5
+  317  set            columnHeight.37, 6
+  318  set            columnHeight.38, 6
+  319  set            columnHeight.39, 6
+  320  set            columnHeight.40, 7
+  321  set            columnHeight.41, 7
+  322  set            columnHeight.42, 7
+  323  set            columnHeight.43, 9
+  324  set            columnHeight.44, 9
+  325  set            columnHeight.45, 9
+  326  set            columnHeight.46, 5
+  327  set            columnHeight.47, 5
+  328  set            columnHeight.48, 5
+  329  set            columnHeight.49, 7
+  330  set            columnHeight.50, 7
+  331  set            columnHeight.51, 7
+  332  set            columnHeight.52, 5
+  333  set            columnHeight.53, 5
+  334  set            columnHeight.54, 5
+  335  set            columnHeight.55, 6
+  336  set            columnHeight.56, 6
+  337  set            columnHeight.57, 6
+  338  set            columnHeight.58, 8
+  339  set            columnHeight.59, 8
+  340  set            columnHeight.60, 8
+  341  set            columnHeight.61, 9
+  342  set            columnHeight.62, 9
+  343  set            columnHeight.63, 9
+  344  set            columnHeight.64, 7
+  345  set            columnHeight.65, 7
+  346  set            columnHeight.66, 7
+  347  set            columnHeight.67, 9
+  348  set            columnHeight.68, 9
+  349  set            columnHeight.69, 9
+  350  set            columnHeight.70, 8
+  351  set            columnHeight.71, 8
+  352  set            columnHeight.72, 8
+  353  set            columnHeight.73, 6
+  354  set            columnHeight.74, 6
+  355  set            columnHeight.75, 6
+  356  set            columnHeight.76, 9
+  357  set            columnHeight.77, 9
+  358  set            columnHeight.78, 9
+  359  set            columnHeight.79, 6
+  360  set            columnHeight.80, 6
+  361  set            columnHeight.81, 6
+  362  set            columnHeight.82, 9
+  363  set            columnHeight.83, 9
+  364  set            columnHeight.84, 9
+  365  set            columnHeight.85, 6
+  366  set            columnHeight.86, 6
+  367  set            columnHeight.87, 6
+  368  set            columnHeight.88, 7
+  369  set            columnHeight.89, 7
+  370  set            columnHeight.90, 7
+  371  set            columnHeight.91, 6
+  372  set            columnHeight.92, 6
+  373  set            columnHeight.93, 6
+  374  set            columnHeight.94, 8
+  375  set            columnHeight.95, 8
+  376  set            columnHeight.96, 8
+  377  set            columnHeight.97, 6
+  378  set            columnHeight.98, 6
+  379  set            columnHeight.99, 6
+  380  set            columnHeight.100, 9
+  381  set            columnHeight.101, 9
+  382  set            columnHeight.102, 9
+  383  set            columnHeight.103, 8
+  384  set            columnHeight.104, 8
+  385  set            columnHeight.105, 8
+  386  set            columnHeight.106, 9
+  387  set            columnHeight.107, 9
+  388  set            columnHeight.108, 9
+  389  set            columnHeight.109, 6
+  390  set            columnHeight.110, 6
+  391  set            columnHeight.111, 6
+  392  set            columnHeight.112, 9
+  393  set            columnHeight.113, 9
+  394  set            columnHeight.114, 9
+  395  set            columnHeight.115, 7
+  396  set            columnHeight.116, 7
+  397  set            columnHeight.117, 7
+  398  set            columnHeight.118, 9
+  399  set            columnHeight.119, 9
+  400  set            columnHeight.120, 9
+  401  set            columnHeight.121, 4
+  402  set            columnHeight.122, 4
+  403  set            columnHeight.123, 4
+  404  set            columnHeight.124, 5
+  405  set            columnHeight.125, 5
+  406  set            columnHeight.126, 5
+  407  set            columnHeight.127, 4
+  408  set            columnHeight.128, 4
+  409  set            columnHeight.129, 4
+  410  set            columnHeight.130, 7
+  411  set            columnHeight.131, 7
+  412  set            columnHeight.132, 7
+  413  set            columnHeight.133, 6
+  414  set            columnHeight.134, 6
+  415  set            columnHeight.135, 6
+  416  set            columnHeight.136, 9
+  417  set            columnHeight.137, 9
+  418  set            columnHeight.138, 9
+  419  set            columnHeight.139, 8
+  420  set            columnHeight.140, 8
+  421  set            columnHeight.141, 8
+  422  set            columnHeight.142, 7
+  423  set            columnHeight.143, 7
+  424  set            columnHeight.144, 7
+  425  set            columnHeight.145, 6
+  426  set            columnHeight.146, 6
+  427  set            columnHeight.147, 6
+  428  set            columnHeight.148, 8
+  429  set            columnHeight.149, 8
+  430  set            columnHeight.150, 8
+  431  set            columnHeight.151, 9
+  432  set            columnHeight.152, 9
+  433  set            columnHeight.153, 9
+  434  set            columnHeight.154, 5
+  435  set            columnHeight.155, 5
+  436  set            columnHeight.156, 5
+  437  set            columnHeight.157, 9
+  438  set            columnHeight.158, 9
+  439  set            columnHeight.159, 9
+  440  set            columnHeight.160, 7
+  441  set            columnHeight.161, 7
+  442  set            columnHeight.162, 7
+  443  set            columnHeight.163, 6
+  444  set            columnHeight.164, 6
+  445  set            columnHeight.165, 6
+  446  set            columnHeight.166, 4
+  447  set            columnHeight.167, 4
+  448  set            columnHeight.168, 4
+  449  set            columnHeight.169, 5
+  450  set            columnHeight.170, 5
+  451  set            columnHeight.171, 5
+  452  set            columnHeight.172, 7
+  453  set            columnHeight.173, 7
+  454  set            columnHeight.174, 7
+  455  set            columnHeight.175, 9
+  456  set            columnHeight.176, 9
+  457  set            columnHeight.177, 9
+  458  set            columnHeight.178, 6
+  459  set            columnHeight.179, 6
+  460  set            columnHeight.180, 6
+  461  set            columnHeight.181, 7
+  462  set            columnHeight.182, 7
+  463  set            columnHeight.183, 7
+  464  set            columnHeight.184, 6
+  465  set            columnHeight.185, 6
+  466  set            columnHeight.186, 6
+  467  set            columnHeight.187, 7
+  468  set            columnHeight.188, 7
+  469  set            columnHeight.189, 7
+  470  set            columnHeight.190, 6
+  471  set            columnHeight.191, 6
+  472  set            columnHeight.192, 6
+  473  set            columnHeight.193, 8
+  474  set            columnHeight.194, 8
+  475  set            columnHeight.195, 8
+  476  set            columnHeight.196, 4
+  477  set            columnHeight.197, 4
+  478  set            columnHeight.198, 4
+  479  set            columnHeight.199, 4.5
+  480  set            columnHeight.200, 4.5
+  481  set            columnHeight.201, 4.5
+  482  set            columnHeight.202, 8.4
+  483  set            columnHeight.203, 8.4
+  484  set            columnHeight.204, 8.4
+  485  set            columnHeight.205, 5.2
+  486  set            columnHeight.206, 5.2
+  487  set            columnHeight.207, 5.2
+  488  set            columnHeight.208, 5.7
+  489  set            columnHeight.209, 5.7
+  490  set            columnHeight.210, 5.7
+  491  set            columnHeight.211, 6.7
+  492  set            columnHeight.212, 6.7
+  493  set            columnHeight.213, 6.7
+  494  set            columnHeight.214, 4.7
+  495  set            columnHeight.215, 4.7
+  496  set            columnHeight.216, 4.7
+  497  set            columnHeight.217, 7.9
+  498  set            columnHeight.218, 7.9
+  499  set            columnHeight.219, 7.9
+  500  set            columnHeight.220, 4.8
+  501  set            columnHeight.221, 4.8
+  502  set            columnHeight.222, 4.8
+  503  set            columnHeight.223, 5.4
+  504  set            columnHeight.224, 5.4
+  505  set            columnHeight.225, 5.4
+  506  set            columnHeight.226, 6.9
+  507  set            columnHeight.227, 6.9
+  508  set            columnHeight.228, 6.9
+  509  set            columnHeight.229, 8.6
+  510  set            columnHeight.230, 8.6
+  511  set            columnHeight.231, 8.6
+  512  set            columnHeight.232, 4
+  513  set            columnHeight.233, 4
+  514  set            columnHeight.234, 4
+  515  set            columnHeight.235, 5.7
+  516  set            columnHeight.236, 5.7
+  517  set            columnHeight.237, 5.7
+  518  set            columnHeight.238, 7.2
+  519  set            columnHeight.239, 7.2
+  520  set            columnHeight.240, 7.2
+  521  set            columnHeight.241, 6.8
+  522  set            columnHeight.242, 6.8
+  523  set            columnHeight.243, 6.8
+  524  set            columnHeight.244, 8.1
+  525  set            columnHeight.245, 8.1
+  526  set            columnHeight.246, 8.1
+  527  set            columnHeight.247, 8.4
+  528  set            columnHeight.248, 8.4
+  529  set            columnHeight.249, 8.4
+  530  set            columnHeight.250, 5.2
+  531  set            columnHeight.251, 5.2
+  532  set            columnHeight.252, 5.2
+  533  set            columnHeight.253, 8.6
+  534  set            columnHeight.254, 8.6
+  535  set            columnHeight.255, 8.6
+  536  set            columnHeight.256, 7.5
+  537  set            columnHeight.257, 7.5
+  538  set            columnHeight.258, 7.5
+  539  set            columnHeight.259, 7.2
+  540  set            columnHeight.260, 7.2
+  541  set            columnHeight.261, 7.2
+  542  set            columnHeight.262, 4.7
+  543  set            columnHeight.263, 4.7
+  544  set            columnHeight.264, 4.7
+  545  set            columnHeight.265, 4
+  546  set            columnHeight.266, 4
+  547  set            columnHeight.267, 4
+  548  set            columnHeight.268, 9
+  549  set            columnHeight.269, 9
+  550  set            columnHeight.270, 9
+  551  set            columnHeight.271, 8.7
+  552  set            columnHeight.272, 8.7
+  553  set            columnHeight.273, 8.7
+  554  set            columnHeight.274, 4.9
+  555  set            columnHeight.275, 4.9
+  556  set            columnHeight.276, 4.9
+  557  set            columnHeight.277, 5.9
+  558  set            columnHeight.278, 5.9
+  559  set            columnHeight.279, 5.9
+  560  set            columnHeight.280, 5.2
+  561  set            columnHeight.281, 5.2
+  562  set            columnHeight.282, 5.2
+  563  set            columnHeight.283, 7
+  564  set            columnHeight.284, 7
+  565  set            columnHeight.285, 7
+  566  set            columnHeight.286, 6.8
+  567  set            columnHeight.287, 6.8
+  568  set            columnHeight.288, 6.8
+  569  set            columnHeight.289, 6.7
+  570  set            columnHeight.290, 6.7
+  571  set            columnHeight.291, 6.7
+  572  set            columnHeight.292, 6.5
+  573  set            columnHeight.293, 6.5
+  574  set            columnHeight.294, 6.5
+  575  set            columnHeight.295, 7.6
+  576  set            columnHeight.296, 7.6
+  577  set            columnHeight.297, 7.6
+  578  set            columnHeight.298, 8.50
+  579  set            columnHeight.299, 8.50
+  580  set            columnHeight.300, 8.50
+  581  set            columnHeight.301, 5.40
+  582  set            columnHeight.302, 5.40
+  583  set            columnHeight.303, 5.40
+  584  set            columnHeight.304, 6.60
+  585  set            columnHeight.305, 6.60
+  586  set            columnHeight.306, 6.60
+  587  set            columnHeight.307, 7.80
+  588  set            columnHeight.308, 7.80
+  589  set            columnHeight.309, 7.80
+  590  set            columnHeight.310, 8.50
+  591  set            columnHeight.311, 8.50
+  592  set            columnHeight.312, 8.50
+  593  set            columnHeight.313, 6.80
+  594  set            columnHeight.314, 6.80
+  595  set            columnHeight.315, 6.80
+  596  set            columnHeight.316, 5.40
+  597  set            columnHeight.317, 5.40
+  598  set            columnHeight.318, 5.40
+  599  set            columnHeight.319, 8.90
+  600  set            columnHeight.320, 8.90
+  601  set            columnHeight.321, 8.90
+  602  set            columnHeight.322, 7.90
+  603  set            columnHeight.323, 7.90
+  604  set            columnHeight.324, 7.90
+  605  set            columnHeight.325, 4.20
+  606  set            columnHeight.326, 4.20
+  607  set            columnHeight.327, 4.20
+  608  set            columnHeight.328, 5.80
+  609  set            columnHeight.329, 5.80
+  610  set            columnHeight.330, 5.80
+  611  set            columnHeight.331, 7.00
+  612  set            columnHeight.332, 7.00
+  613  set            columnHeight.333, 7.00
+  614  set            columnHeight.334, 6.30
+  615  set            columnHeight.335, 6.30
+  616  set            columnHeight.336, 6.30
+  617  set            columnHeight.337, 6.60
+  618  set            columnHeight.338, 6.60
+  619  set            columnHeight.339, 6.60
+  620  set            columnHeight.340, 4.80
+  621  set            columnHeight.341, 4.80
+  622  set            columnHeight.342, 4.80
+  623  set            columnHeight.343, 8.50
+  624  set            columnHeight.344, 8.50
+  625  set            columnHeight.345, 8.50
+  626  set            columnHeight.346, 6.00
+  627  set            columnHeight.347, 6.00
+  628  set            columnHeight.348, 6.00
+  629  set            columnHeight.349, 6.20
+  630  set            columnHeight.350, 6.20
+  631  set            columnHeight.351, 6.20
+  632  set            columnHeight.352, 7.90
+  633  set            columnHeight.353, 7.90
+  634  set            columnHeight.354, 7.90
+  635  set            columnHeight.355, 6.40
+  636  set            columnHeight.356, 6.40
+  637  set            columnHeight.357, 6.40
+  638  set            columnHeight.358, 4.40
+  639  set            columnHeight.359, 4.40
+  640  set            columnHeight.360, 4.40
+  641  set            columnHeight.361, 7.20
+  642  set            columnHeight.362, 7.20
+  643  set            columnHeight.363, 7.20
+  644  set            columnHeight.364, 6.60
+  645  set            columnHeight.365, 6.60
+  646  set            columnHeight.366, 6.60
+  647  set            columnHeight.367, 5.40
+  648  set            columnHeight.368, 5.40
+  649  set            columnHeight.369, 5.40
+  650  set            columnHeight.370, 9.10
+  651  set            columnHeight.371, 9.10
+  652  set            columnHeight.372, 9.10
+  653  set            columnHeight.373, 6.00
+  654  set            columnHeight.374, 6.00
+  655  set            columnHeight.375, 6.00
+  656  set            columnHeight.376, 7.50
+  657  set            columnHeight.377, 7.50
+  658  set            columnHeight.378, 7.50
+  659  set            columnHeight.379, 5.60
+  660  set            columnHeight.380, 5.60
+  661  set            columnHeight.381, 5.60
+  662  set            columnHeight.382, 9.10
+  663  set            columnHeight.383, 9.10
+  664  set            columnHeight.384, 9.10
+  665  set            columnHeight.385, 6.60
+  666  set            columnHeight.386, 6.60
+  667  set            columnHeight.387, 6.60
+  668  set            columnHeight.388, 5.50
+  669  set            columnHeight.389, 5.50
+  670  set            columnHeight.390, 5.50
+  671  set            columnHeight.391, 7.40
+  672  set            columnHeight.392, 7.40
+  673  set            columnHeight.393, 7.40
+  674  set            columnHeight.394, 6.10
+  675  set            columnHeight.395, 6.10
+  676  set            columnHeight.396, 6.10
+  677  set            kBackpackDef, 1
+  678  set            kMaxItemsInBackpack, 12
+  679  set            kMaxItemsInWS, 6
+  680  set            kMaxItemsInHub, 12
+  681  set            kMaxItemW, 36
+  682  set            kMaxItemH, 28
+  683  set            kCGlyphStart, 1
+  684  set            kCGlyphEnd, 12
+  685  set            kGemStart, 13
+  686  set            kGemEnd, 28
+  687  set            kItemInBPSfxID, 30524
+  688  set            kItemPickUpSfxID, 30525
+  689  set            openBackpack, 0
+  690  set            closedBackpack, 0
+  691  set            closedBackpackName, 0
+  692  set            objectIndex, 1
+  693  set            toBackpackOnly, 1
+
+  694  sub            pInitObjectsAndBackpack@694, toBackpack, backpackName
+  695  loop           i, 1, kMaxItemsInWS
+  696  loop_test      i, 1, kMaxItemsInWS
+  697  jump_if_false  -> 704
+  698  get_prop       gPort, itemPresent, i, objectToDisplay
+  699  if             (objectToDisplay#0)
+  700  jump_if_false  -> 703
+  701  call           pDisplayObject@707, kFalse
+  702  end
+  703  jump           -> 696
+  704  set            toBackpackOnly, toBackpack
+  705  set            closedBackpackName, backpackName
+  706  return
+
+  707  sub            pDisplayObject@707, animate
+  708  if             (objectBoxW>kMaxItemW)
+  709  jump_if_false  -> 713
+  710  call_global    RandomNumber, 1, (objectBoxW-kMaxItemW)
+  711  set            xOff, $result
+  712  jump           -> 715
+  713  end
+  714  set            xOff, 0
+  715  set            ox, (objectBoxX+xOff)
+  716  if             (objectBoxH>kMaxItemH)
+  717  jump_if_false  -> 721
+  718  call_global    RandomNumber, 1, (objectBoxH-kMaxItemH)
+  719  set            yOff, $result
+  720  jump           -> 723
+  721  end
+  722  set            yOff, 0
+  723  set            oy, (objectBoxY+yOff)
+  724  set            object.objectIndex, RAnimation, ox, oy, objectAOIDs.objectToDisplay
+  725  set_prop       object.objectIndex, "z", objectZ
+  726  set_prop       object.objectIndex, userData, (" "+ox+"#"+oy+":"+objectToDisplay)
+  727  set_prop       object.objectIndex, "mouseDown", eObjectPickedUp@764
+  728  set_prop       object.objectIndex, "mouseUp", eObjectDropped@768
+  729  send           object.objectIndex, setAOCursor, kOpenHandCursor, kClosedHandCursor
+  730  if             animate
+  731  jump_if_false  -> 743
+  732  send           object.objectIndex, play
+  733  set            port, RWorldPort, RWorldPort
+  734  get_prop       port, currentLocation, location
+  735  delete         port
+  736  if             ((location="CWS1")+(location="CWS2")+(location="CWS3")+(location="CWS4"))
+  737  jump_if_false  -> 740
+  738  call_global    PlaySound, 1000
+  739  jump           -> 742
+  740  end
+  741  call_global    PlaySound, 11000
+  742  end
+  743  set            objectIndex, (objectIndex+1)
+  744  return
+
+  745  sub            pNewObjectAtLocation@745, newID
+  746  send           gPort, addObject, newID
+  747  set            objectToDisplay, newID
+  748  call           pDisplayObject@707, kTrue
+  749  return
+
+  750  sub            eBackpackOpened@750
+  751  if             (openBackpack=0)
+  752  jump_if_false  -> 760
+  753  set            openBackpack, RBackPack, backpackX, backpackY, backpackZ
+  754  set_prop       openBackpack, closed, eBackpackClosed@761
+  755  if             (toBackpackOnly=0)
+  756  jump_if_false  -> 759
+  757  set_prop       openBackpack, objectDropped, eBackpackObjectDropped
+  758  end
+  759  end
+  760  return
+
+  761  sub            eBackpackClosed@761
+  762  set            openBackpack, 0
+  763  return
+
+  764  sub            eObjectPickedUp@764
+  765  set_prop       $1, "z", 10000
+  766  call_global    PlaySound, kItemPickUpSfxID
+  767  return
+
+  768  sub            eObjectDropped@768
+  769  get_prop       $1, userData, ud
+  770  set            p1, ("#"@ud)
+  771  set            p2, (":"@ud)
+  772  set            t2, (p1-1)
+  773  set            ox, ud|1|t2
+  774  set            t1, (p1+1)
+  775  set            t2, (p2-p1-1)
+  776  set            oy, ud|t1|t2
+  777  set            t1, (p2+1)
+  778  set            id, ud|t1
+  779  set_prop       $1, "z", objectZ
+  780  if             (toBackpackOnly=1)
+  781  jump_if_false  -> 826
+  782  if             (openBackpack#0)
+  783  jump_if_false  -> 807
+  784  call_global    IntersectTest, "RECEIVER", "openBackpack"
+  785  set            test, $result
+  786  if             (test=1)
+  787  jump_if_false  -> 790
+  788  send           openBackpack, addObject, id
+  789  jump           -> 806
+  790  end
+  791  if             (closedBackpack#0)
+  792  jump_if_false  -> 804
+  793  get_prop       closedBackpack, visible, test
+  794  if             (test=1)
+  795  jump_if_false  -> 803
+  796  call_global    IntersectTest, "RECEIVER", "closedBackpack"
+  797  set            test, $result
+  798  if             (test=1)
+  799  jump_if_false  -> 802
+  800  send           openBackpack, addObject, id
+  801  end
+  802  end
+  803  jump           -> 806
+  804  end
+  805  set            test, 0
+  806  jump           -> 825
+  807  end
+  808  if             (closedBackpack#0)
+  809  jump_if_false  -> 823
+  810  get_prop       closedBackpack, visible, test
+  811  if             (test=1)
+  812  jump_if_false  -> 822
+  813  call_global    IntersectTest, "RECEIVER", "closedBackpack"
+  814  set            test, $result
+  815  if             (test=1)
+  816  jump_if_false  -> 821
+  817  set            openBackpack, RBackPack, backpackX, backpackY, backpackZ
+  818  send           openBackpack, addObject, id
+  819  set            openBackpack, 0
+  820  end
+  821  end
+  822  jump           -> 825
+  823  end
+  824  set            test, 0
+  825  jump           -> 828
+  826  end
+  827  set            test, 0
+  828  if             (test=1)
+  829  jump_if_false  -> 838
+  830  get_prop       $1, name, Name
+  831  set            p, (1+"."@Name)
+  832  set            n, Name|p
+  833  delete         object.n
+  834  send           gPort, removeObjectFromLocation, id
+  835  set_prop       gPort, itemPlacedInBackpack, kTrue
+  836  call_global    PlaySound, kItemInBPSfxID
+  837  jump           -> 841
+  838  end
+  839  set_prop       $1, x, ox
+  840  set_prop       $1, y, oy
+  841  return
+  842  call           globalInit@212
+  843  call           pInit@846
+  844  call           pStart@961
+  845  call_global    EndTransition
+
+  846  sub            pInit@846
+  847  set            sQueue, RQueue, 1
+  848  set_prop       sQueue, finished, eSQueueDone@1471
+  849  set            sQueueFinished, "empty"
+  850  set            kSocratesID, 12003
+  851  set            kLaptrapID, 12002
+  852  set            kBackpackID, 12004
+  853  set            kSantiagoID, 12001
+  854  set            kFixnuppansID, 12005
+  855  set            kSanFidgID, 12191
+  856  set            kSocFidgID, 12192
+  857  set            kFixFidgID, 12190
+  858  set            kSanBlinkID, 12195
+  859  set            kSocBlinkID, 12193
+  860  set            kLapBlinkID, 12194
+  861  set            kFixBlinkID, 12196
+  862  set            kOasis1SfxID, 12009
+  863  set            kOasis2SfxID, 12010
+  864  set            kOasis3SfxID, 12011
+  865  set            kOasis4SfxID, 12012
+  866  set            kOasis5SfxID, 12013
+  867  set            kSantiagoWalkInID, 12010
+  868  set            kLaptrapWalkInID, 12011
+  869  set            kSocratesWalkInID, 12012
+  870  set            kBackpackWalkInID, 12013
+  871  set            kSantiagoWalkOutID, 12175
+  872  set            kSocratesWalkOutID, 12177
+  873  set            kLaptrapWalkOutID, 12176
+  874  set            kBackpackWalkOutID, 12200
+  875  set            backpackX, 14
+  876  set            backpackY, 8
+  877  set            objectBoxX, 121
+  878  set            objectBoxY, 171
+  879  set            objectBoxW, 58
+  880  set            objectBoxH, 125
+  881  set            kResetAnimID, 12121
+  882  set            kNoGemAnimID, 12121
+  883  set            kContainerY, 80
+  884  set            kContainerW, 61
+  885  set            kContainerH, 264
+  886  set            kBlockCount, 46
+  887  set            kBlockStartingID, 12040
+  888  set            kBlockStartingHeight, 30
+  889  set            kBlockDeltaHeight, 2
+  890  set            kAnswerStartingX, 150
+  891  set            kAnswerW, 61
+  892  set            kAnswerXOff, 20
+  893  set            kAnswerBaseY, 475
+  894  set            kAnswerOverlap, 4
+  895  set            kAnswerPickUpID, 12000
+  896  set            kAnswerSnapID, 12001
+  897  set            kAnswerGoHomeID, 12002
+  898  set            kBaseY, 339
+  899  set            kColumnSfxID, 12007
+  900  set            kTargetIndexID, 13
+  901  set            kTargetX, 573
+  902  set            kTargetY, 168
+  903  set            kCurrentHeightY, 357
+  904  set            kNavHotspotX1, 0
+  905  set            kNavHotspotY1, 0
+  906  set            kNavHotspotX2, 180
+  907  set            kNavHotspotY2, 59
+  908  set            kRewardID, 12122
+  909  set            kStartingRewardY, 315
+  910  set            kRewardYoffset, 25
+  911  set            kPoofID, 12140
+  912  set            kPoofSfxID, 12008
+  913  set            kResetAudioBID, 12323
+  914  set            kNoGemSpchID, 12315
+  915  set            kFixIntro1SpchID, 12307
+  916  set            kFixIntro2SpchID, 12300
+  917  set            kFixIntro3SpchID, 12336
+  918  set            kFixIntro4SpchID, 12343
+  919  set            kSantIntroSpchID, 12301
+  920  set            kFixRightSpch1ID, 12308
+  921  set            kFixRightSpch2ID, 12309
+  922  set            kFixRightSpch3ID, 12310
+  923  set            kFixRightSpch4ID, 12311
+  924  set            kFixFinishSpch1ID, 12312
+  925  set            kFixFinishSpch2ID, 12313
+  926  set            kFixFinishSpch3ID, 12314
+  927  set            kFixResetSpch1ID, 12319
+  928  set            kFixResetSpch2ID, 12320
+  929  set            kFixResetSpch3ID, 12321
+  930  set            kFixResetSpch4ID, 12322
+  931  set            kFixClckSpch1ID, 12336
+  932  set            kFixClckSpch2ID, 12337
+  933  set            kSocClckSpch1ID, 12338
+  934  set            kSocClckSpch2ID, 12339
+  935  set            kSanClckSpch1ID, 12340
+  936  set            kSanClckSpch2ID, 12341
+  937  set            kLapExitSpchID, 12332
+  938  set            kFixExitSpch1ID, 12333
+  939  set            kSanExitSpchID, 12334
+  940  set            kFixExitSpch2ID, 12335
+  941  set            kNavHotspotZ, 0
+  942  set            kLaptrapZ, 30
+  943  set            kSantiagoZ, 10
+  944  set            objectZ, 20
+  945  set            kSocratesZ, 40
+  946  set            kBackpackZ, 50
+  947  set            kFixnuppanZ, 105
+  948  set            kColumnBaseZ, 70
+  949  set            kCurrentHeightZ, 80
+  950  set            kColumnCapZ, 90
+  951  set            kAnswerStaticZ, 100
+  952  set            kAnswerMovingZ, 550
+  953  set            kColumnCapZ, 120
+  954  set            backpackZ, 200
+  955  set            kOpenedLaptrapZ, 300
+  956  set            kColumnsFallingZ, 500
+  957  set            kContainerZ, 100
+  958  set            socratesClickCtr, 1
+  959  set            santiagoClickCtr, 1
+  960  return
+
+  961  sub            pStart@961
+  962  send           gPort, autoLevel, "OWS1"
+  963  get_prop       gPort, currentLevel, "OWS1", level
+  964  get_prop       gPort, "wsCurrentLevelEntryCount", "OWS1", numTimesEntered
+  965  set_prop       gPort, "wsCurrentLevelEntryCount", "OWS1", (numTimesEntered+1)
+  966  get_prop       gPort, inGame, "OWS1", gameMode
+  967  set            practiceMode, (1-gameMode)
+  968  if             gameMode
+  969  jump_if_false  -> 974
+  970  set_prop       gPort, currentLocation, "OWS1"
+  971  get_prop       gPort, visitedCount, visit
+  972  set_prop       gPort, visitedCount, (visit+1)
+  973  jump           -> 976
+  974  end
+  975  set            gCurLocation, "OWS1"
+  976  set_prop       gScenePort, backgroundClicked, pInterruptScene@1040
+  977  set_prop       gScenePort, backgroundMusicID, kOasis2BMusicID
+  978  set_prop       gScenePort, paused, ePauseScene@1609
+  979  set_prop       gScenePort, resumed, eResumeScene@1619
+  980  set            maxDataset, maximumDataset.level
+  981  set            minDataset, minimumDataset.level
+  982  set            previousLevel, level
+  983  set            columnNumber, 0
+  984  set            firstRndIncorrectTriesComplete, 0
+  985  set            numTries, 0
+  986  set            numTimesReset, 0
+  987  set            gemGiven, kFalse
+  988  set            noGemAudioPlayedBefore, kFalse
+  989  set            noGemsResetAudioPlayed, kFalse
+  990  set            puzzleActive, kFalse
+  991  set            laptrapCall, kFalse
+  992  call_global    Scene, 12000
+  993  set            fixnuppan, RCharacter, kFixnuppansID, kFixnuppanZ
+  994  set_prop       fixnuppan, "movable", kFalse
+  995  set_prop       fixnuppan, mouseDown, eFixnuppanClick@1555
+  996  set            socrates, RCharacter, kSocratesID, kSocratesZ
+  997  set_prop       socrates, "movable", kFalse
+  998  set_prop       socrates, mouseDown, eSocratesClick@1568
+  999  send           fixnuppan, addSpeechAnim, 12020
+ 1000  send           fixnuppan, addSpeechAnim, 12022
+ 1001  send           fixnuppan, addSpeechAnim, 12023
+ 1002  send           socrates, addSpeechAnim, 12180
+ 1003  if             gameMode
+ 1004  jump_if_false  -> 1020
+ 1005  set            closedBackpack, RCharacter, kBackpackID, kBackpackZ
+ 1006  set_prop       closedBackpack, "movable", kFalse
+ 1007  send           closedBackpack, setAOCursor, kFingerCursor, kClosedHandCursor
+ 1008  set_prop       closedBackpack, mouseDown, eBackpackClick@1552
+ 1009  set            laptrap, RCharacter, kLaptrapID, kLaptrapZ
+ 1010  set_prop       laptrap, "movable", kFalse
+ 1011  send           laptrap, setAOCursor, kFingerCursor, kClosedHandCursor
+ 1012  set_prop       laptrap, animateSettled, kTrue
+ 1013  set_prop       laptrap, mouseDown, eLaptrapClick@1525
+ 1014  set            santiago, RCharacter, kSantiagoID, kSantiagoZ
+ 1015  set_prop       santiago, "movable", kFalse
+ 1016  set_prop       santiago, mouseDown, eSantiagoClick@1583
+ 1017  send           santiago, addSpeechAnim, 12021
+ 1018  call           pInitObjectsAndBackpack@694, kTrue, "closedBackpack"
+ 1019  jump           -> 1025
+ 1020  end
+ 1021  set            activityButton, RCharacter, kPMChooseActButtonID, kLaptrapZ
+ 1022  set_prop       activityButton, "movable", kFalse
+ 1023  send           activityButton, setAOCursor, kFingerCursor, kFingerCursor
+ 1024  set_prop       activityButton, mouseDown, eLaptrapClick@1525
+ 1025  get_prop       gPort, currentDataset, "OWS1", whichDataset
+ 1026  if             whichDataset
+ 1027  jump_if_false  -> 1031
+ 1028  set            whichDataset, (((whichDataset\3)*3)+3)
+ 1029  set_prop       gPort, currentDataset, "OWS1", whichDataset
+ 1030  end
+ 1031  call           pAddFidgets@1064
+ 1032  if             gameMode
+ 1033  jump_if_false  -> 1036
+ 1034  call           pExitHotspots@1150
+ 1035  end
+ 1036  call           pSetupPuzzle@1188
+ 1037  call           pSetupReusableActions@1134
+ 1038  call           pWalkIn@1080
+ 1039  return
+
+ 1040  sub            pInterruptScene@1040
+ 1041  set            sceneInterrupted, kTrue
+ 1042  get_prop       sQueue, actionCount, numActions
+ 1043  loop           (numActions>0)
+ 1044  loop_test      (numActions>0)
+ 1045  jump_if_false  -> 1063
+ 1046  send           sQueue, halt
+ 1047  get_prop       sQueue, isActive, haltFailed
+ 1048  if             haltFailed
+ 1049  jump_if_false  -> 1053
+ 1050  set            sceneInterrupted, kFalse
+ 1051  jump           -> 1063
+ 1052  jump           -> 1061
+ 1053  end
+ 1054  send           sQueue, clear
+ 1055  if             (sQueueFinished#"empty")
+ 1056  jump_if_false  -> 1061
+ 1057  set            finishedEvent, sQueueFinished
+ 1058  set            sQueueFinished, "empty"
+ 1059  call           finishedEvent
+ 1060  end
+ 1061  get_prop       sQueue, actionCount, numActions
+ 1062  jump           -> 1044
+ 1063  return
+
+ 1064  sub            pAddFidgets@1064
+ 1065  if             gameMode
+ 1066  jump_if_false  -> 1073
+ 1067  send           santiago, addFidgetGroup, 1, kFidgetMinTime, kFidgetMaxTime
+ 1068  send           santiago, addFidget, 1, kSanFidgID
+ 1069  send           santiago, addFidget, 1, kSanBlinkID, kFalse
+ 1070  send           laptrap, addFidgetGroup, 1, kFidgetMinTime, kFidgetMaxTime
+ 1071  send           laptrap, addFidget, 1, kLapBlinkID
+ 1072  end
+ 1073  send           socrates, addFidgetGroup, 1, kFidgetMinTime, kFidgetMaxTime
+ 1074  send           socrates, addFidget, 1, kSocFidgID
+ 1075  send           socrates, addFidget, 1, kSocBlinkID, kFalse
+ 1076  send           fixnuppan, addFidgetGroup, 1, kFidgetMinTime, kFidgetMaxTime
+ 1077  send           fixnuppan, addFidget, 1, kFixFidgID
+ 1078  send           fixnuppan, addFidget, 1, kFixBlinkID, kFalse
+ 1079  return
+
+ 1080  sub            pWalkIn@1080
+ 1081  call           pInterruptScene@1040
+ 1082  set            walkIn, RCompositeAction, kTrue
+ 1083  if             gameMode
+ 1084  jump_if_false  -> 1089
+ 1085  send           walkIn, add, CharacterAnimAction, "santiago", kSantiagoWalkInID, 1, kTrue, kTrue
+ 1086  send           walkIn, add, CharacterAnimAction, "closedBackpack", kBackpackWalkInID, 1, kTrue, kTrue
+ 1087  send           walkIn, add, CharacterAnimAction, "laptrap", kLaptrapWalkInID, 1, kTrue, kTrue
+ 1088  end
+ 1089  send           walkIn, add, CharacterAnimAction, "socrates", kSocratesWalkInID, 1, kTrue, kTrue
+ 1090  send           sQueue, add, "walkIn"
+ 1091  set            sQueueFinished, "pEntrySpeech"
+ 1092  send           sQueue, start
+ 1093  return
+
+ 1094  sub            pWalkOut@1094
+ 1095  set            walkOut, RCompositeAction, kFalse
+ 1096  if             gameMode
+ 1097  jump_if_false  -> 1102
+ 1098  send           walkOut, add, PropertyAction, "closedBackpack", visible, kFalse, kTrue
+ 1099  send           walkOut, add, CharacterAnimAction, "santiago", kSantiagoWalkOutID, 1, kFalse, kTrue
+ 1100  send           walkOut, add, CharacterAnimAction, "laptrap", kLaptrapWalkOutID, 1, kFalse, kTrue
+ 1101  end
+ 1102  send           walkOut, add, CharacterAnimAction, "socrates", kSocratesWalkOutID, 1, kFalse, kTrue
+ 1103  send           sQueue, add, "walkOut"
+ 1104  return
+
+ 1105  sub            pEntrySpeech@1105
+ 1106  call           pInterruptScene@1040
+ 1107  if             practiceMode
+ 1108  jump_if_false  -> 1112
+ 1109  send           sQueue, add, CharacterSpeechAction, "fixnuppan", kFixIntro2SpchID, kTrue
+ 1110  send           sQueue, add, CharacterSpeechAction, "fixnuppan", kFixIntro3SpchID, kTrue
+ 1111  jump           -> 1128
+ 1112  end
+ 1113  get_prop       gPort, "wsNextItemInQueue", numItemsLeft
+ 1114  if             (numItemsLeft=0)
+ 1115  jump_if_false  -> 1118
+ 1116  send           sQueue, add, CharacterSpeechAction, "fixnuppan", kFixIntro1SpchID, kTrue
+ 1117  jump           -> 1128
+ 1118  end
+ 1119  if             (visit=0)
+ 1120  jump_if_false  -> 1126
+ 1121  send           sQueue, add, CharacterSpeechAction, "fixnuppan", kFixIntro2SpchID, kTrue
+ 1122  send           sQueue, add, CharacterSpeechAction, "santiago", kSantIntroSpchID, kTrue
+ 1123  send           sQueue, add, CharacterSpeechAction, "fixnuppan", kFixIntro3SpchID, kTrue
+ 1124  send           sQueue, add, CharacterSpeechAction, "fixnuppan", kFixIntro4SpchID, kTrue
+ 1125  jump           -> 1128
+ 1126  end
+ 1127  call           pReentrySpeech@1130
+ 1128  send           sQueue, start
+ 1129  return
+
+ 1130  sub            pReentrySpeech@1130
+ 1131  set            speechAudioID, (12303+(numTimesEntered%4))
+ 1132  send           sQueue, add, CharacterSpeechAction, "fixnuppan", speechAudioID, kTrue
+ 1133  return
+
+ 1134  sub            pSetupReusableActions@1134
+ 1135  set            correctAnswerSpeech, RRandomAction, kTrue, kTrue
+ 1136  send           correctAnswerSpeech, add, CharacterSpeechAction, "fixnuppan", kFixRightSpch1ID, kTrue
+ 1137  send           correctAnswerSpeech, add, CharacterSpeechAction, "fixnuppan", kFixRightSpch2ID, kTrue
+ 1138  send           correctAnswerSpeech, add, CharacterSpeechAction, "fixnuppan", kFixRightSpch3ID, kTrue
+ 1139  send           correctAnswerSpeech, add, CharacterSpeechAction, "fixnuppan", kFixRightSpch4ID, kTrue
+ 1140  set            puzzleFinishedSpeech, RRandomAction, kTrue, kTrue
+ 1141  send           puzzleFinishedSpeech, add, CharacterSpeechAction, "fixnuppan", kFixFinishSpch1ID, kTrue
+ 1142  send           puzzleFinishedSpeech, add, CharacterSpeechAction, "fixnuppan", kFixFinishSpch2ID, kTrue
+ 1143  send           puzzleFinishedSpeech, add, CharacterSpeechAction, "fixnuppan", kFixFinishSpch3ID, kTrue
+ 1144  set            resetPuzzleSpeech, RRandomAction, kTrue, kTrue
+ 1145  send           resetPuzzleSpeech, add, CharacterSpeechAction, "fixnuppan", kFixResetSpch1ID, kTrue
+ 1146  send           resetPuzzleSpeech, add, CharacterSpeechAction, "fixnuppan", kFixResetSpch2ID, kTrue
+ 1147  send           resetPuzzleSpeech, add, CharacterSpeechAction, "fixnuppan", kFixResetSpch3ID, kTrue
+ 1148  send           resetPuzzleSpeech, add, CharacterSpeechAction, "fixnuppan", kFixResetSpch4ID, kTrue
+ 1149  return
+
+ 1150  sub            pExitHotspots@1150
+ 1151  set            navHotspot, RHotSpot, kNavHotspotX1, kNavHotspotY1, kNavHotspotX2, kNavHotspotY2, kNavHotspotZ
+ 1152  send           navHotspot, setAOCursor, kWestCursor
+ 1153  set_prop       navHotspot, mouseDown, eExitClicked@1629
+ 1154  return
+
+ 1155  sub            pPickDataset@1155
+ 1156  if             (columnNumber=0)
+ 1157  jump_if_false  -> 1162
+ 1158  send           gPort, autoLevel, "OWS1"
+ 1159  get_prop       gPort, currentDataset, "OWS1", whichDataset
+ 1160  get_prop       gPort, currentLevel, "OWS1", level
+ 1161  end
+ 1162  if             ((previousLevel#level)*(columnNumber=0))
+ 1163  jump_if_false  -> 1175
+ 1164  set            maxDataset, maximumDataset.level
+ 1165  set            minDataset, minimumDataset.level
+ 1166  if             ((whichDataset<minDataset)+(whichDataset>maxDataset))
+ 1167  jump_if_false  -> 1170
+ 1168  set            whichDataset, 0
+ 1169  jump           -> 1173
+ 1170  end
+ 1171  set            whichDataset, (((whichDataset\3)*3)+3)
+ 1172  set_prop       gPort, currentDataset, "OWS1", whichDataset
+ 1173  set            previousLevel, level
+ 1174  end
+ 1175  if             ((whichDataset=0))
+ 1176  jump_if_false  -> 1181
+ 1177  call_global    RandomNumber, 1, 32
+ 1178  set            temp, $result
+ 1179  set            whichDataset, ((temp*3)+minDataset-1)
+ 1180  end
+ 1181  set            whichDataset, (whichDataset+1)
+ 1182  if             (whichDataset>maxDataset)
+ 1183  jump_if_false  -> 1186
+ 1184  set            whichDataset, minDataset
+ 1185  end
+ 1186  set_prop       gPort, currentDataset, "OWS1", whichDataset
+ 1187  return
+
+ 1188  sub            pSetupPuzzle@1188
+ 1189  call           pPickDataset@1155
+ 1190  set            puzzleComplete, kFalse
+ 1191  set            puzzle, RPuzzle, RPuzzle
+ 1192  set_prop       puzzle, puzzleSolved, ePuzzleSolvedCheck@1598
+ 1193  set            columnNumber, (columnNumber+1)
+ 1194  set            container.columnNumber, RStackingContainer, kContainerX.columnNumber, kContainerY, kContainerW, kContainerH, kContainerZ, 1, (-1)
+ 1195  set_prop       container.columnNumber, answerPlaced, eAnswerAdded@1488
+ 1196  set_prop       container.columnNumber, answerRemoved, eAnswerRemoved@1520
+ 1197  send           puzzle, addContainer, "container.columnNumber"
+ 1198  set            targetValue, columnHeight.whichDataset
+ 1199  set            targetHeight1, RText, targetValue, kTargetIndexID, kTargetX, kTargetY, kTrue
+ 1200  set            targetHeight2, RText, " in.", kTargetIndexID, kTargetX, (kTargetY+20), kTrue
+ 1201  set_prop       container.columnNumber, value, (targetValue*100)
+ 1202  send           targetHeight1, setFont, kFontName, kFontStyle, kFontSize, kProblemColorIndex
+ 1203  set_prop       targetHeight1, movable, kFalse
+ 1204  set_prop       targetHeight1, touchy, kFalse
+ 1205  send           targetHeight2, setFont, kFontName, kFontStyle, kFontSize, kProblemColorIndex
+ 1206  set_prop       targetHeight2, movable, kFalse
+ 1207  set_prop       targetHeight2, touchy, kFalse
+ 1208  set            base.columnNumber, RAnimation, kBaseX.columnNumber, kBaseY, kBaseID.columnNumber
+ 1209  set_prop       base.columnNumber, "z", kColumnBaseZ
+ 1210  set_prop       base.columnNumber, "movable", kFalse
+ 1211  set_prop       base.columnNumber, "touchy", kFalse
+ 1212  set            i, 1
+ 1213  loop           (blockHeights.whichDataset.i#"#")
+ 1214  loop_test      (blockHeights.whichDataset.i#"#")
+ 1215  jump_if_false  -> 1234
+ 1216  set            h, (blockHeights.whichDataset.i/10*kContainerH)
+ 1217  set            b, ((h-kBlockStartingHeight)\kBlockDeltaHeight+kBlockStartingID)
+ 1218  if             (h>365)
+ 1219  jump_if_false  -> 1222
+ 1220  set            h, 365
+ 1221  end
+ 1222  set            ax, (kAnswerStartingX+(i-1)*(kAnswerW+kAnswerXOff))
+ 1223  set            ay, (kAnswerBaseY-(b-kBlockStartingID)*kBlockDeltaHeight-kBlockStartingHeight)
+ 1224  set            answers.columnNumber.i, RGraphicTextAnswer, ax, ay, kAnswerStaticZ, b, (blockHeights.whichDataset.i+" in."), i, (blockHeights.whichDataset.i*100)
+ 1225  send           answers.columnNumber.i, setFont, kFontName, kFontStyle, kFontSize, kBlockColorIndex
+ 1226  set_prop       answers.columnNumber.i, extraTop, 5
+ 1227  set_prop       answers.columnNumber.i, dropped, eAnswerDropped@1517
+ 1228  set_prop       answers.columnNumber.i, pickedUp, eAnswerPickedUp@1484
+ 1229  set_prop       answers.columnNumber.i, pickUpSound, kAnswerPickUpID
+ 1230  set_prop       answers.columnNumber.i, snapSound, kAnswerSnapID
+ 1231  set_prop       answers.columnNumber.i, goHomeSound, kAnswerGoHomeID
+ 1232  set            i, (i+1)
+ 1233  jump           -> 1214
+ 1234  set            numberOfAnswers, (i-1)
+ 1235  loop           i, 1, 30
+ 1236  loop_test      i, 1, 30
+ 1237  jump_if_false  -> 1267
+ 1238  set            i1, ((?%numberOfAnswers)+1)
+ 1239  set            i2, ((?%numberOfAnswers)+1)
+ 1240  if             ((i1=1)+(i1=4)+(i1=6)+(i2=1)+(i2=4)+(i2=6))
+ 1241  jump_if_false  -> 1257
+ 1242  get_prop       answers.columnNumber.i1, text, t1
+ 1243  get_prop       answers.columnNumber.i2, text, t2
+ 1244  set            t1Length, (~t1)
+ 1245  set            t1Length, (t1Length-3)
+ 1246  set            t1, t1|1|t1Length
+ 1247  set            t2Length, (~t2)
+ 1248  set            t2Length, (t2Length-3)
+ 1249  set            t2, t2|1|t2Length
+ 1250  if             ((t1>4)+(t2>4))
+ 1251  jump_if_false  -> 1254
+ 1252  set            swap, kFalse
+ 1253  jump           -> 1256
+ 1254  end
+ 1255  set            swap, kTrue
+ 1256  jump           -> 1259
+ 1257  end
+ 1258  set            swap, kTrue
+ 1259  if             (swap=kTrue)
+ 1260  jump_if_false  -> 1266
+ 1261  get_prop       answers.columnNumber.i1, homeX, x1
+ 1262  get_prop       answers.columnNumber.i2, homeX, x2
+ 1263  set_prop       answers.columnNumber.i2, homeX, x1
+ 1264  set_prop       answers.columnNumber.i1, homeX, x2
+ 1265  end
+ 1266  jump           -> 1236
+ 1267  loop           i, 1, numberOfAnswers
+ 1268  loop_test      i, 1, numberOfAnswers
+ 1269  jump_if_false  -> 1272
+ 1270  send           puzzle, addAnswer, "answers.columnNumber.i"
+ 1271  jump           -> 1268
+ 1272  set            columnValue, 0
+ 1273  call           pColumnValueDisplay@1330
+ 1274  set            puzzleActive, kTrue
+ 1275  return
+
+ 1276  sub            pReset@1276
+ 1277  if             (puzzleComplete=1)
+ 1278  jump_if_false  -> 1291
+ 1279  call           pInterruptScene@1040
+ 1280  set            puzzleComplete, 0
+ 1281  if             laptrapCall
+ 1282  jump_if_false  -> 1286
+ 1283  set            laptrapCall, kFalse
+ 1284  call           pSetupPuzzle@1188
+ 1285  jump           -> 1290
+ 1286  end
+ 1287  call           pSetupPuzzle@1188
+ 1288  call           pResetAudio@1295
+ 1289  send           sQueue, start
+ 1290  jump           -> 1294
+ 1291  end
+ 1292  call           pCleanupColumn@1436
+ 1293  call           pSetupPuzzle@1188
+ 1294  return
+
+ 1295  sub            pResetAudio@1295
+ 1296  get_prop       gPort, "wsNextItemInQueue", numItemsLeft
+ 1297  if             ((numItemsLeft=0)*gameMode)
+ 1298  jump_if_false  -> 1307
+ 1299  if             (noGemsResetAudioPlayed=kFalse)
+ 1300  jump_if_false  -> 1304
+ 1301  send           sQueue, add, CharacterSpeechAction, "fixnuppan", kResetAudioBID, 1
+ 1302  set            noGemsResetAudioPlayed, kTrue
+ 1303  jump           -> 1306
+ 1304  end
+ 1305  send           sQueue, add, CharacterAnimAction, "fixnuppan", kResetAnimID, 1, kTrue, kTrue
+ 1306  jump           -> 1309
+ 1307  end
+ 1308  send           sQueue, add, "resetPuzzleSpeech"
+ 1309  return
+
+ 1310  sub            pCheckPuzzle@1310
+ 1311  get_prop       container.columnNumber, answerValue, v
+ 1312  set            columnValue, (v/100)
+ 1313  call           pColumnValueDisplay@1330
+ 1314  set            temp, (columnHeight.whichDataset*100)
+ 1315  if             (v=temp)
+ 1316  jump_if_false  -> 1329
+ 1317  set            puzzleActive, kFalse
+ 1318  send           puzzle, anchorAnswers
+ 1319  if             (columnNumber=3)
+ 1320  jump_if_false  -> 1325
+ 1321  call           pCleanupPuzzle@1453
+ 1322  set            puzzleComplete, 1
+ 1323  call           pPuzzleSolved@1337
+ 1324  jump           -> 1328
+ 1325  end
+ 1326  set_prop       container.columnNumber, answerRemoved
+ 1327  call           pColumnSolved@1406
+ 1328  end
+ 1329  return
+
+ 1330  sub            pColumnValueDisplay@1330
+ 1331  set            currentHeight, RText, (columnValue+" in."), kBlockColorIndex, currentHeightX.columnNumber, kCurrentHeightY, kTrue
+ 1332  send           currentHeight, setFont, kFontName, kFontStyle, kFontSize, kBlockColorIndex
+ 1333  set_prop       currentHeight, z, kCurrentHeightZ
+ 1334  set_prop       currentHeight, movable, kFalse
+ 1335  set_prop       currentHeight, touchy, kFalse
+ 1336  return
+
+ 1337  sub            pPuzzleSolved@1337
+ 1338  call           pInterruptScene@1040
+ 1339  send           gPort, correctGuess, "OWS1"
+ 1340  set            numTries, 0
+ 1341  set            rewardY, (kStartingRewardY-(targetValue*kRewardYoffset))
+ 1342  set            rewardAnim.columnNumber, RAnimation, rewardX.columnNumber, rewardY, kRewardID
+ 1343  set_prop       rewardAnim.columnNumber, z, kColumnCapZ
+ 1344  set_prop       rewardAnim.columnNumber, visible, kFalse
+ 1345  set_prop       rewardAnim.columnNumber, frame, 15
+ 1346  set_prop       rewardAnim.columnNumber, "movable", kFalse
+ 1347  set_prop       rewardAnim.columnNumber, "touchy", kFalse
+ 1348  send           sQueue, add, AnimAction, kRewardID, rewardX.columnNumber, rewardY, kColumnCapZ, 1, kTrue
+ 1349  send           sQueue, add, VerbAction, "rewardAnim.columnNumber", kTrue, "show"
+ 1350  call           pPuzzleSolvedSpeech@1352
+ 1351  return
+
+ 1352  sub            pPuzzleSolvedSpeech@1352
+ 1353  if             gameMode
+ 1354  jump_if_false  -> 1370
+ 1355  get_prop       gPort, "wsNextItemInQueue", numItemsLeft
+ 1356  if             (numItemsLeft>0)
+ 1357  jump_if_false  -> 1360
+ 1358  send           sQueue, add, "puzzleFinishedSpeech"
+ 1359  jump           -> 1369
+ 1360  end
+ 1361  get_prop       gPort, "wsNextItemInQueue", numItemsLeft
+ 1362  if             (noGemAudioPlayedBefore=kFalse)
+ 1363  jump_if_false  -> 1367
+ 1364  set            noGemAudioPlayedBefore, kTrue
+ 1365  send           sQueue, add, CharacterSpeechAction, "fixnuppan", kNoGemSpchID
+ 1366  jump           -> 1369
+ 1367  end
+ 1368  send           sQueue, add, CharacterAnimAction, "fixnuppan", kNoGemAnimID
+ 1369  end
+ 1370  set            sQueueFinished, "pPuzzleSolvedAnimation"
+ 1371  send           sQueue, start
+ 1372  return
+
+ 1373  sub            pPuzzleSolvedAnimation@1373
+ 1374  if             gameMode
+ 1375  jump_if_false  -> 1378
+ 1376  call           pDistributeGems@1428
+ 1377  end
+ 1378  get_prop       gPort, currentLevel, "OWS1", level
+ 1379  if             gameMode
+ 1380  jump_if_false  -> 1393
+ 1381  set            temp, (targetValue\1)
+ 1382  set            columnSizeAnim, columnSize.temp
+ 1383  set            poof, RCompositeAction, kTrue
+ 1384  send           poof, add, AnimAction, kPoofID, kColumnsFallingZ, kTrue
+ 1385  send           poof, add, SoundAction, kPoofSfxID
+ 1386  set            columnsFallingQ, RQueue, 1
+ 1387  send           columnsFallingQ, add, AnimAction, kColumnAnimID.columnSizeAnim, kColumnsFallingZ, kTrue
+ 1388  send           columnsFallingQ, add, "poof"
+ 1389  set            columnsFall, RCompositeAction, kTrue
+ 1390  send           columnsFall, add, SoundAction, kColumnSfxID
+ 1391  send           columnsFall, add, "columnsFallingQ"
+ 1392  end
+ 1393  if             gameMode
+ 1394  jump_if_false  -> 1401
+ 1395  send           sQueue, add, "columnsFall"
+ 1396  set            sQueueFinished, "pReset"
+ 1397  call           pCleanupPuzzle@1453
+ 1398  set            puzzleActive, kFalse
+ 1399  send           sQueue, start
+ 1400  jump           -> 1405
+ 1401  end
+ 1402  call           pCleanupPuzzle@1453
+ 1403  set            puzzleActive, kFalse
+ 1404  call           pReset@1276
+ 1405  return
+
+ 1406  sub            pColumnSolved@1406
+ 1407  call           pInterruptScene@1040
+ 1408  send           gPort, correctGuess, "OWS1"
+ 1409  set            numTries, 0
+ 1410  set            rewardY, (kStartingRewardY-(targetValue*kRewardYoffset))
+ 1411  set            rewardAnim.columnNumber, RAnimation, rewardX.columnNumber, rewardY, kRewardID
+ 1412  set_prop       rewardAnim.columnNumber, z, kColumnCapZ
+ 1413  set_prop       rewardAnim.columnNumber, visible, kFalse
+ 1414  set_prop       rewardAnim.columnNumber, frame, 15
+ 1415  set_prop       rewardAnim.columnNumber, "movable", kFalse
+ 1416  set_prop       rewardAnim.columnNumber, "touchy", kFalse
+ 1417  send           sQueue, add, AnimAction, kRewardID, rewardX.columnNumber, rewardY, kColumnCapZ, 1, kTrue
+ 1418  send           sQueue, add, VerbAction, "rewardAnim.columnNumber", kTrue, "show"
+ 1419  send           sQueue, add, "correctAnswerSpeech"
+ 1420  set            sQueueFinished, "pReset"
+ 1421  send           sQueue, start
+ 1422  return
+
+ 1423  sub            pMovingRightAlong@1423
+ 1424  set_prop       gPort, previousLocation, "OWS1"
+ 1425  call_global    StartTransition
+ 1426  load_script    "oloc06.mps"
+ 1427  return
+
+ 1428  sub            pDistributeGems@1428
+ 1429  get_prop       gPort, "wsNextItemInQueue", numItemsLeft
+ 1430  if             (numItemsLeft>0)
+ 1431  jump_if_false  -> 1435
+ 1432  send           gPort, removeNextObjectFromQueue
+ 1433  call           pNewObjectAtLocation@745, numItemsLeft
+ 1434  end
+ 1435  return
+
+ 1436  sub            pCleanupColumn@1436
+ 1437  send           puzzle, anchorAnswers
+ 1438  delete         [, container
+ 1439  delete         puzzle
+ 1440  delete         reward
+ 1441  loop           i, 1, numberOfAnswers
+ 1442  loop_test      i, 1, numberOfAnswers
+ 1443  jump_if_false  -> 1452
+ 1444  set_prop       answers.columnNumber.i, pickedUp
+ 1445  set_prop       answers.columnNumber.i, dropped
+ 1446  get_prop       answers.columnNumber.i, isUsed, answerUsed
+ 1447  if             (answerUsed=0)
+ 1448  jump_if_false  -> 1451
+ 1449  delete         answers.columnNumber.i
+ 1450  end
+ 1451  jump           -> 1442
+ 1452  return
+
+ 1453  sub            pCleanupPuzzle@1453
+ 1454  delete         puzzle
+ 1455  delete         [, container
+ 1456  loop           i, 1, 3
+ 1457  loop_test      i, 1, 3
+ 1458  jump_if_false  -> 1465
+ 1459  loop           j, 1, 6
+ 1460  loop_test      j, 1, 6
+ 1461  jump_if_false  -> 1464
+ 1462  delete         answers.i.j
+ 1463  jump           -> 1460
+ 1464  jump           -> 1457
+ 1465  delete         [, base
+ 1466  delete         [, rewardAnim
+ 1467  delete         targetHeight
+ 1468  delete         currentHeight
+ 1469  set            columnNumber, 0
+ 1470  return
+
+ 1471  sub            eSQueueDone@1471
+ 1472  send           sQueue, clear
+ 1473  if             (sQueueFinished#"empty")
+ 1474  jump_if_false  -> 1479
+ 1475  set            finishedEvent, sQueueFinished
+ 1476  set            sQueueFinished, "empty"
+ 1477  call           finishedEvent
+ 1478  end
+ 1479  return
+
+ 1480  sub            eRewardFinished@1480
+ 1481  delete         reward
+ 1482  call           pReset@1276
+ 1483  return
+
+ 1484  sub            eAnswerPickedUp@1484
+ 1485  call           pInterruptScene@1040
+ 1486  set_prop       $1, z, kAnswerMovingZ
+ 1487  return
+
+ 1488  sub            eAnswerAdded@1488
+ 1489  get_prop       $1, answerValue, v
+ 1490  set            columnValue, (v/100)
+ 1491  call           pColumnValueDisplay@1330
+ 1492  get_prop       puzzle, isSolved, solved
+ 1493  if             (firstRndIncorrectTriesComplete=kTrue)
+ 1494  jump_if_false  -> 1505
+ 1495  if             (solved=kFalse)
+ 1496  jump_if_false  -> 1499
+ 1497  set            numTries, (numTries+1)
+ 1498  end
+ 1499  if             (numTries=3)
+ 1500  jump_if_false  -> 1504
+ 1501  send           gPort, incorrectGuess, "OWS1"
+ 1502  set            numTries, 0
+ 1503  end
+ 1504  jump           -> 1516
+ 1505  end
+ 1506  if             (solved=kFalse)
+ 1507  jump_if_false  -> 1510
+ 1508  set            numTries, (numTries+1)
+ 1509  end
+ 1510  if             (numTries=6)
+ 1511  jump_if_false  -> 1516
+ 1512  send           gPort, incorrectGuess, "OWS1"
+ 1513  set            numTries, 0
+ 1514  set            firstRndIncorrectTriesComplete, kTrue
+ 1515  end
+ 1516  return
+
+ 1517  sub            eAnswerDropped@1517
+ 1518  set_prop       $1, z, kAnswerStaticZ
+ 1519  return
+
+ 1520  sub            eAnswerRemoved@1520
+ 1521  get_prop       $1, answerValue, v
+ 1522  set            columnValue, (v/100)
+ 1523  call           pColumnValueDisplay@1330
+ 1524  return
+
+ 1525  sub            eLaptrapClick@1525
+ 1526  call           pInterruptScene@1040
+ 1527  if             sceneInterrupted
+ 1528  jump_if_false  -> 1533
+ 1529  get_prop       gPort, currentLevel, "OWS1", openingLevel
+ 1530  call           gOpenLaptrap@222
+ 1531  set_prop       gLaptrap, closed, eCloseLaptrap@1534
+ 1532  end
+ 1533  return
+
+ 1534  sub            eCloseLaptrap@1534
+ 1535  call           gCloseLaptrap@236
+ 1536  get_prop       gPort, currentLevel, "OWS1", closingLevel
+ 1537  if             (openingLevel#closingLevel)
+ 1538  jump_if_false  -> 1545
+ 1539  set            level, closingLevel
+ 1540  set            puzzleComplete, 1
+ 1541  call           pCleanupPuzzle@1453
+ 1542  set            laptrapCall, kTrue
+ 1543  call           pReset@1276
+ 1544  end
+ 1545  return
+
+ 1546  sub            eExitToMapLoc@1546
+ 1547  set_prop       gPort, previousLocation, "OWS1"
+ 1548  get_prop       gLaptrap, selectedLocation, location
+ 1549  call_global    StartTransition
+ 1550  load_script    (location+".mps")
+ 1551  return
+
+ 1552  sub            eBackpackClick@1552
+ 1553  call           eBackpackOpened@750
+ 1554  return
+
+ 1555  sub            eFixnuppanClick@1555
+ 1556  call           pInterruptScene@1040
+ 1557  if             sceneInterrupted
+ 1558  jump_if_false  -> 1567
+ 1559  if             ((level=1)+(practiceMode))
+ 1560  jump_if_false  -> 1563
+ 1561  send           sQueue, add, CharacterSpeechAction, "fixnuppan", kFixClckSpch1ID, kTrue
+ 1562  jump           -> 1565
+ 1563  end
+ 1564  send           sQueue, add, CharacterSpeechAction, "fixnuppan", kFixClckSpch2ID, kTrue
+ 1565  send           sQueue, start
+ 1566  end
+ 1567  return
+
+ 1568  sub            eSocratesClick@1568
+ 1569  call           pInterruptScene@1040
+ 1570  if             sceneInterrupted
+ 1571  jump_if_false  -> 1582
+ 1572  if             (socratesClickCtr=1)
+ 1573  jump_if_false  -> 1577
+ 1574  set            socratesClickCtr, 2
+ 1575  send           sQueue, add, CharacterSpeechAction, "socrates", kSocClckSpch1ID, kTrue
+ 1576  jump           -> 1580
+ 1577  end
+ 1578  set            socratesClickCtr, 1
+ 1579  send           sQueue, add, CharacterSpeechAction, "socrates", kSocClckSpch2ID, kTrue
+ 1580  send           sQueue, start
+ 1581  end
+ 1582  return
+
+ 1583  sub            eSantiagoClick@1583
+ 1584  call           pInterruptScene@1040
+ 1585  if             sceneInterrupted
+ 1586  jump_if_false  -> 1597
+ 1587  if             (santiagoClickCtr=1)
+ 1588  jump_if_false  -> 1592
+ 1589  set            santiagoClickCtr, 2
+ 1590  send           sQueue, add, CharacterSpeechAction, "santiago", kSanClckSpch1ID, kTrue
+ 1591  jump           -> 1595
+ 1592  end
+ 1593  set            santiagoClickCtr, 1
+ 1594  send           sQueue, add, CharacterSpeechAction, "santiago", kSanClckSpch2ID, kTrue
+ 1595  send           sQueue, start
+ 1596  end
+ 1597  return
+
+ 1598  sub            ePuzzleSolvedCheck@1598
+ 1599  send           puzzle, anchorAnswers
+ 1600  if             (columnNumber<3)
+ 1601  jump_if_false  -> 1605
+ 1602  set            puzzleComplete, 0
+ 1603  call           pColumnSolved@1406
+ 1604  jump           -> 1608
+ 1605  end
+ 1606  set            puzzleComplete, 1
+ 1607  call           pPuzzleSolved@1337
+ 1608  return
+
+ 1609  sub            ePauseScene@1609
+ 1610  send           sQueue, pause
+ 1611  send           socrates, pause
+ 1612  send           fixnuppan, pause
+ 1613  if             (practiceMode=kFalse)
+ 1614  jump_if_false  -> 1618
+ 1615  send           santiago, pause
+ 1616  send           laptrap, pause
+ 1617  end
+ 1618  return
+
+ 1619  sub            eResumeScene@1619
+ 1620  send           sQueue, resume
+ 1621  send           socrates, resume
+ 1622  send           fixnuppan, resume
+ 1623  if             (practiceMode=kFalse)
+ 1624  jump_if_false  -> 1628
+ 1625  send           santiago, resume
+ 1626  send           laptrap, resume
+ 1627  end
+ 1628  return
+
+ 1629  sub            eExitClicked@1629
+ 1630  call           pInterruptScene@1040
+ 1631  if             sceneInterrupted
+ 1632  jump_if_false  -> 1641
+ 1633  if             puzzleActive
+ 1634  jump_if_false  -> 1637
+ 1635  send           puzzle, anchorAnswers
+ 1636  end
+ 1637  call           pWalkOut@1094
+ 1638  set            sQueueFinished, "pMovingRightAlong"
+ 1639  send           sQueue, start
+ 1640  end
+ 1641  return

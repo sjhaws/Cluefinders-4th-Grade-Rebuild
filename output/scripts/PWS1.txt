@@ -1,0 +1,1048 @@
+    0  start
+    1  call_global    UncacheAllDLLs
+    2  call_global    CacheDLL, "pws1P.rsc"
+    3  set            kOMFontNormal, 0
+    4  set            kOMFontBold, 1
+    5  set            kOMFontItalic, 2
+    6  set            kOMFontUnderlined, 4
+    7  set            kNormalCursor, 25
+    8  set            kHotCursor, 26
+    9  set            kFingerCursor, 27
+   10  set            kOpenHandCursor, 28
+   11  set            kClosedHandCursor, 29
+   12  set            kNorthCursor, 30
+   13  set            kEastCursor, 31
+   14  set            kWestCursor, 32
+   15  set            kSouthCursor, 33
+   16  set            kNorthWestCursor, 34
+   17  set            kNorthEastCursor, 35
+   18  set            kSouthWestCursor, 36
+   19  set            kSouthEastCursor, 37
+   20  set            kHourglassCursor, 38
+   21  set            kCairo1BMusicID, 30515
+   22  set            kCairo2BMusicID, 30516
+   23  set            kCairo3BMusicID, 30517
+   24  set            kOasis1BMusicID, 30518
+   25  set            kOasis2BMusicID, 30519
+   26  set            kOasis3BMusicID, 30520
+   27  set            kPyramid1BMusicID, 30521
+   28  set            kPyramid2BMusicID, 30522
+   29  set            kPyramid3BMusicID, 30523
+   30  set            kPMChooseActButtonID, 5
+   31  set            kBlinkMinTime, 3
+   32  set            kBlinkMaxTime, 5
+   33  set            kFidgetMinTime, 45
+   34  set            kFidgetMaxTime, 60
+   35  set            kTrue, 1
+   36  set            kFalse, 0
+   37  set            kOn, 1
+   38  set            kOff, 0
+   39  set            kScreenWidth, 640
+   40  set            kScreenHeight, 480
+   41  set            kUseAOCoords, 11111
+   42  set            kNumCRounds, 5
+   43  set            kNumItemsPerCRound, 12
+   44  set            kNumCStatueDatasets, 10
+   45  set            kNumORounds, 5
+   46  set            kNumItemsPerORound, 12
+   47  set            kBackpackDef, 1
+   48  set            kMaxItemsInBackpack, 12
+   49  set            kMaxItemsInWS, 6
+   50  set            kMaxItemsInHub, 12
+   51  set            kMaxItemW, 36
+   52  set            kMaxItemH, 28
+   53  set            kCGlyphStart, 1
+   54  set            kCGlyphEnd, 12
+   55  set            kGemStart, 13
+   56  set            kGemEnd, 28
+   57  set            kItemInBPSfxID, 30524
+   58  set            kItemPickUpSfxID, 30525
+   59  set            openBackpack, 0
+   60  set            closedBackpack, 0
+   61  set            closedBackpackName, 0
+   62  set            objectIndex, 1
+   63  set            toBackpackOnly, 1
+
+   64  sub            pInitObjectsAndBackpack@64, toBackpack, backpackName
+   65  loop           i, 1, kMaxItemsInWS
+   66  loop_test      i, 1, kMaxItemsInWS
+   67  jump_if_false  -> 74
+   68  get_prop       gPort, itemPresent, i, objectToDisplay
+   69  if             (objectToDisplay#0)
+   70  jump_if_false  -> 73
+   71  call           pDisplayObject@77, kFalse
+   72  end
+   73  jump           -> 66
+   74  set            toBackpackOnly, toBackpack
+   75  set            closedBackpackName, backpackName
+   76  return
+
+   77  sub            pDisplayObject@77, animate
+   78  if             (objectBoxW>kMaxItemW)
+   79  jump_if_false  -> 83
+   80  call_global    RandomNumber, 1, (objectBoxW-kMaxItemW)
+   81  set            xOff, $result
+   82  jump           -> 85
+   83  end
+   84  set            xOff, 0
+   85  set            ox, (objectBoxX+xOff)
+   86  if             (objectBoxH>kMaxItemH)
+   87  jump_if_false  -> 91
+   88  call_global    RandomNumber, 1, (objectBoxH-kMaxItemH)
+   89  set            yOff, $result
+   90  jump           -> 93
+   91  end
+   92  set            yOff, 0
+   93  set            oy, (objectBoxY+yOff)
+   94  set            object.objectIndex, RAnimation, ox, oy, objectAOIDs.objectToDisplay
+   95  set_prop       object.objectIndex, "z", objectZ
+   96  set_prop       object.objectIndex, userData, (" "+ox+"#"+oy+":"+objectToDisplay)
+   97  set_prop       object.objectIndex, "mouseDown", eObjectPickedUp@134
+   98  set_prop       object.objectIndex, "mouseUp", eObjectDropped@138
+   99  send           object.objectIndex, setAOCursor, kOpenHandCursor, kClosedHandCursor
+  100  if             animate
+  101  jump_if_false  -> 113
+  102  send           object.objectIndex, play
+  103  set            port, RWorldPort, RWorldPort
+  104  get_prop       port, currentLocation, location
+  105  delete         port
+  106  if             ((location="CWS1")+(location="CWS2")+(location="CWS3")+(location="CWS4"))
+  107  jump_if_false  -> 110
+  108  call_global    PlaySound, 1000
+  109  jump           -> 112
+  110  end
+  111  call_global    PlaySound, 11000
+  112  end
+  113  set            objectIndex, (objectIndex+1)
+  114  return
+
+  115  sub            pNewObjectAtLocation@115, newID
+  116  send           gPort, addObject, newID
+  117  set            objectToDisplay, newID
+  118  call           pDisplayObject@77, kTrue
+  119  return
+
+  120  sub            eBackpackOpened@120
+  121  if             (openBackpack=0)
+  122  jump_if_false  -> 130
+  123  set            openBackpack, RBackPack, backpackX, backpackY, backpackZ
+  124  set_prop       openBackpack, closed, eBackpackClosed@131
+  125  if             (toBackpackOnly=0)
+  126  jump_if_false  -> 129
+  127  set_prop       openBackpack, objectDropped, eBackpackObjectDropped
+  128  end
+  129  end
+  130  return
+
+  131  sub            eBackpackClosed@131
+  132  set            openBackpack, 0
+  133  return
+
+  134  sub            eObjectPickedUp@134
+  135  set_prop       $1, "z", 10000
+  136  call_global    PlaySound, kItemPickUpSfxID
+  137  return
+
+  138  sub            eObjectDropped@138
+  139  get_prop       $1, userData, ud
+  140  set            p1, ("#"@ud)
+  141  set            p2, (":"@ud)
+  142  set            t2, (p1-1)
+  143  set            ox, ud|1|t2
+  144  set            t1, (p1+1)
+  145  set            t2, (p2-p1-1)
+  146  set            oy, ud|t1|t2
+  147  set            t1, (p2+1)
+  148  set            id, ud|t1
+  149  set_prop       $1, "z", objectZ
+  150  if             (toBackpackOnly=1)
+  151  jump_if_false  -> 196
+  152  if             (openBackpack#0)
+  153  jump_if_false  -> 177
+  154  call_global    IntersectTest, "RECEIVER", "openBackpack"
+  155  set            test, $result
+  156  if             (test=1)
+  157  jump_if_false  -> 160
+  158  send           openBackpack, addObject, id
+  159  jump           -> 176
+  160  end
+  161  if             (closedBackpack#0)
+  162  jump_if_false  -> 174
+  163  get_prop       closedBackpack, visible, test
+  164  if             (test=1)
+  165  jump_if_false  -> 173
+  166  call_global    IntersectTest, "RECEIVER", "closedBackpack"
+  167  set            test, $result
+  168  if             (test=1)
+  169  jump_if_false  -> 172
+  170  send           openBackpack, addObject, id
+  171  end
+  172  end
+  173  jump           -> 176
+  174  end
+  175  set            test, 0
+  176  jump           -> 195
+  177  end
+  178  if             (closedBackpack#0)
+  179  jump_if_false  -> 193
+  180  get_prop       closedBackpack, visible, test
+  181  if             (test=1)
+  182  jump_if_false  -> 192
+  183  call_global    IntersectTest, "RECEIVER", "closedBackpack"
+  184  set            test, $result
+  185  if             (test=1)
+  186  jump_if_false  -> 191
+  187  set            openBackpack, RBackPack, backpackX, backpackY, backpackZ
+  188  send           openBackpack, addObject, id
+  189  set            openBackpack, 0
+  190  end
+  191  end
+  192  jump           -> 195
+  193  end
+  194  set            test, 0
+  195  jump           -> 198
+  196  end
+  197  set            test, 0
+  198  if             (test=1)
+  199  jump_if_false  -> 208
+  200  get_prop       $1, name, Name
+  201  set            p, (1+"."@Name)
+  202  set            n, Name|p
+  203  delete         object.n
+  204  send           gPort, removeObjectFromLocation, id
+  205  set_prop       gPort, itemPlacedInBackpack, kTrue
+  206  call_global    PlaySound, kItemInBPSfxID
+  207  jump           -> 211
+  208  end
+  209  set_prop       $1, x, ox
+  210  set_prop       $1, y, oy
+  211  return
+
+  212  sub            globalInit@212
+  213  set            gCurLocation, 0
+  214  set            laptrap, 0
+  215  set            gPort, RWorldPort, RWorldPort
+  216  set            gScenePort, RScenePort, RScenePort
+  217  return
+
+  218  sub            globalDispose@218
+  219  delete         gPort
+  220  delete         gScenePort
+  221  return
+
+  222  sub            gOpenLaptrap@222
+  223  if             (laptrap#0)
+  224  jump_if_false  -> 227
+  225  set_prop       laptrap, visible, kFalse
+  226  end
+  227  if             (gCurLocation=0)
+  228  jump_if_false  -> 231
+  229  set            gLaptrap, RLapTrap, 10000
+  230  jump           -> 233
+  231  end
+  232  set            gLaptrap, RLapTrap, 10000, gCurLocation
+  233  set_prop       gLaptrap, closed, gCloseLaptrap@236
+  234  set_prop       gLaptrap, locationSelected, eExitToMapLoc@956
+  235  return
+
+  236  sub            gCloseLaptrap@236
+  237  if             (laptrap#0)
+  238  jump_if_false  -> 241
+  239  set_prop       laptrap, visible, kTrue
+  240  end
+  241  delete         gLaptrap
+  242  return
+
+  243  sub            gNewGame@243
+  244  call_global    RandomNumber, 1, kNumCStatueDatasets
+  245  set_prop       gPort, CStatueDataset, $result
+  246  return
+
+  247  sub            gGameCompleted@247
+  248  send           gPort, newGame
+  249  get_prop       gPort, CStatueDataset, curDataset
+  250  set            curDataset, (curDataset+1)
+  251  if             (curDataset>kNumCStatueDatasets)
+  252  jump_if_false  -> 255
+  253  set            curDataset, 1
+  254  end
+  255  set_prop       gPort, CStatueDataset, curDataset
+  256  set_prop       gPort, CLOC01StatueUp, 0
+  257  set_prop       gPort, CBA2OpenVisitedCount, 0
+  258  set_prop       gPort, "CMALevel", 0
+  259  set_prop       gPort, "CMASolved", 0
+  260  set_prop       gPort, "PLOC2VisitedCount", 0
+  261  set_prop       gPort, "OMASolved", 0
+  262  set_prop       gPort, "OMAPracModeEntryCount", 0
+  263  set_prop       gPort, "OMALevel", 0
+  264  loop           i, 1, 4
+  265  loop_test      i, 1, 4
+  266  jump_if_false  -> 269
+  267  set_prop       gPort, ("OMAGatorDown"+i), 0
+  268  jump           -> 265
+  269  set_prop       gPort, "PWS2CompletedCount", 0
+  270  set_prop       gPort, "PWS2Round1visits", 0
+  271  set_prop       gPort, "PWS2Round2visits", 0
+  272  set_prop       gPort, "PWS2Round3visits", 0
+  273  set_prop       gPort, "PWS2Round4visits", 0
+  274  return
+  275  set            Question.1.1, 22018
+  276  set            Answer.1.1, "C"
+  277  set            Question.1.2, 22019
+  278  set            Answer.1.2, "A"
+  279  set            Question.1.3, 22020
+  280  set            Answer.1.3, "C"
+  281  set            Question.1.4, 22021
+  282  set            Answer.1.4, "A"
+  283  set            Question.1.5, 22022
+  284  set            Answer.1.5, "C"
+  285  set            Question.1.6, 22023
+  286  set            Answer.1.6, "A"
+  287  set            Question.1.7, 22024
+  288  set            Answer.1.7, "B"
+  289  set            Question.1.8, 22025
+  290  set            Answer.1.8, "D"
+  291  set            Question.1.9, 22026
+  292  set            Answer.1.9, "C"
+  293  set            Question.1.10, 22027
+  294  set            Answer.1.10, "D"
+  295  set            Question.1.11, 22028
+  296  set            Answer.1.11, "B"
+  297  set            Question.1.12, 22029
+  298  set            Answer.1.12, "B"
+  299  set            Question.2.1, 22030
+  300  set            Answer.2.1, "B"
+  301  set            Question.2.2, 22031
+  302  set            Answer.2.2, "B"
+  303  set            Question.2.3, 22032
+  304  set            Answer.2.3, "B"
+  305  set            Question.2.4, 22033
+  306  set            Answer.2.4, "C"
+  307  set            Question.2.5, 22034
+  308  set            Answer.2.5, "C"
+  309  set            Question.2.6, 22035
+  310  set            Answer.2.6, "B"
+  311  set            Question.2.7, 22036
+  312  set            Answer.2.7, "C"
+  313  set            Question.2.8, 22037
+  314  set            Answer.2.8, "A"
+  315  set            Question.2.9, 22038
+  316  set            Answer.2.9, "C"
+  317  set            Question.2.10, 22039
+  318  set            Answer.2.10, "B"
+  319  set            Question.2.11, 22040
+  320  set            Answer.2.11, "C"
+  321  set            Question.2.12, 22041
+  322  set            Answer.2.12, "C"
+  323  set            Question.3.1, 22042
+  324  set            Answer.3.1, "B"
+  325  set            Question.3.2, 22043
+  326  set            Answer.3.2, "A"
+  327  set            Question.3.3, 22044
+  328  set            Answer.3.3, "B"
+  329  set            Question.3.4, 22045
+  330  set            Answer.3.4, "C"
+  331  set            Question.3.5, 22046
+  332  set            Answer.3.5, "C"
+  333  set            Question.3.6, 22047
+  334  set            Answer.3.6, "A"
+  335  set            Question.3.7, 22048
+  336  set            Answer.3.7, "C"
+  337  set            Question.3.8, 22049
+  338  set            Answer.3.8, "A"
+  339  set            Question.3.9, 22050
+  340  set            Answer.3.9, "D"
+  341  set            Question.3.10, 22051
+  342  set            Answer.3.10, "C"
+  343  set            Question.3.11, 22052
+  344  set            Answer.3.11, "C"
+  345  set            Question.3.12, 22053
+  346  set            Answer.3.12, "C"
+  347  set            Question.4.1, 22054
+  348  set            Answer.4.1, "C"
+  349  set            Question.4.2, 22055
+  350  set            Answer.4.2, "A"
+  351  set            Question.4.3, 22056
+  352  set            Answer.4.3, "D"
+  353  set            Question.4.4, 22057
+  354  set            Answer.4.4, "B"
+  355  set            Question.4.5, 22058
+  356  set            Answer.4.5, "B"
+  357  set            Question.4.6, 22059
+  358  set            Answer.4.6, "C"
+  359  set            Question.4.7, 22060
+  360  set            Answer.4.7, "C"
+  361  set            Question.4.8, 22061
+  362  set            Answer.4.8, "B"
+  363  set            Question.4.9, 22062
+  364  set            Answer.4.9, "B"
+  365  set            Question.4.10, 22063
+  366  set            Answer.4.10, "C"
+  367  set            Question.4.11, 22064
+  368  set            Answer.4.11, "B"
+  369  set            Question.4.12, 22065
+  370  set            Answer.4.12, "C"
+  371  call           globalInit@212
+  372  call           pInit@376
+  373  call           pStart@621
+  374  call           eintrospeeches@695
+  375  call_global    EndTransition
+
+  376  sub            pInit@376
+  377  call_global    Scene, 22000
+  378  set_prop       gScenePort, backgroundMusicID, kCairo2BMusicID
+  379  set_prop       gScenePort, paused, ePauseScene@985
+  380  set_prop       gScenePort, resumed, eResumeScene@998
+  381  get_prop       gPort, inGame, gameMode
+  382  set            practiceMode, (1-gameMode)
+  383  if             (practiceMode=kTrue)
+  384  jump_if_false  -> 388
+  385  set            gCurLocation, "PWS1"
+  386  set            WrongAnswersNumber, 1
+  387  jump           -> 396
+  388  end
+  389  set_prop       gPort, currentLocation, "PWS1"
+  390  get_prop       gPort, visitedCount, "PWS1", visitnumber
+  391  set            visitnumber, (visitnumber+1)
+  392  if             (visitnumber>12)
+  393  jump_if_false  -> 396
+  394  set            visitnumber, 1
+  395  end
+  396  set_prop       gPort, PWS1Solved, 0
+  397  send           gPort, autoLevel, "PWS1"
+  398  call           pGetNewDatasetNumber@818
+  399  set            cycleAnumber, 1
+  400  set            cycleBnumber, 1
+  401  set            cycleCnumber, 1
+  402  set            cycleDnumber, 1
+  403  set            solved, 0
+  404  set            kOwenSettleID, 22006
+  405  set            kJoniSettleID, 22004
+  406  set            kSantiagoSettleID, 22001
+  407  set            kLeslieSettleID, 22005
+  408  set            kSocratesSettleID, 22003
+  409  set            kLaptrapSettleID, 22002
+  410  set            kSphinxoSettleID, 22007
+  411  set            kOwenWalkinID, 22011
+  412  set            kJoniWalkinID, 22010
+  413  set            kSantiagoWalkinID, 22009
+  414  set            kLeslieWalkinID, 22012
+  415  set            kSocratesWalkinID, 22014
+  416  set            kLaptrapWalkinID, 22013
+  417  set            kOwenWalkforwardID, 22070
+  418  set            kJoniWalkforwardID, 22069
+  419  set            kSantiagoWalkforwardID, 22068
+  420  set            kLeslieWalkiforwardID, 22071
+  421  set            kSocratesWalkforwardID, 22073
+  422  set            kLaptrapWalkforwardID, 22072
+  423  set            kSphinxoFidgitA, 22074
+  424  set            kKeyID, 22016
+  425  set            kMaskID, 22017
+  426  set            kDissolveID, 22066
+  427  set            kDissolveSoundID, 1000
+  428  set            kSlideDoorID, 22067
+  429  set            kDoorSettleID, Question.level.questionNumber
+  430  set            kOwenZ, 24
+  431  set            kJoniZ, 22
+  432  set            kSantiagoZ, 25
+  433  set            kLeslieZ, 30
+  434  set            kSocratesZ, 35
+  435  set            kLaptrapZ, 20
+  436  set            kSphinxoZ, 15
+  437  set            kDoorZ, 10
+  438  set            kKeyNormalZ, 13
+  439  set            kKeyPickedZ, 40
+  440  set            kMaskZ, 15
+  441  set            kDissolveZ, 16
+  442  set            kSlideDoorZ, 18
+  443  set            kExitHSZinitial, 0
+  444  set            kExitHSZfinal, 20
+  445  set            buttonZ, 38
+  446  set            kanswerAcontX, 266
+  447  set            kanswerAcontY, 289
+  448  set            kanswerBcontX, 266
+  449  set            kanswerBcontY, 310
+  450  set            kanswerCcontX, 431
+  451  set            kanswerCcontY, 289
+  452  set            kanswerDcontX, 431
+  453  set            kanswerDcontY, 310
+  454  set            kanswercontWidth, 15
+  455  set            kanswercontHeight, 15
+  456  set            kanswercontZ, 13
+  457  set            kKeyhomeX, 380
+  458  set            kKeyhomeY, 360
+  459  set            kKeyPickSoundID, 22001
+  460  set            kKeySnapSoundID, 22002
+  461  set            kKeyHomeSoundID, 22003
+  462  set            kiperson.2.1, "leslie"
+  463  set            kispeech.2.1, "22108"
+  464  set            kiperson.2.2, "sphinxo"
+  465  set            kispeech.2.2, "22109"
+  466  set            kiperson.3.1, "owen"
+  467  set            kispeech.3.1, "22110"
+  468  set            kiperson.3.2, "sphinxo"
+  469  set            kispeech.3.2, "22111"
+  470  set            kiperson.4.1, "joni"
+  471  set            kispeech.4.1, "22112"
+  472  set            kiperson.4.2, "sphinxo"
+  473  set            kispeech.4.2, "22113"
+  474  set            kiperson.5.1, "owen"
+  475  set            kispeech.5.1, "22114"
+  476  set            kiperson.5.2, "sphinxo"
+  477  set            kispeech.5.2, "22115"
+  478  set            kiperson.6.1, "sphinxo"
+  479  set            kispeech.6.1, "22116"
+  480  set            kiperson.6.2, ""
+  481  set            kispeech.6.2, "0"
+  482  set            kiperson.7.1, "sphinxo"
+  483  set            kispeech.7.1, "22117"
+  484  set            kiperson.7.2, ""
+  485  set            kispeech.7.2, "0"
+  486  set            kiperson.8.1, "joni"
+  487  set            kispeech.8.1, "22118"
+  488  set            kiperson.8.2, "sphinxo"
+  489  set            kispeech.8.2, "22119"
+  490  set            kiperson.9.1, "sphinxo"
+  491  set            kispeech.9.1, "22120"
+  492  set            kiperson.9.2, ""
+  493  set            kispeech.9.2, "0"
+  494  set            kiperson.10.1, "santiago"
+  495  set            kispeech.10.1, "22121"
+  496  set            kiperson.10.2, "sphinxo"
+  497  set            kispeech.10.2, "22122"
+  498  set            kiperson.11.1, "sphinxo"
+  499  set            kispeech.11.1, "22123"
+  500  set            kiperson.11.2, ""
+  501  set            kispeech.11.2, "0"
+  502  set            kiperson.12.1, "sphinxo"
+  503  set            kispeech.12.1, "22124"
+  504  set            kiperson.12.2, ""
+  505  set            kispeech.12.2, "0"
+  506  set            kcperson.1.1, "joni"
+  507  set            kcspeech.1.1, "22125"
+  508  set            kcperson.1.2, "sphinxo"
+  509  set            kcspeech.1.2, "22126"
+  510  set            kcperson.2.1, "sphinxo"
+  511  set            kcspeech.2.1, "22127"
+  512  set            kcperson.2.2, ""
+  513  set            kcspeech.2.2, "0"
+  514  set            kcperson.3.1, "sphinxo"
+  515  set            kcspeech.3.1, "22128"
+  516  set            kcperson.3.2, ""
+  517  set            kcspeech.3.2, "0"
+  518  set            kcperson.4.1, "sphinxo"
+  519  set            kcspeech.4.1, "22129"
+  520  set            kcperson.4.2, ""
+  521  set            kcspeech.4.2, "0"
+  522  set            kcperson.5.1, "santiago"
+  523  set            kcspeech.5.1, "22130"
+  524  set            kcperson.5.2, "sphinxo"
+  525  set            kcspeech.5.2, "22131"
+  526  set            kcperson.6.1, "sphinxo"
+  527  set            kcspeech.6.1, "22132"
+  528  set            kcperson.6.2, ""
+  529  set            kcspeech.6.2, "0"
+  530  set            kcperson.7.1, "sphinxo"
+  531  set            kcspeech.7.1, "22133"
+  532  set            kcperson.7.2, ""
+  533  set            kcspeech.7.2, "0"
+  534  set            kcperson.8.1, "santiago"
+  535  set            kcspeech.8.1, "22134"
+  536  set            kcperson.8.2, "sphinxo"
+  537  set            kcspeech.8.2, "22135"
+  538  set            kcperson.9.1, "santiago"
+  539  set            kcspeech.9.1, "22134"
+  540  set            kcperson.9.2, "sphinxo"
+  541  set            kcspeech.9.2, "22137"
+  542  set            kcperson.10.1, "sphinxo"
+  543  set            kcspeech.10.1, "22138"
+  544  set            kcperson.10.2, ""
+  545  set            kcspeech.10.2, "0"
+  546  set            kcperson.11.1, "sphinxo"
+  547  set            kcspeech.11.1, "22139"
+  548  set            kcperson.11.2, ""
+  549  set            kcspeech.11.2, "0"
+  550  set            kwspeech.1, "22144"
+  551  set            kwspeech.2, "22145"
+  552  set            kwspeech.3, "22146"
+  553  set            kwspeech.4, "22147"
+  554  set            kwspeech.5, "22148"
+  555  set            kwspeech.6, "22149"
+  556  set            kwspeech.7, "22150"
+  557  set            kwspeech.8, "22151"
+  558  set            socrates, RCharacter, kSocratesSettleID, kSocratesZ
+  559  set            sphinxo, RCharacter, kSphinxoSettleID, kSphinxoZ
+  560  set            door, RAnimation, kDoorSettleID
+  561  set            mask, RAnimation, kMaskID
+  562  if             (practiceMode=kFalse)
+  563  jump_if_false  -> 586
+  564  set            owen, RCharacter, kOwenSettleID, kOwenZ
+  565  set            joni, RCharacter, kJoniSettleID, kJoniZ
+  566  set            santiago, RCharacter, kSantiagoSettleID, kSantiagoZ
+  567  set            leslie, RCharacter, kLeslieSettleID, kLeslieZ
+  568  set            laptrap, RCharacter, kLaptrapSettleID, kLaptrapZ
+  569  send           owen, addSpeechAnim, 22090
+  570  send           joni, addSpeechAnim, 22088
+  571  send           santiago, addSpeechAnim, 22089
+  572  send           leslie, addSpeechAnim, 22091
+  573  set_prop       owen, movable, kFalse
+  574  set_prop       joni, movable, kFalse
+  575  set_prop       santiago, movable, kFalse
+  576  set_prop       leslie, movable, kFalse
+  577  set_prop       laptrap, movable, kFalse
+  578  set_prop       owen, mouseDown, ePersonClicked@878
+  579  set_prop       joni, mouseDown, ePersonClicked@878
+  580  set_prop       santiago, mouseDown, ePersonClicked@878
+  581  set_prop       leslie, mouseDown, ePersonClicked@878
+  582  set_prop       laptrap, mouseDown, eLaptrapClicked@948
+  583  set_prop       laptrap, animateSettled, 1
+  584  send           laptrap, setAOCursor, kFingerCursor, kFingerCursor
+  585  jump           -> 590
+  586  end
+  587  set            chooseActivityB, RPButton, kUseAOCoords, kUseAOCoords, kPMChooseActButtonID
+  588  set_prop       chooseActivityB, z, buttonZ
+  589  set_prop       chooseActivityB, hit, eLaptrapClicked@948
+  590  send           socrates, addSpeechAnim, 22092
+  591  send           sphinxo, addSpeechAnim, 22087
+  592  send           sphinxo, addSpeechAnim, 22095
+  593  send           sphinxo, addSpeechAnim, 22096
+  594  send           sphinxo, addSpeechAnim, 22097
+  595  set_prop       socrates, movable, kFalse
+  596  set_prop       sphinxo, movable, kFalse
+  597  set_prop       door, movable, kFalse
+  598  set_prop       mask, movable, kFalse
+  599  set_prop       sphinxo, mouseDown, eSphinxoClicked@928
+  600  set_prop       socrates, mouseDown, eSocratesClicked@908
+  601  set_prop       gScenePort, backgroundClicked, pInterruptScene@641
+  602  set_prop       door, mouseDown, pInterruptScene@641
+  603  set_prop       mask, mouseDown, pInterruptScene@641
+  604  set_prop       door, z, kDoorZ
+  605  set_prop       mask, z, kMaskZ
+  606  set            kExitHSX1, 240
+  607  set            kExitHSX2, 600
+  608  set            kExitHSY1, 40
+  609  set            kExitHSY2, 350
+  610  set            kexitHScursorID, kNorthEastCursor
+  611  set            exitHS, RHotSpot, kExitHSX1, kExitHSY1, kExitHSX2, kExitHSY2, kExitHSZinitial
+  612  send           exitHS, setAOCursor, kexitHScursorID
+  613  set_prop       exitHS, touchy, 0
+  614  set_prop       exitHS, mouseDown, pExitAnimations@834
+  615  send           sphinxo, addFidgetGroup, 1, kFidgetMinTime, kFidgetMaxTime, 0
+  616  send           sphinxo, addFidget, 1, kSphinxoFidgitA
+  617  set            sQueue, RQueue, 1
+  618  set_prop       sQueue, finished, eSQueueDone@861
+  619  set            sQueueFinished, "empty"
+  620  return
+
+  621  sub            pStart@621
+  622  call           pmakepuzzle@670
+  623  set_prop       key, touchy, 0
+  624  if             practiceMode
+  625  jump_if_false  -> 628
+  626  send           sQueue, add, CharacterSpeechAction, "sphinxo", 22105
+  627  jump           -> 639
+  628  end
+  629  call_global    CacheDLL, "pws1i1.rsc"
+  630  set            walkin, RCompositeAction, 1
+  631  send           walkin, add, CharacterAnimAction, "owen", kOwenWalkinID, 1, 1, 1
+  632  send           walkin, add, CharacterAnimAction, "joni", kJoniWalkinID, 1, 1, 1
+  633  send           walkin, add, CharacterAnimAction, "santiago", kSantiagoWalkinID, 1, 1, 1
+  634  send           walkin, add, CharacterAnimAction, "leslie", kLeslieWalkinID, 1, 1, 1
+  635  send           walkin, add, CharacterAnimAction, "socrates", kSocratesWalkinID, 1, 1, 1
+  636  send           walkin, add, CharacterAnimAction, "laptrap", kLaptrapWalkinID, 1, 1, 1
+  637  send           sQueue, add, "walkin"
+  638  send           sQueue, add, EmptyAction, 0
+  639  send           sQueue, add, PropertyAction, "key", "touchy", kTrue
+  640  return
+
+  641  sub            pInterruptScene@641
+  642  set            sceneInterrupted, kTrue
+  643  set            stopInterruptingScene, kFalse
+  644  get_prop       sQueue, actionCount, numActions
+  645  loop           (numActions>0)
+  646  loop_test      (numActions>0)
+  647  jump_if_false  -> 669
+  648  if             stopInterruptingScene
+  649  jump_if_false  -> 653
+  650  set            sceneInterrupted, kFalse
+  651  jump           -> 669
+  652  end
+  653  send           sQueue, halt
+  654  get_prop       sQueue, isActive, active
+  655  if             active
+  656  jump_if_false  -> 660
+  657  set            sceneInterrupted, kFalse
+  658  jump           -> 669
+  659  end
+  660  send           sQueue, clear
+  661  if             (sQueueFinished#"empty")
+  662  jump_if_false  -> 667
+  663  set            finishedEvent, sQueueFinished
+  664  set            sQueueFinished, "empty"
+  665  call           finishedEvent
+  666  end
+  667  get_prop       sQueue, actionCount, numActions
+  668  jump           -> 646
+  669  return
+
+  670  sub            pmakepuzzle@670
+  671  set            puzzle, RPuzzle, RPuzzle
+  672  set            answerAcontainer, RAttributeContainer, kanswerAcontX, kanswerAcontY, kanswercontWidth, kanswercontHeight, kanswercontZ, "A"
+  673  set            answerBcontainer, RAttributeContainer, kanswerBcontX, kanswerBcontY, kanswercontWidth, kanswercontHeight, kanswercontZ, "B"
+  674  set            answerCcontainer, RAttributeContainer, kanswerCcontX, kanswerCcontY, kanswercontWidth, kanswercontHeight, kanswercontZ, "C"
+  675  set            answerDcontainer, RAttributeContainer, kanswerDcontX, kanswerDcontY, kanswercontWidth, kanswercontHeight, kanswercontZ, "D"
+  676  send           puzzle, addContainer, "answerAcontainer"
+  677  send           puzzle, addContainer, "answerBcontainer"
+  678  send           puzzle, addContainer, "answerCcontainer"
+  679  send           puzzle, addContainer, "answerDcontainer"
+  680  set_prop       answerAcontainer, enabled, 1
+  681  set_prop       answerBcontainer, enabled, 1
+  682  set_prop       answerCcontainer, enabled, 1
+  683  set_prop       answerDcontainer, enabled, 1
+  684  set            key, RGraphicAnswer, kKeyhomeX, kKeyhomeY, kKeyNormalZ, kKeyID, Answer.level.questionNumber, 1
+  685  send           puzzle, addAnswer, "key"
+  686  set_prop       key, pickedUp, ePicked@870
+  687  set_prop       key, pickUpSound, kKeyPickSoundID
+  688  set_prop       key, snapSound, kKeySnapSoundID
+  689  set_prop       key, goHomeSound, kKeyHomeSoundID
+  690  set_prop       answerAcontainer, answerPlaced, eanswerplaced@739
+  691  set_prop       answerBcontainer, answerPlaced, eanswerplaced@739
+  692  set_prop       answerCcontainer, answerPlaced, eanswerplaced@739
+  693  set_prop       answerDcontainer, answerPlaced, eanswerplaced@739
+  694  return
+
+  695  sub            eintrospeeches@695
+  696  if             (practiceMode=kFalse)
+  697  jump_if_false  -> 718
+  698  if             (visitnumber=1)
+  699  jump_if_false  -> 709
+  700  send           sQueue, add, CharacterSpeechAction, "sphinxo", 22100
+  701  send           sQueue, add, CharacterSpeechAction, "joni", 22101
+  702  send           sQueue, add, CharacterSpeechAction, "sphinxo", 22102
+  703  send           sQueue, add, CharacterSpeechAction, "santiago", 22103
+  704  send           sQueue, add, CharacterSpeechAction, "sphinxo", 22104
+  705  send           sQueue, add, CharacterSpeechAction, "sphinxo", 22105
+  706  send           sQueue, add, CharacterSpeechAction, "owen", 22106
+  707  send           sQueue, add, CharacterSpeechAction, "sphinxo", 22107
+  708  jump           -> 716
+  709  end
+  710  send           sQueue, add, CharacterSpeechAction, kiperson.visitnumber.1, kispeech.visitnumber.1
+  711  if             (kiperson.visitnumber.2="")
+  712  jump_if_false  -> 714
+  713  jump           -> 716
+  714  end
+  715  send           sQueue, add, CharacterSpeechAction, kiperson.visitnumber.2, kispeech.visitnumber.2
+  716  set            sQueueFinished, "pDropDLL"
+  717  end
+  718  send           sQueue, start
+  719  return
+
+  720  sub            pDropDLL@720
+  721  call_global    UncacheDLL, "pws1i1.rsc"
+  722  return
+
+  723  sub            ecorrectspeeches@723
+  724  if             (visitnumber=12)
+  725  jump_if_false  -> 730
+  726  send           sQueue, add, CharacterSpeechAction, "sphinxo", 22140, 1
+  727  send           sQueue, add, CharacterSpeechAction, "owen", 22141, 1
+  728  send           sQueue, add, CharacterSpeechAction, "sphinxo", 22142, 1
+  729  jump           -> 737
+  730  end
+  731  send           sQueue, add, CharacterSpeechAction, kcperson.visitnumber.1, kcspeech.visitnumber.1
+  732  if             (kcperson.visitnumber.2="")
+  733  jump_if_false  -> 735
+  734  jump           -> 737
+  735  end
+  736  send           sQueue, add, CharacterSpeechAction, kcperson.visitnumber.2, kcspeech.visitnumber.2
+  737  send           sQueue, start
+  738  return
+
+  739  sub            eanswerplaced@739
+  740  get_prop       $1, isSolved, solved
+  741  if             (solved=1)
+  742  jump_if_false  -> 776
+  743  send           gPort, correctGuess, "PWS1"
+  744  set_prop       key, touchy, 0
+  745  call           pInterruptScene@641
+  746  if             (sceneInterrupted=kTrue)
+  747  jump_if_false  -> 775
+  748  set            dissolve, RAnimation, kDissolveID
+  749  set_prop       dissolve, z, kDissolveZ
+  750  set_prop       dissolve, visible, 0
+  751  set_prop       dissolve, frame, 8
+  752  set_prop       dissolve, movable, kFalse
+  753  send           sQueue, add, DelayAction, 1
+  754  set            doordissolve, RCompositeAction, 1
+  755  send           doordissolve, add, SoundAction, kDissolveSoundID, 0, 1
+  756  set            dissolveA, RQueue, 1
+  757  send           dissolveA, add, AnimAction, kDissolveID, kDissolveZ, 1, 1
+  758  send           dissolveA, add, PropertyAction, "dissolve", "visible", 1, 1
+  759  send           doordissolve, add, "dissolveA"
+  760  send           sQueue, add, "doordissolve"
+  761  send           sQueue, add, PropertyAction, "door", "visible", 0, 1
+  762  send           sQueue, add, PropertyAction, "mask", "visible", 0, 1
+  763  send           sQueue, add, PropertyAction, "key", "visible", 0, 1
+  764  send           sQueue, add, PropertyAction, "dissolve", "visible", 0, 1
+  765  if             practiceMode
+  766  jump_if_false  -> 769
+  767  set            sQueueFinished, "pPracticeReset"
+  768  jump           -> 773
+  769  end
+  770  set_prop       gPort, PWS1Solved, 1
+  771  send           sQueue, add, AnimAction, kSlideDoorID, kSlideDoorZ, 1, 1
+  772  set            sQueueFinished, "pActivateExitHotSpot"
+  773  send           sQueue, start
+  774  end
+  775  jump           -> 795
+  776  end
+  777  send           gPort, incorrectGuess, "PWS1"
+  778  if             practiceMode
+  779  jump_if_false  -> 789
+  780  if             (WrongAnswersNumber=1)
+  781  jump_if_false  -> 785
+  782  send           sQueue, add, CharacterSpeechAction, "sphinxo", kwspeech.1, 1
+  783  set            WrongAnswersNumber, 2
+  784  jump           -> 788
+  785  end
+  786  send           sQueue, add, CharacterSpeechAction, "sphinxo", kwspeech.4, 1
+  787  set            WrongAnswersNumber, 1
+  788  jump           -> 793
+  789  end
+  790  call_global    RandomNumber, 1, 8
+  791  set            WrongAnswersNumber, $result
+  792  send           sQueue, add, CharacterSpeechAction, "sphinxo", kwspeech.WrongAnswersNumber, 1
+  793  set            sQueueFinished, "pSendAnswerHome"
+  794  send           sQueue, start
+  795  return
+
+  796  sub            pSendAnswerHome@796
+  797  send           puzzle, reset
+  798  return
+
+  799  sub            pActivateExitHotSpot@799
+  800  call           ecorrectspeeches@723
+  801  set_prop       exitHS, z, kExitHSZfinal
+  802  set_prop       exitHS, touchy, 1
+  803  return
+
+  804  sub            pPracticeReset@804
+  805  delete         puzzle
+  806  delete         door
+  807  send           gPort, autoLevel, "PWS1"
+  808  call           pGetNewDatasetNumber@818
+  809  set            kDoorSettleID, Question.level.questionNumber
+  810  set            door, RAnimation, kDoorSettleID
+  811  set_prop       door, movable, kFalse
+  812  call           pmakepuzzle@670
+  813  set_prop       door, visible, 1
+  814  set_prop       door, mouseDown, pInterruptScene@641
+  815  set_prop       mask, visible, 1
+  816  set            solved, 0
+  817  return
+
+  818  sub            pGetNewDatasetNumber@818
+  819  get_prop       gPort, currentLevel, "PWS1", level
+  820  get_prop       gPort, currentDataset, "PWS1", level, questionNumber
+  821  if             (questionNumber=0)
+  822  jump_if_false  -> 826
+  823  call_global    RandomNumber, 1, 12
+  824  set            questionNumber, $result
+  825  jump           -> 832
+  826  end
+  827  set            questionNumber, (questionNumber+1)
+  828  if             (questionNumber>12)
+  829  jump_if_false  -> 832
+  830  set            questionNumber, 1
+  831  end
+  832  set_prop       gPort, currentDataset, "PWS1", level, questionNumber
+  833  return
+
+  834  sub            pExitAnimations@834
+  835  call           pInterruptScene@641
+  836  if             (sceneInterrupted=kTrue)
+  837  jump_if_false  -> 850
+  838  call_global    CacheDLL, "pws1o1.rsc"
+  839  set            walkforward, RCompositeAction, 1
+  840  send           walkforward, add, CharacterAnimAction, "owen", kOwenWalkforwardID, 1, 0, 1
+  841  send           walkforward, add, CharacterAnimAction, "joni", kJoniWalkforwardID, 1, 0, 1
+  842  send           walkforward, add, CharacterAnimAction, "santiago", kSantiagoWalkforwardID, 1, 0, 1
+  843  send           walkforward, add, CharacterAnimAction, "leslie", kLeslieWalkiforwardID, 1, 0, 1
+  844  send           walkforward, add, CharacterAnimAction, "socrates", kSocratesWalkforwardID, 1, 0, 1
+  845  send           walkforward, add, CharacterAnimAction, "laptrap", kLaptrapWalkforwardID, 1, 0, 1
+  846  send           sQueue, add, "walkforward"
+  847  set            sQueueFinished, "pNewScript"
+  848  send           sQueue, start
+  849  end
+  850  return
+
+  851  sub            pNewScript@851
+  852  set_prop       gPort, visitedCount, "PWS1", visitnumber
+  853  call_global    StartTransition
+  854  if             ((visitnumber%3)=0)
+  855  jump_if_false  -> 858
+  856  load_script    "PLOC3.mps"
+  857  jump           -> 860
+  858  end
+  859  load_script    "PLOC2.mps"
+  860  return
+
+  861  sub            eSQueueDone@861
+  862  send           sQueue, clear
+  863  if             (sQueueFinished#"empty")
+  864  jump_if_false  -> 869
+  865  set            finishedEvent, sQueueFinished
+  866  set            sQueueFinished, "empty"
+  867  call           finishedEvent
+  868  end
+  869  return
+
+  870  sub            ePicked@870
+  871  set            sQueueFinished, "empty"
+  872  call           pInterruptScene@641
+  873  if             (sceneInterrupted=kTrue)
+  874  jump_if_false  -> 877
+  875  set_prop       key, z, kKeyPickedZ
+  876  end
+  877  return
+
+  878  sub            ePersonClicked@878
+  879  call           pInterruptScene@641
+  880  if             (sceneInterrupted=kTrue)
+  881  jump_if_false  -> 907
+  882  if             (solved=1)
+  883  jump_if_false  -> 895
+  884  if             (cycleBnumber=1)
+  885  jump_if_false  -> 890
+  886  send           sQueue, add, CharacterSpeechAction, "leslie", 22159
+  887  send           sQueue, add, CharacterSpeechAction, "sphinxo", 22160
+  888  set            cycleBnumber, 2
+  889  jump           -> 894
+  890  end
+  891  send           sQueue, add, CharacterSpeechAction, "santiago", 22161
+  892  send           sQueue, add, CharacterSpeechAction, "sphinxo", 22162
+  893  set            cycleBnumber, 1
+  894  jump           -> 905
+  895  end
+  896  if             (cycleAnumber=1)
+  897  jump_if_false  -> 902
+  898  send           sQueue, add, CharacterSpeechAction, "leslie", 22156
+  899  send           sQueue, add, CharacterSpeechAction, "sphinxo", 22157
+  900  set            cycleAnumber, 2
+  901  jump           -> 905
+  902  end
+  903  send           sQueue, add, CharacterSpeechAction, "santiago", 22158
+  904  set            cycleAnumber, 1
+  905  send           sQueue, start
+  906  end
+  907  return
+
+  908  sub            eSocratesClicked@908
+  909  call           pInterruptScene@641
+  910  if             (sceneInterrupted=kTrue)
+  911  jump_if_false  -> 927
+  912  if             (solved=1)
+  913  jump_if_false  -> 916
+  914  call           ePersonClicked@878
+  915  jump           -> 926
+  916  end
+  917  if             (cycleCnumber=1)
+  918  jump_if_false  -> 922
+  919  send           sQueue, add, CharacterSpeechAction, "socrates", 22154
+  920  set            cycleCnumber, 2
+  921  jump           -> 925
+  922  end
+  923  send           sQueue, add, CharacterSpeechAction, "socrates", 22155
+  924  set            cycleCnumber, 1
+  925  send           sQueue, start
+  926  end
+  927  return
+
+  928  sub            eSphinxoClicked@928
+  929  call           pInterruptScene@641
+  930  if             (sceneInterrupted=kTrue)
+  931  jump_if_false  -> 947
+  932  if             (solved=1)
+  933  jump_if_false  -> 936
+  934  call           ecorrectspeeches@723
+  935  jump           -> 946
+  936  end
+  937  if             (cycleDnumber=1)
+  938  jump_if_false  -> 942
+  939  send           sQueue, add, CharacterSpeechAction, "sphinxo", 22152
+  940  set            cycleDnumber, 2
+  941  jump           -> 945
+  942  end
+  943  send           sQueue, add, CharacterSpeechAction, "sphinxo", 22153
+  944  set            cycleDnumber, 1
+  945  send           sQueue, start
+  946  end
+  947  return
+
+  948  sub            eLaptrapClicked@948
+  949  call           pInterruptScene@641
+  950  if             sceneInterrupted
+  951  jump_if_false  -> 955
+  952  call           gOpenLaptrap@222
+  953  set_prop       gLaptrap, closed, eLaptrapClosed@961
+  954  end
+  955  return
+
+  956  sub            eExitToMapLoc@956
+  957  get_prop       gLaptrap, selectedLocation, location
+  958  call_global    StartTransition
+  959  load_script    (location+".mps")
+  960  return
+
+  961  sub            eLaptrapClosed@961
+  962  call           gCloseLaptrap@236
+  963  set            oldLevel, level
+  964  get_prop       gPort, currentLevel, "PWS1", level
+  965  if             (level#oldLevel)
+  966  jump_if_false  -> 984
+  967  if             (practiceMode=kTrue)
+  968  jump_if_false  -> 971
+  969  call           pPracticeReset@804
+  970  jump           -> 983
+  971  end
+  972  if             (solved=0)
+  973  jump_if_false  -> 983
+  974  call           pGetNewDatasetNumber@818
+  975  delete         puzzle
+  976  delete         door
+  977  set            kDoorSettleID, Question.level.questionNumber
+  978  set            door, RAnimation, kDoorSettleID
+  979  call           pmakepuzzle@670
+  980  set_prop       door, movable, kFalse
+  981  set_prop       door, mouseDown, pInterruptScene@641
+  982  end
+  983  end
+  984  return
+
+  985  sub            ePauseScene@985
+  986  send           sQueue, pause
+  987  send           socrates, pause
+  988  send           sphinxo, pause
+  989  if             (practiceMode=kFalse)
+  990  jump_if_false  -> 997
+  991  send           joni, pause
+  992  send           santiago, pause
+  993  send           owen, pause
+  994  send           leslie, pause
+  995  send           laptrap, pause
+  996  end
+  997  return
+
+  998  sub            eResumeScene@998
+  999  send           sQueue, resume
+ 1000  send           socrates, resume
+ 1001  send           sphinxo, resume
+ 1002  if             (practiceMode=kFalse)
+ 1003  jump_if_false  -> 1010
+ 1004  send           joni, resume
+ 1005  send           santiago, resume
+ 1006  send           owen, resume
+ 1007  send           leslie, resume
+ 1008  send           laptrap, resume
+ 1009  end
+ 1010  return

@@ -1,0 +1,121 @@
+import { Assets, Rectangle, Texture } from 'pixi.js';
+import type { AseqResourceEntry, GameManifest, SequenceDoc } from './types';
+
+const ASSET_BASE = '/assets/';
+
+export interface LoadedAseq {
+  entry: AseqResourceEntry;
+  frames: Texture[];
+  sequence: SequenceDoc;
+}
+
+export interface SoundRef {
+  id: number;
+  url: string;
+}
+
+/**
+ * Loads manifest.json and resolves assets. Images and sounds are loaded
+ * lazily per resource -- the full asset set is hundreds of MB.
+ */
+export class ResourceManager {
+  private manifest!: GameManifest;
+  private soundUrlById = new Map<number, string>();
+  private soundsByBundle = new Map<string, SoundRef[]>();
+  private aseqCache = new Map<string, Promise<LoadedAseq>>();
+  private aseqById = new Map<number, AseqResourceEntry>();
+
+  async load(manifestUrl = `${ASSET_BASE}manifest.json`): Promise<void> {
+    const res = await fetch(manifestUrl);
+    if (!res.ok) {
+      throw new Error(`Failed to load manifest: ${res.status} ${res.statusText}`);
+    }
+    this.manifest = await res.json();
+
+    // audio_files keys are "<bundle>_<resource id>"; ids are unique across the game
+    for (const [key, filename] of Object.entries(this.manifest.audio_files)) {
+      const split = key.lastIndexOf('_');
+      const bundle = key.slice(0, split);
+      const id = Number(key.slice(split + 1));
+      if (!Number.isFinite(id)) continue;
+      const url = `${ASSET_BASE}audio/${filename}`;
+      this.soundUrlById.set(id, url);
+      const list = this.soundsByBundle.get(bundle) ?? [];
+      list.push({ id, url });
+      this.soundsByBundle.set(bundle, list);
+    }
+    for (const list of this.soundsByBundle.values()) list.sort((a, b) => a.id - b.id);
+    // image resource ids are unique across the game
+    for (const r of this.manifest.aseq_resources) this.aseqById.set(r.resource_id, r);
+  }
+
+  findAseq(id: number): AseqResourceEntry | undefined {
+    return this.aseqById.get(id);
+  }
+
+  getScriptUrl(name: string): string {
+    return `${ASSET_BASE}scripts/${name}.json`;
+  }
+
+  getPaletteIndexUrl(): string {
+    return `${ASSET_BASE}palettes/index.json`;
+  }
+
+  getPaletteUrl(name: string): string {
+    return `${ASSET_BASE}palettes/${name}.pal`;
+  }
+
+  bundleNames(): string[] {
+    const names = new Set(this.manifest.aseq_resources.map((r) => r.bundle));
+    for (const bundle of this.soundsByBundle.keys()) names.add(bundle);
+    return [...names].sort();
+  }
+
+  listAseqForBundle(bundle: string): AseqResourceEntry[] {
+    return this.manifest.aseq_resources
+      .filter((r) => r.bundle === bundle)
+      .sort((a, b) => a.resource_id - b.resource_id);
+  }
+
+  listSoundsForBundle(bundle: string): SoundRef[] {
+    return this.soundsByBundle.get(bundle) ?? [];
+  }
+
+  getSoundUrl(id: number): string | undefined {
+    return this.soundUrlById.get(id);
+  }
+
+  getImageUrl(path: string): string {
+    return `${ASSET_BASE}images/${path}`;
+  }
+
+  getVideoUrl(name: string): string | undefined {
+    const filename = this.manifest.video_files[name.toLowerCase()];
+    return filename ? `${ASSET_BASE}video/${filename}` : undefined;
+  }
+
+  loadAseq(entry: AseqResourceEntry): Promise<LoadedAseq> {
+    const key = `${entry.bundle}/${entry.resource_id}`;
+    let pending = this.aseqCache.get(key);
+    if (!pending) {
+      pending = this.fetchAseq(entry);
+      pending.catch(() => this.aseqCache.delete(key));
+      this.aseqCache.set(key, pending);
+    }
+    return pending;
+  }
+
+  private async fetchAseq(entry: AseqResourceEntry): Promise<LoadedAseq> {
+    if (!entry.decoded || !entry.sheets || !entry.frames || !entry.sequence_file) {
+      throw new Error(`${entry.bundle}/${entry.resource_id} is not decoded: ${entry.error ?? 'unknown'}`);
+    }
+    const sheets = await Promise.all(entry.sheets.map((s) => Assets.load<Texture>(this.getImageUrl(s))));
+    for (const sheet of sheets) sheet.source.scaleMode = 'nearest';
+    const frames = entry.frames.map(
+      (f) => new Texture({ source: sheets[f.sheet].source, frame: new Rectangle(f.x, f.y, f.w, f.h) })
+    );
+    const res = await fetch(this.getImageUrl(entry.sequence_file));
+    if (!res.ok) throw new Error(`Failed to load ${entry.sequence_file}: ${res.status}`);
+    return { entry, frames, sequence: await res.json() };
+  }
+}

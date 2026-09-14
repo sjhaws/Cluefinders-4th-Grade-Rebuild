@@ -1,0 +1,20 @@
+{
+  "name": "cluefinders-4th-grade-web",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "howler": "^2.2.4",
+    "pixi.js": "^8.0.0"
+  },
+  "devDependencies": {
+    "@types/howler": "^2.2.11",
+    "typescript": "^5.5.0",
+    "vite": "^5.4.0"
+  }
+}

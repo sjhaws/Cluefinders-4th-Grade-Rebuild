@@ -1,0 +1,46 @@
+import type { Value } from './ScriptVm';
+import { GenericObject, type ScriptObject } from './ScriptObject';
+import type { GameEngine } from './GameEngine';
+import { RScenePort, RWorldPort } from './WorldState';
+import { RAnimation, RDialog, RHotSpot, RLapTrap, RPButton, RSmackerMovie, RText } from './DisplayObjects';
+import { RSelList } from './SelList';
+import { RCompositeAction, RKbdInp, RQueue } from './Queue';
+import { RCharacter } from './Character';
+
+type Factory = (engine: GameEngine, args: Value[]) => ScriptObject;
+
+/** Script-visible class names from 4THADV32.EXE; unimplemented ones become GenericObject. */
+const KNOWN_CLASSES = [
+  'Action', 'ActionContainer', 'AnimAction', 'BigOleButtonGroup', 'CharacterAnimAction',
+  'CharacterSpeechAction', 'DelayAction', 'EffectsWindow', 'IntProperty', 'MapAction', 'MoveXAction',
+  'MoveXYAction', 'MoveYAction', 'MovieAction', 'OMAnimation', 'OMMultiTrinket', 'OMPopUpMenu',
+  'OMTCursor', 'OMTrinket', 'OMTrinketWindow', 'PlayAnimAction', 'Player', 'PropertyAction',
+  'RAnimation', 'RAnimationTrigger', 'RAnswer', 'RAttributeContainer', 'RBackPack', 'RCharacter',
+  'RContainer', 'RDialog', 'RDoubleGraphicTextAnswer', 'RFabricContainer', 'RGraphicAnswer',
+  'RGraphicTextAnswer', 'RHorizontalContainer', 'RHorizontalValueContainer', 'RHotSpot', 'RKbdInp',
+  'RLapTrap', 'RMap', 'RPButton', 'RPegGame', 'RPentominoGame', 'RPuzzle', 'RQueue', 'RRandomAction',
+  'RScenePort', 'RSelList', 'RSmackerMovie', 'RStackingContainer', 'RText', 'RTrigger',
+  'RValueContainer', 'RWorldPort', 'RandomDelayAction', 'SoundAction', 'StringProperty', 'VerbAction',
+  'YThread',
+];
+
+const IMPLEMENTED: Record<string, Factory> = {
+  rworldport: (e) => new RWorldPort(e),
+  rsceneport: (e) => new RScenePort(e),
+  ranimation: (e, a) => new RAnimation(e, a),
+  rpbutton: (e, a) => new RPButton(e, a),
+  rtext: (e, a) => new RText(e, a),
+  rsmackermovie: (e, a) => new RSmackerMovie(e, a),
+  rdialog: (e, a) => new RDialog(e, a),
+  rlaptrap: (e) => new RLapTrap(e),
+  rsellist: (e, a) => new RSelList(e, a),
+  rqueue: (e) => new RQueue(e),
+  rcompositeaction: (e) => new RCompositeAction(e),
+  rkbdinp: (e) => new RKbdInp(e),
+  rcharacter: (e, a) => new RCharacter(e, a),
+  rhotspot: (e, a) => new RHotSpot(e, a),
+};
+
+export const CLASSES = new Map<string, Factory>();
+for (const name of KNOWN_CLASSES) CLASSES.set(name.toLowerCase(), (e) => new GenericObject(e, name));
+for (const [name, factory] of Object.entries(IMPLEMENTED)) CLASSES.set(name, factory);

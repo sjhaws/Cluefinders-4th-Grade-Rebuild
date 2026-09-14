@@ -1,0 +1,743 @@
+    0  start
+    1  call_global    UncacheAllDLLs
+    2  call_global    CacheDLL, "signin.rsc"
+    3  set            kOMFontNormal, 0
+    4  set            kOMFontBold, 1
+    5  set            kOMFontItalic, 2
+    6  set            kOMFontUnderlined, 4
+    7  set            kNormalCursor, 25
+    8  set            kHotCursor, 26
+    9  set            kFingerCursor, 27
+   10  set            kOpenHandCursor, 28
+   11  set            kClosedHandCursor, 29
+   12  set            kNorthCursor, 30
+   13  set            kEastCursor, 31
+   14  set            kWestCursor, 32
+   15  set            kSouthCursor, 33
+   16  set            kNorthWestCursor, 34
+   17  set            kNorthEastCursor, 35
+   18  set            kSouthWestCursor, 36
+   19  set            kSouthEastCursor, 37
+   20  set            kHourglassCursor, 38
+   21  set            kCairo1BMusicID, 30515
+   22  set            kCairo2BMusicID, 30516
+   23  set            kCairo3BMusicID, 30517
+   24  set            kOasis1BMusicID, 30518
+   25  set            kOasis2BMusicID, 30519
+   26  set            kOasis3BMusicID, 30520
+   27  set            kPyramid1BMusicID, 30521
+   28  set            kPyramid2BMusicID, 30522
+   29  set            kPyramid3BMusicID, 30523
+   30  set            kPMChooseActButtonID, 5
+   31  set            kBlinkMinTime, 3
+   32  set            kBlinkMaxTime, 5
+   33  set            kFidgetMinTime, 45
+   34  set            kFidgetMaxTime, 60
+   35  set            kTrue, 1
+   36  set            kFalse, 0
+   37  set            kOn, 1
+   38  set            kOff, 0
+   39  set            kScreenWidth, 640
+   40  set            kScreenHeight, 480
+   41  set            kUseAOCoords, 11111
+   42  set            kNumCRounds, 5
+   43  set            kNumItemsPerCRound, 12
+   44  set            kNumCStatueDatasets, 10
+   45  set            kNumORounds, 5
+   46  set            kNumItemsPerORound, 12
+   47  set            kBackpackDef, 1
+   48  set            kMaxItemsInBackpack, 12
+   49  set            kMaxItemsInWS, 6
+   50  set            kMaxItemsInHub, 12
+   51  set            kMaxItemW, 36
+   52  set            kMaxItemH, 28
+   53  set            kCGlyphStart, 1
+   54  set            kCGlyphEnd, 12
+   55  set            kGemStart, 13
+   56  set            kGemEnd, 28
+   57  set            kItemInBPSfxID, 30524
+   58  set            kItemPickUpSfxID, 30525
+   59  set            openBackpack, 0
+   60  set            closedBackpack, 0
+   61  set            closedBackpackName, 0
+   62  set            objectIndex, 1
+   63  set            toBackpackOnly, 1
+
+   64  sub            pInitObjectsAndBackpack@64, toBackpack, backpackName
+   65  loop           i, 1, kMaxItemsInWS
+   66  loop_test      i, 1, kMaxItemsInWS
+   67  jump_if_false  -> 74
+   68  get_prop       gPort, itemPresent, i, objectToDisplay
+   69  if             (objectToDisplay#0)
+   70  jump_if_false  -> 73
+   71  call           pDisplayObject@77, kFalse
+   72  end
+   73  jump           -> 66
+   74  set            toBackpackOnly, toBackpack
+   75  set            closedBackpackName, backpackName
+   76  return
+
+   77  sub            pDisplayObject@77, animate
+   78  if             (objectBoxW>kMaxItemW)
+   79  jump_if_false  -> 83
+   80  call_global    RandomNumber, 1, (objectBoxW-kMaxItemW)
+   81  set            xOff, $result
+   82  jump           -> 85
+   83  end
+   84  set            xOff, 0
+   85  set            ox, (objectBoxX+xOff)
+   86  if             (objectBoxH>kMaxItemH)
+   87  jump_if_false  -> 91
+   88  call_global    RandomNumber, 1, (objectBoxH-kMaxItemH)
+   89  set            yOff, $result
+   90  jump           -> 93
+   91  end
+   92  set            yOff, 0
+   93  set            oy, (objectBoxY+yOff)
+   94  set            object.objectIndex, RAnimation, ox, oy, objectAOIDs.objectToDisplay
+   95  set_prop       object.objectIndex, "z", objectZ
+   96  set_prop       object.objectIndex, userData, (" "+ox+"#"+oy+":"+objectToDisplay)
+   97  set_prop       object.objectIndex, "mouseDown", eObjectPickedUp@134
+   98  set_prop       object.objectIndex, "mouseUp", eObjectDropped@138
+   99  send           object.objectIndex, setAOCursor, kOpenHandCursor, kClosedHandCursor
+  100  if             animate
+  101  jump_if_false  -> 113
+  102  send           object.objectIndex, play
+  103  set            port, RWorldPort, RWorldPort
+  104  get_prop       port, currentLocation, location
+  105  delete         port
+  106  if             ((location="CWS1")+(location="CWS2")+(location="CWS3")+(location="CWS4"))
+  107  jump_if_false  -> 110
+  108  call_global    PlaySound, 1000
+  109  jump           -> 112
+  110  end
+  111  call_global    PlaySound, 11000
+  112  end
+  113  set            objectIndex, (objectIndex+1)
+  114  return
+
+  115  sub            pNewObjectAtLocation@115, newID
+  116  send           gPort, addObject, newID
+  117  set            objectToDisplay, newID
+  118  call           pDisplayObject@77, kTrue
+  119  return
+
+  120  sub            eBackpackOpened@120
+  121  if             (openBackpack=0)
+  122  jump_if_false  -> 130
+  123  set            openBackpack, RBackPack, backpackX, backpackY, backpackZ
+  124  set_prop       openBackpack, closed, eBackpackClosed@131
+  125  if             (toBackpackOnly=0)
+  126  jump_if_false  -> 129
+  127  set_prop       openBackpack, objectDropped, eBackpackObjectDropped
+  128  end
+  129  end
+  130  return
+
+  131  sub            eBackpackClosed@131
+  132  set            openBackpack, 0
+  133  return
+
+  134  sub            eObjectPickedUp@134
+  135  set_prop       $1, "z", 10000
+  136  call_global    PlaySound, kItemPickUpSfxID
+  137  return
+
+  138  sub            eObjectDropped@138
+  139  get_prop       $1, userData, ud
+  140  set            p1, ("#"@ud)
+  141  set            p2, (":"@ud)
+  142  set            t2, (p1-1)
+  143  set            ox, ud|1|t2
+  144  set            t1, (p1+1)
+  145  set            t2, (p2-p1-1)
+  146  set            oy, ud|t1|t2
+  147  set            t1, (p2+1)
+  148  set            id, ud|t1
+  149  set_prop       $1, "z", objectZ
+  150  if             (toBackpackOnly=1)
+  151  jump_if_false  -> 196
+  152  if             (openBackpack#0)
+  153  jump_if_false  -> 177
+  154  call_global    IntersectTest, "RECEIVER", "openBackpack"
+  155  set            test, $result
+  156  if             (test=1)
+  157  jump_if_false  -> 160
+  158  send           openBackpack, addObject, id
+  159  jump           -> 176
+  160  end
+  161  if             (closedBackpack#0)
+  162  jump_if_false  -> 174
+  163  get_prop       closedBackpack, visible, test
+  164  if             (test=1)
+  165  jump_if_false  -> 173
+  166  call_global    IntersectTest, "RECEIVER", "closedBackpack"
+  167  set            test, $result
+  168  if             (test=1)
+  169  jump_if_false  -> 172
+  170  send           openBackpack, addObject, id
+  171  end
+  172  end
+  173  jump           -> 176
+  174  end
+  175  set            test, 0
+  176  jump           -> 195
+  177  end
+  178  if             (closedBackpack#0)
+  179  jump_if_false  -> 193
+  180  get_prop       closedBackpack, visible, test
+  181  if             (test=1)
+  182  jump_if_false  -> 192
+  183  call_global    IntersectTest, "RECEIVER", "closedBackpack"
+  184  set            test, $result
+  185  if             (test=1)
+  186  jump_if_false  -> 191
+  187  set            openBackpack, RBackPack, backpackX, backpackY, backpackZ
+  188  send           openBackpack, addObject, id
+  189  set            openBackpack, 0
+  190  end
+  191  end
+  192  jump           -> 195
+  193  end
+  194  set            test, 0
+  195  jump           -> 198
+  196  end
+  197  set            test, 0
+  198  if             (test=1)
+  199  jump_if_false  -> 208
+  200  get_prop       $1, name, Name
+  201  set            p, (1+"."@Name)
+  202  set            n, Name|p
+  203  delete         object.n
+  204  send           gPort, removeObjectFromLocation, id
+  205  set_prop       gPort, itemPlacedInBackpack, kTrue
+  206  call_global    PlaySound, kItemInBPSfxID
+  207  jump           -> 211
+  208  end
+  209  set_prop       $1, x, ox
+  210  set_prop       $1, y, oy
+  211  return
+
+  212  sub            globalInit@212
+  213  set            gCurLocation, 0
+  214  set            laptrap, 0
+  215  set            gPort, RWorldPort, RWorldPort
+  216  set            gScenePort, RScenePort, RScenePort
+  217  return
+
+  218  sub            globalDispose@218
+  219  delete         gPort
+  220  delete         gScenePort
+  221  return
+
+  222  sub            gOpenLaptrap@222
+  223  if             (laptrap#0)
+  224  jump_if_false  -> 227
+  225  set_prop       laptrap, visible, kFalse
+  226  end
+  227  if             (gCurLocation=0)
+  228  jump_if_false  -> 231
+  229  set            gLaptrap, RLapTrap, 10000
+  230  jump           -> 233
+  231  end
+  232  set            gLaptrap, RLapTrap, 10000, gCurLocation
+  233  set_prop       gLaptrap, closed, gCloseLaptrap@236
+  234  set_prop       gLaptrap, locationSelected, eExitToMapLoc@687
+  235  return
+
+  236  sub            gCloseLaptrap@236
+  237  if             (laptrap#0)
+  238  jump_if_false  -> 241
+  239  set_prop       laptrap, visible, kTrue
+  240  end
+  241  delete         gLaptrap
+  242  return
+
+  243  sub            gNewGame@243
+  244  call_global    RandomNumber, 1, kNumCStatueDatasets
+  245  set_prop       gPort, CStatueDataset, $result
+  246  return
+
+  247  sub            gGameCompleted@247
+  248  send           gPort, newGame
+  249  get_prop       gPort, CStatueDataset, curDataset
+  250  set            curDataset, (curDataset+1)
+  251  if             (curDataset>kNumCStatueDatasets)
+  252  jump_if_false  -> 255
+  253  set            curDataset, 1
+  254  end
+  255  set_prop       gPort, CStatueDataset, curDataset
+  256  set_prop       gPort, CLOC01StatueUp, 0
+  257  set_prop       gPort, CBA2OpenVisitedCount, 0
+  258  set_prop       gPort, "CMALevel", 0
+  259  set_prop       gPort, "CMASolved", 0
+  260  set_prop       gPort, "PLOC2VisitedCount", 0
+  261  set_prop       gPort, "OMASolved", 0
+  262  set_prop       gPort, "OMAPracModeEntryCount", 0
+  263  set_prop       gPort, "OMALevel", 0
+  264  loop           i, 1, 4
+  265  loop_test      i, 1, 4
+  266  jump_if_false  -> 269
+  267  set_prop       gPort, ("OMAGatorDown"+i), 0
+  268  jump           -> 265
+  269  set_prop       gPort, "PWS2CompletedCount", 0
+  270  set_prop       gPort, "PWS2Round1visits", 0
+  271  set_prop       gPort, "PWS2Round2visits", 0
+  272  set_prop       gPort, "PWS2Round3visits", 0
+  273  set_prop       gPort, "PWS2Round4visits", 0
+  274  return
+  275  call           globalInit@212
+  276  call           pInit@277
+
+  277  sub            pInit@277
+  278  set            gCurLocation, "SIGN-IN"
+  279  set            sQueue, RQueue, RQueue
+  280  set_prop       sQueue, finished, eSQueueDone@678
+  281  set            sQueueFinished, "empty"
+  282  set            exitDialogBoxID, 30566
+  283  set            exitButton1ResID, 30563
+  284  set            exitButton2ResID, 30564
+  285  set            exitGraphic, 30561
+  286  set            listFull1DialogBoxID, 30567
+  287  set            listFull2DialogBoxID, 30568
+  288  set            listFullButton1ResID, 30571
+  289  set            listFullGraphic, 30562
+  290  set            deleteDialogBoxID, 30576
+  291  set            deleteButton1ResID, 30563
+  292  set            deleteButton2ResID, 30564
+  293  set            deleteGraphic, 30561
+  294  set            laptrapIntroSfx, 30610
+  295  set            laptrapRetSfx, 30611
+  296  set            kClickSfxID, 30600
+  297  set            kListZ, 100
+  298  return
+
+  299  sub            pInterruptScene@299
+  300  set            sceneInterrupted, kTrue
+  301  get_prop       sQueue, actionCount, numActions
+  302  loop           (numActions>0)
+  303  loop_test      (numActions>0)
+  304  jump_if_false  -> 322
+  305  send           sQueue, halt
+  306  get_prop       sQueue, isActive, haltFailed
+  307  if             (haltFailed=kTrue)
+  308  jump_if_false  -> 312
+  309  set            sceneInterrupted, kFalse
+  310  jump           -> 322
+  311  jump           -> 320
+  312  end
+  313  send           sQueue, clear
+  314  if             (sQueueFinished#"empty")
+  315  jump_if_false  -> 320
+  316  set            finishedEvent, sQueueFinished
+  317  set            sQueueFinished, "empty"
+  318  call           finishedEvent
+  319  end
+  320  get_prop       sQueue, actionCount, numActions
+  321  jump           -> 303
+  322  return
+  323  call           procInitObjects@369
+  324  call           procPutText@438
+  325  call           procInitData@411
+  326  set_prop       KeyInput, "keyPressed", procKeyPressed@480
+  327  set_prop       SignInList, "entrySelected", procEntrySelected@634
+  328  set_prop       newPlayerButton, "hit", procNewPlayerButtonHit@585
+  329  set_prop       startButton, "hit", procStartButtonHit@591
+  330  set_prop       pracModeButton, "hit", procPracButtonHit@595
+  331  set_prop       exitButton, "hit", procExitButtonHit@611
+  332  set_prop       upArrowButton, "hit", procUpArrowHit@615
+  333  set_prop       downArrowButton, "hit", procDownArrowHit@619
+  334  get_prop       SignInList, "entryIsValid", lastEntryIsValid
+  335  set_prop       startButton, "enabled", lastEntryIsValid
+  336  set_prop       pracModeButton, "enabled", lastEntryIsValid
+  337  call           procUpdateNewButton@359
+  338  call_global    SetDoubleClicksEnabled, kTrue
+  339  set_prop       gScenePort, backgroundMusicID, kPyramid1BMusicID
+  340  get_prop       gPort, beenToSignInBefore, prior
+  341  set_prop       gPort, beenToSignInBefore, 1
+  342  if             (prior=1)
+  343  jump_if_false  -> 346
+  344  send           sQueue, add, SoundAction, laptrapRetSfx, kFalse, kTrue
+  345  jump           -> 348
+  346  end
+  347  send           sQueue, add, SoundAction, laptrapIntroSfx, kFalse, kTrue
+  348  send           sQueue, start
+  349  call_global    EndTransition
+
+  350  sub            procUpdateStartButton@350
+  351  get_prop       SignInList, "entryIsValid", entryIsValid
+  352  if             (entryIsValid#lastEntryIsValid)
+  353  jump_if_false  -> 357
+  354  set_prop       startButton, "enabled", entryIsValid
+  355  set_prop       pracModeButton, "enabled", entryIsValid
+  356  end
+  357  set            lastEntryIsValid, entryIsValid
+  358  return
+
+  359  sub            procUpdateNewButton@359
+  360  get_prop       SignInList, "listIsFull", f
+  361  if             (f=0)
+  362  jump_if_false  -> 366
+  363  get_prop       SignInList, "entryIsNew", f
+  364  set_prop       newPlayerButton, "enabled", (1-f)
+  365  jump           -> 368
+  366  end
+  367  set_prop       newPlayerButton, "enabled", 0
+  368  return
+
+  369  sub            procInitObjects@369
+  370  call_global    Scene, 30600
+  371  set            upArrowButton, RPButton, kUseAOCoords, kUseAOCoords, 30611
+  372  set_prop       upArrowButton, clickSoundID, kClickSfxID
+  373  set            downArrowButton, RPButton, kUseAOCoords, kUseAOCoords, 30612
+  374  set_prop       downArrowButton, clickSoundID, kClickSfxID
+  375  set            SignInList, RSelList, 51, 208, 330, 79
+  376  set_prop       SignInList, textFontID, 40
+  377  set_prop       SignInList, "listBackgroundColor", 48
+  378  set_prop       SignInList, "highlightedBackgroundColor", 18
+  379  set_prop       SignInList, "normalTextColor", 10
+  380  set_prop       SignInList, "matchedTextColor", 39
+  381  set_prop       SignInList, "selectedTextColor", 41
+  382  set            KeyInput, RKbdInp, RKbdInp
+  383  set            exitButton, RPButton, kUseAOCoords, kUseAOCoords, 30614
+  384  set_prop       exitButton, clickSoundID, kClickSfxID
+  385  set            startButton, RPButton, kUseAOCoords, kUseAOCoords, 30613
+  386  set_prop       startButton, clickSoundID, kClickSfxID
+  387  set            newPlayerButton, RPButton, kUseAOCoords, kUseAOCoords, 30610
+  388  set_prop       newPlayerButton, clickSoundID, kClickSfxID
+  389  set            pracModeButton, RPButton, kUseAOCoords, kUseAOCoords, 30615
+  390  set_prop       pracModeButton, clickSoundID, kClickSfxID
+  391  return
+
+  392  sub            callQaCheatScript@392
+  393  get_prop       SignInList, "currentEntry", entry
+  394  if             (entry="")
+  395  jump_if_false  -> 398
+  396  send           gPort, activatePlayer, "QA"
+  397  jump           -> 400
+  398  end
+  399  send           gPort, activatePlayer, entry
+  400  set_prop       gPort, inGame, kTrue
+  401  get_prop       SignInList, "entryIsNew", f
+  402  if             ((f=1)+(entry=""))
+  403  jump_if_false  -> 406
+  404  call           gNewGame@243
+  405  end
+  406  call_global    SetDoubleClicksEnabled, kFalse
+  407  call           cleanup@623
+  408  call_global    StartTransition
+  409  load_script    "fl.mps"
+  410  return
+
+  411  sub            procInitData@411
+  412  send           gPort, activateDataFile
+  413  get_prop       gPort, playersCount, pc
+  414  if             (pc>0)
+  415  jump_if_false  -> 429
+  416  loop           i, 0, (pc-1)
+  417  loop_test      i, 0, (pc-1)
+  418  jump_if_false  -> 428
+  419  get_prop       SignInList, listIsFull, full
+  420  if             full
+  421  jump_if_false  -> 424
+  422  jump           -> 428
+  423  end
+  424  send           gPort, activatePlayer, ("#"+i)
+  425  get_prop       gPort, playerName, pn
+  426  send           SignInList, addListEntry, pn
+  427  jump           -> 417
+  428  end
+  429  if             (pc<2)
+  430  jump_if_false  -> 433
+  431  set_prop       downArrowButton, enabled, kFalse
+  432  end
+  433  if             (pc=0)
+  434  jump_if_false  -> 437
+  435  set_prop       upArrowButton, enabled, kFalse
+  436  end
+  437  return
+
+  438  sub            procPutText@438
+  439  set            bigFontSize, 16
+  440  set            smallFontSize, 14
+  441  set            x1, 260
+  442  set            y1, 27
+  443  set            height, 25
+  444  set            affidavitText1, "The ClueFinders need YOU to help them rescue the"
+  445  set            affidavitText2, "professor and return the artifacts to their rightful places!"
+  446  set            affidavitText3, "But BEWARE, the forces of chaos are at work!"
+  447  set            affidavitText4, "You may tangle with giant crocodiles and need to cross"
+  448  set            affidavitText5, "ancient underground chasms.   If you're ready for"
+  449  set            affidavitText6, "this mysterious adventure, sign your name below."
+  450  set            text1, RText, affidavitText1, 10, x1, y1, 1
+  451  send           text1, setFont, 50
+  452  set_prop       text1, z, kTextz
+  453  set_prop       text1, touchy, kFalse
+  454  set            y1, (y1+height)
+  455  set            text2, RText, affidavitText2, 10, x1, y1, 1
+  456  send           text2, setFont, 50
+  457  set_prop       text2, z, kTextz
+  458  set_prop       text2, touchy, kFalse
+  459  set            y1, (y1+height+14)
+  460  set            text3, RText, affidavitText3, 10, x1, y1, 1
+  461  send           text3, setFont, 50
+  462  set_prop       text3, z, kTextz
+  463  set_prop       text3, touchy, kFalse
+  464  set            y1, (y1+height+14)
+  465  set            text4, RText, affidavitText4, 10, x1, y1, 1
+  466  send           text4, setFont, 50
+  467  set_prop       text4, z, kTextz
+  468  set_prop       text4, touchy, kFalse
+  469  set            y1, (y1+height)
+  470  set            text5, RText, affidavitText5, 10, x1, y1, 1
+  471  send           text5, setFont, 50
+  472  set_prop       text5, z, kTextz
+  473  set_prop       text5, touchy, kFalse
+  474  set            y1, (y1+height)
+  475  set            text6, RText, affidavitText6, 10, x1, y1, 1
+  476  send           text6, setFont, 50
+  477  set_prop       text6, z, kTextz
+  478  set_prop       text6, touchy, kFalse
+  479  return
+
+  480  sub            procKeyPressed@480
+  481  get_prop       KeyInput, "key", key
+  482  if             ((key="Cmd-Q")+(key="Ctrl-Q")+(key="Esc"))
+  483  jump_if_false  -> 486
+  484  call           exitDialogBox@659
+  485  end
+  486  set            p, ((key@"[abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")-1)
+  487  if             ((p>0))
+  488  jump_if_false  -> 504
+  489  call           pInterruptScene@299
+  490  send           SignInList, addChar, key
+  491  if             (RESULT=4)
+  492  jump_if_false  -> 495
+  493  call           procListFull@571
+  494  jump           -> 503
+  495  end
+  496  if             (RESULT=0)
+  497  jump_if_false  -> 503
+  498  send           sQueue, add, SoundAction, 30601, kFalse, kTrue
+  499  call           procUpdateStartButton@350
+  500  call           procUpdateNewButton@359
+  501  send           sQueue, start
+  502  end
+  503  jump           -> 558
+  504  end
+  505  if             ((key="Backspace")+(key="Delete"))
+  506  jump_if_false  -> 518
+  507  get_prop       SignInList, canDeleteChar, dc
+  508  if             (dc=1)
+  509  jump_if_false  -> 517
+  510  call           pInterruptScene@299
+  511  send           sQueue, add, SoundAction, 30602, kFalse, kTrue
+  512  send           SignInList, deleteChar
+  513  call           procUpdateStartButton@350
+  514  call           procUpdateNewButton@359
+  515  send           sQueue, start
+  516  end
+  517  end
+  518  if             (((key="Enter")+(key="Return"))>0)
+  519  jump_if_false  -> 526
+  520  get_prop       SignInList, "entryIsValid", f
+  521  if             (f=1)
+  522  jump_if_false  -> 525
+  523  call           procEntrySelected@634
+  524  end
+  525  end
+  526  if             (key="PageUp")
+  527  jump_if_false  -> 530
+  528  send           SignInList, scrollListPageUp
+  529  end
+  530  if             (key="PageDown")
+  531  jump_if_false  -> 534
+  532  send           SignInList, scrollListPageDown
+  533  end
+  534  if             (key="Up")
+  535  jump_if_false  -> 538
+  536  send           SignInList, moveHighlightUp
+  537  end
+  538  if             (key="Down")
+  539  jump_if_false  -> 542
+  540  send           SignInList, moveHighlightDown
+  541  end
+  542  if             ((key="Cmd-R")+(key="Ctrl-R"))
+  543  jump_if_false  -> 558
+  544  get_prop       SignInList, "entryIsNew", f
+  545  if             (f=0)
+  546  jump_if_false  -> 557
+  547  get_prop       SignInList, "entryIsValid", f
+  548  if             (f=1)
+  549  jump_if_false  -> 556
+  550  set            deleteBox, RDialog, deleteDialogBoxID, 2000
+  551  send           deleteBox, addButton, deleteButton1ResID, 1
+  552  send           deleteBox, addButton, deleteButton2ResID, 0
+  553  set_prop       deleteBox, buttonPressed, deleteBoxHandler@559
+  554  send           deleteBox, addGraphic, deleteGraphic
+  555  end
+  556  end
+  557  end
+  558  return
+
+  559  sub            deleteBoxHandler@559
+  560  get_prop       deleteBox, selectedButton, button
+  561  if             (button=1)
+  562  jump_if_false  -> 567
+  563  send           SignInList, deleteEntry
+  564  get_prop       SignInList, "deletedEntry", entry
+  565  send           gPort, removePlayer, entry
+  566  end
+  567  delete         deleteBox
+  568  call           procUpdateStartButton@350
+  569  call           procUpdateNewButton@359
+  570  return
+
+  571  sub            procListFull@571
+  572  if             (SYSTEM="WIN")
+  573  jump_if_false  -> 576
+  574  set            listFullBox, RDialog, listFull1DialogBoxID, 30567
+  575  jump           -> 578
+  576  end
+  577  set            listFullBox, RDialog, listFull2DialogBoxID, 30568
+  578  send           listFullBox, addButton, listFullButton1ResID, 1
+  579  set_prop       listFullBox, buttonPressed, dumpListFullMessage@582
+  580  send           listFullBox, addGraphic, listFullGraphic
+  581  return
+
+  582  sub            dumpListFullMessage@582
+  583  delete         listFullBox
+  584  return
+
+  585  sub            procNewPlayerButtonHit@585
+  586  call           pInterruptScene@299
+  587  send           SignInList, startNewEntry
+  588  call           procUpdateStartButton@350
+  589  call           procUpdateNewButton@359
+  590  return
+
+  591  sub            procStartButtonHit@591
+  592  call           pInterruptScene@299
+  593  call           procEntrySelected@634
+  594  return
+
+  595  sub            procPracButtonHit@595
+  596  call           pInterruptScene@299
+  597  get_prop       SignInList, "currentEntry", entry
+  598  send           gPort, activatePlayer, entry
+  599  set_prop       gPort, inGame, kFalse
+  600  get_prop       gPort, isBackgroundMusicOff, abc
+  601  set            sPort, RScenePort, RScenePort
+  602  set_prop       sPort, isBackgroundMusicEnabled, (1-abc)
+  603  delete         sPort
+  604  get_prop       SignInList, "entryIsNew", f
+  605  if             ((f=1))
+  606  jump_if_false  -> 609
+  607  call           gNewGame@243
+  608  end
+  609  call           pLaptrapClick@666
+  610  return
+
+  611  sub            procExitButtonHit@611
+  612  call           pInterruptScene@299
+  613  call           exitDialogBox@659
+  614  return
+
+  615  sub            procUpArrowHit@615
+  616  call           pInterruptScene@299
+  617  send           SignInList, moveHighlightUp
+  618  return
+
+  619  sub            procDownArrowHit@619
+  620  call           pInterruptScene@299
+  621  send           SignInList, moveHighlightDown
+  622  return
+
+  623  sub            cleanup@623
+  624  delete         upArrowButton
+  625  delete         downArrowButton
+  626  delete         exitButton
+  627  delete         startButton
+  628  delete         pracModeButton
+  629  delete         newPlayerButton
+  630  delete         SignInList
+  631  delete         KeyInput
+  632  delete         SignInData
+  633  return
+
+  634  sub            procEntrySelected@634
+  635  call           pInterruptScene@299
+  636  get_prop       SignInList, "currentEntry", entry
+  637  if             (entry="Limburger")
+  638  jump_if_false  -> 641
+  639  call           callQaCheatScript@392
+  640  jump           -> 658
+  641  end
+  642  send           gPort, activatePlayer, entry
+  643  set_prop       gPort, inGame, kTrue
+  644  get_prop       gPort, isBackgroundMusicOff, abc
+  645  set            sPort, RScenePort, RScenePort
+  646  set_prop       sPort, isBackgroundMusicEnabled, (1-abc)
+  647  delete         sPort
+  648  get_prop       SignInList, "entryIsNew", f
+  649  if             ((f=1))
+  650  jump_if_false  -> 653
+  651  call           gNewGame@243
+  652  end
+  653  call_global    SetDoubleClicksEnabled, kFalse
+  654  get_prop       gPort, currentLocation, curScript
+  655  call           cleanup@623
+  656  call_global    StartTransition
+  657  load_script    (curScript+".mps")
+  658  return
+
+  659  sub            exitDialogBox@659
+  660  set            exitBox, RDialog, exitDialogBoxID, 2000
+  661  send           exitBox, addButton, exitButton1ResID, 1
+  662  send           exitBox, addButton, exitButton2ResID, 0
+  663  send           exitBox, addGraphic, exitGraphic
+  664  set_prop       exitBox, buttonPressed, exitGame@694
+  665  return
+
+  666  sub            pLaptrapClick@666
+  667  call           pInterruptScene@299
+  668  if             sceneInterrupted
+  669  jump_if_false  -> 674
+  670  set            gLaptrap, RLapTrap, 10000, SIGNIN
+  671  set_prop       gLaptrap, closed, eCloseLaptrap@675
+  672  set_prop       gLaptrap, locationSelected, eExitToMapLoc@687
+  673  end
+  674  return
+
+  675  sub            eCloseLaptrap@675
+  676  delete         gLaptrap
+  677  return
+
+  678  sub            eSQueueDone@678
+  679  send           sQueue, clear
+  680  if             (sQueueFinished#"empty")
+  681  jump_if_false  -> 686
+  682  set            finishedEvent, sQueueFinished
+  683  set            sQueueFinished, "empty"
+  684  call           finishedEvent
+  685  end
+  686  return
+
+  687  sub            eExitToMapLoc@687
+  688  call_global    SetDoubleClicksEnabled, kFalse
+  689  set_prop       gPort, previousLocation, "SIGNIN"
+  690  get_prop       gLaptrap, selectedLocation, location
+  691  call_global    StartTransition
+  692  load_script    (location+".mps")
+  693  return
+
+  694  sub            exitGame@694
+  695  get_prop       exitBox, selectedButton, button
+  696  if             (button=0)
+  697  jump_if_false  -> 700
+  698  delete         exitBox
+  699  jump           -> 703
+  700  end
+  701  call_global    GoToBlack
+  702  exit
+  703  return

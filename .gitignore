@@ -1,0 +1,13 @@
+# Node / Vite
+app/node_modules/
+app/dist/
+app/.vite/
+
+# Environment
+.env
+.env.*
+
+# Editor / OS
+.vscode/
+.DS_Store
+Thumbs.db

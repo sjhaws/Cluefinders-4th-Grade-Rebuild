@@ -1,0 +1,1619 @@
+    0  start
+    1  call_global    UncacheAllDLLs
+    2  set            kOMFontNormal, 0
+    3  set            kOMFontBold, 1
+    4  set            kOMFontItalic, 2
+    5  set            kOMFontUnderlined, 4
+    6  set            kNormalCursor, 25
+    7  set            kHotCursor, 26
+    8  set            kFingerCursor, 27
+    9  set            kOpenHandCursor, 28
+   10  set            kClosedHandCursor, 29
+   11  set            kNorthCursor, 30
+   12  set            kEastCursor, 31
+   13  set            kWestCursor, 32
+   14  set            kSouthCursor, 33
+   15  set            kNorthWestCursor, 34
+   16  set            kNorthEastCursor, 35
+   17  set            kSouthWestCursor, 36
+   18  set            kSouthEastCursor, 37
+   19  set            kHourglassCursor, 38
+   20  set            kCairo1BMusicID, 30515
+   21  set            kCairo2BMusicID, 30516
+   22  set            kCairo3BMusicID, 30517
+   23  set            kOasis1BMusicID, 30518
+   24  set            kOasis2BMusicID, 30519
+   25  set            kOasis3BMusicID, 30520
+   26  set            kPyramid1BMusicID, 30521
+   27  set            kPyramid2BMusicID, 30522
+   28  set            kPyramid3BMusicID, 30523
+   29  set            kPMChooseActButtonID, 5
+   30  set            kBlinkMinTime, 3
+   31  set            kBlinkMaxTime, 5
+   32  set            kFidgetMinTime, 45
+   33  set            kFidgetMaxTime, 60
+   34  set            kTrue, 1
+   35  set            kFalse, 0
+   36  set            kOn, 1
+   37  set            kOff, 0
+   38  set            kScreenWidth, 640
+   39  set            kScreenHeight, 480
+   40  set            kUseAOCoords, 11111
+   41  set            kNumCRounds, 5
+   42  set            kNumItemsPerCRound, 12
+   43  set            kNumCStatueDatasets, 10
+   44  set            kNumORounds, 5
+   45  set            kNumItemsPerORound, 12
+   46  set            kBackpackDef, 1
+   47  set            kMaxItemsInBackpack, 12
+   48  set            kMaxItemsInWS, 6
+   49  set            kMaxItemsInHub, 12
+   50  set            kMaxItemW, 36
+   51  set            kMaxItemH, 28
+   52  set            kCGlyphStart, 1
+   53  set            kCGlyphEnd, 12
+   54  set            kGemStart, 13
+   55  set            kGemEnd, 28
+   56  set            kItemInBPSfxID, 30524
+   57  set            kItemPickUpSfxID, 30525
+   58  set            openBackpack, 0
+   59  set            closedBackpack, 0
+   60  set            closedBackpackName, 0
+   61  set            objectIndex, 1
+   62  set            toBackpackOnly, 1
+
+   63  sub            pInitObjectsAndBackpack@63, toBackpack, backpackName
+   64  loop           i, 1, kMaxItemsInWS
+   65  loop_test      i, 1, kMaxItemsInWS
+   66  jump_if_false  -> 73
+   67  get_prop       gPort, itemPresent, i, objectToDisplay
+   68  if             (objectToDisplay#0)
+   69  jump_if_false  -> 72
+   70  call           pDisplayObject@76, kFalse
+   71  end
+   72  jump           -> 65
+   73  set            toBackpackOnly, toBackpack
+   74  set            closedBackpackName, backpackName
+   75  return
+
+   76  sub            pDisplayObject@76, animate
+   77  if             (objectBoxW>kMaxItemW)
+   78  jump_if_false  -> 82
+   79  call_global    RandomNumber, 1, (objectBoxW-kMaxItemW)
+   80  set            xOff, $result
+   81  jump           -> 84
+   82  end
+   83  set            xOff, 0
+   84  set            ox, (objectBoxX+xOff)
+   85  if             (objectBoxH>kMaxItemH)
+   86  jump_if_false  -> 90
+   87  call_global    RandomNumber, 1, (objectBoxH-kMaxItemH)
+   88  set            yOff, $result
+   89  jump           -> 92
+   90  end
+   91  set            yOff, 0
+   92  set            oy, (objectBoxY+yOff)
+   93  set            object.objectIndex, RAnimation, ox, oy, objectAOIDs.objectToDisplay
+   94  set_prop       object.objectIndex, "z", objectZ
+   95  set_prop       object.objectIndex, userData, (" "+ox+"#"+oy+":"+objectToDisplay)
+   96  set_prop       object.objectIndex, "mouseDown", eObjectPickedUp@133
+   97  set_prop       object.objectIndex, "mouseUp", eObjectDropped@137
+   98  send           object.objectIndex, setAOCursor, kOpenHandCursor, kClosedHandCursor
+   99  if             animate
+  100  jump_if_false  -> 112
+  101  send           object.objectIndex, play
+  102  set            port, RWorldPort, RWorldPort
+  103  get_prop       port, currentLocation, location
+  104  delete         port
+  105  if             ((location="CWS1")+(location="CWS2")+(location="CWS3")+(location="CWS4"))
+  106  jump_if_false  -> 109
+  107  call_global    PlaySound, 1000
+  108  jump           -> 111
+  109  end
+  110  call_global    PlaySound, 11000
+  111  end
+  112  set            objectIndex, (objectIndex+1)
+  113  return
+
+  114  sub            pNewObjectAtLocation@114, newID
+  115  send           gPort, addObject, newID
+  116  set            objectToDisplay, newID
+  117  call           pDisplayObject@76, kTrue
+  118  return
+
+  119  sub            eBackpackOpened@119
+  120  if             (openBackpack=0)
+  121  jump_if_false  -> 129
+  122  set            openBackpack, RBackPack, backpackX, backpackY, backpackZ
+  123  set_prop       openBackpack, closed, eBackpackClosed@130
+  124  if             (toBackpackOnly=0)
+  125  jump_if_false  -> 128
+  126  set_prop       openBackpack, objectDropped, eBackpackObjectDropped
+  127  end
+  128  end
+  129  return
+
+  130  sub            eBackpackClosed@130
+  131  set            openBackpack, 0
+  132  return
+
+  133  sub            eObjectPickedUp@133
+  134  set_prop       $1, "z", 10000
+  135  call_global    PlaySound, kItemPickUpSfxID
+  136  return
+
+  137  sub            eObjectDropped@137
+  138  get_prop       $1, userData, ud
+  139  set            p1, ("#"@ud)
+  140  set            p2, (":"@ud)
+  141  set            t2, (p1-1)
+  142  set            ox, ud|1|t2
+  143  set            t1, (p1+1)
+  144  set            t2, (p2-p1-1)
+  145  set            oy, ud|t1|t2
+  146  set            t1, (p2+1)
+  147  set            id, ud|t1
+  148  set_prop       $1, "z", objectZ
+  149  if             (toBackpackOnly=1)
+  150  jump_if_false  -> 195
+  151  if             (openBackpack#0)
+  152  jump_if_false  -> 176
+  153  call_global    IntersectTest, "RECEIVER", "openBackpack"
+  154  set            test, $result
+  155  if             (test=1)
+  156  jump_if_false  -> 159
+  157  send           openBackpack, addObject, id
+  158  jump           -> 175
+  159  end
+  160  if             (closedBackpack#0)
+  161  jump_if_false  -> 173
+  162  get_prop       closedBackpack, visible, test
+  163  if             (test=1)
+  164  jump_if_false  -> 172
+  165  call_global    IntersectTest, "RECEIVER", "closedBackpack"
+  166  set            test, $result
+  167  if             (test=1)
+  168  jump_if_false  -> 171
+  169  send           openBackpack, addObject, id
+  170  end
+  171  end
+  172  jump           -> 175
+  173  end
+  174  set            test, 0
+  175  jump           -> 194
+  176  end
+  177  if             (closedBackpack#0)
+  178  jump_if_false  -> 192
+  179  get_prop       closedBackpack, visible, test
+  180  if             (test=1)
+  181  jump_if_false  -> 191
+  182  call_global    IntersectTest, "RECEIVER", "closedBackpack"
+  183  set            test, $result
+  184  if             (test=1)
+  185  jump_if_false  -> 190
+  186  set            openBackpack, RBackPack, backpackX, backpackY, backpackZ
+  187  send           openBackpack, addObject, id
+  188  set            openBackpack, 0
+  189  end
+  190  end
+  191  jump           -> 194
+  192  end
+  193  set            test, 0
+  194  jump           -> 197
+  195  end
+  196  set            test, 0
+  197  if             (test=1)
+  198  jump_if_false  -> 207
+  199  get_prop       $1, name, Name
+  200  set            p, (1+"."@Name)
+  201  set            n, Name|p
+  202  delete         object.n
+  203  send           gPort, removeObjectFromLocation, id
+  204  set_prop       gPort, itemPlacedInBackpack, kTrue
+  205  call_global    PlaySound, kItemInBPSfxID
+  206  jump           -> 210
+  207  end
+  208  set_prop       $1, x, ox
+  209  set_prop       $1, y, oy
+  210  return
+
+  211  sub            globalInit@211
+  212  set            gCurLocation, 0
+  213  set            laptrap, 0
+  214  set            gPort, RWorldPort, RWorldPort
+  215  set            gScenePort, RScenePort, RScenePort
+  216  return
+
+  217  sub            globalDispose@217
+  218  delete         gPort
+  219  delete         gScenePort
+  220  return
+
+  221  sub            gOpenLaptrap@221
+  222  if             (laptrap#0)
+  223  jump_if_false  -> 226
+  224  set_prop       laptrap, visible, kFalse
+  225  end
+  226  if             (gCurLocation=0)
+  227  jump_if_false  -> 230
+  228  set            gLaptrap, RLapTrap, 10000
+  229  jump           -> 232
+  230  end
+  231  set            gLaptrap, RLapTrap, 10000, gCurLocation
+  232  set_prop       gLaptrap, closed, gCloseLaptrap@235
+  233  set_prop       gLaptrap, locationSelected, eExitToMapLoc@1533
+  234  return
+
+  235  sub            gCloseLaptrap@235
+  236  if             (laptrap#0)
+  237  jump_if_false  -> 240
+  238  set_prop       laptrap, visible, kTrue
+  239  end
+  240  delete         gLaptrap
+  241  return
+
+  242  sub            gNewGame@242
+  243  call_global    RandomNumber, 1, kNumCStatueDatasets
+  244  set_prop       gPort, CStatueDataset, $result
+  245  return
+
+  246  sub            gGameCompleted@246
+  247  send           gPort, newGame
+  248  get_prop       gPort, CStatueDataset, curDataset
+  249  set            curDataset, (curDataset+1)
+  250  if             (curDataset>kNumCStatueDatasets)
+  251  jump_if_false  -> 254
+  252  set            curDataset, 1
+  253  end
+  254  set_prop       gPort, CStatueDataset, curDataset
+  255  set_prop       gPort, CLOC01StatueUp, 0
+  256  set_prop       gPort, CBA2OpenVisitedCount, 0
+  257  set_prop       gPort, "CMALevel", 0
+  258  set_prop       gPort, "CMASolved", 0
+  259  set_prop       gPort, "PLOC2VisitedCount", 0
+  260  set_prop       gPort, "OMASolved", 0
+  261  set_prop       gPort, "OMAPracModeEntryCount", 0
+  262  set_prop       gPort, "OMALevel", 0
+  263  loop           i, 1, 4
+  264  loop_test      i, 1, 4
+  265  jump_if_false  -> 268
+  266  set_prop       gPort, ("OMAGatorDown"+i), 0
+  267  jump           -> 264
+  268  set_prop       gPort, "PWS2CompletedCount", 0
+  269  set_prop       gPort, "PWS2Round1visits", 0
+  270  set_prop       gPort, "PWS2Round2visits", 0
+  271  set_prop       gPort, "PWS2Round3visits", 0
+  272  set_prop       gPort, "PWS2Round4visits", 0
+  273  return
+  274  set            kTagFontName, "Arial"
+  275  set            kTagFontSize, 12
+  276  set            kTagFontStyle, kOMFontBold
+  277  set            kTagTextColor, 10
+  278  set            kPackageFontName, "Arial"
+  279  set            kPackageFontSize, 12
+  280  set            kPackageFontStyle, kOMFontBold
+  281  set            kPackageTextColor, 10
+  282  set            kMapID.1.1, 30347
+  283  set            kAnswer.1.1, 3756
+  284  set            kAnswerSnapX.1.1, 20
+  285  set            kAnswerSnapY.1.1, 22
+  286  set            kPackageText.1.1, "This country is to the east of Thailand."
+  287  set            kTagText.1.1, "This country is landlocked."
+  288  set            kTargettingNSEW.1.1, 1
+  289  set            kHasKey.1.1, 0
+  290  set            kPixelCompare.1.1, 1
+  291  set            kMapID.1.2, 30453
+  292  set            kAnswer.1.2, 3828
+  293  set            kAnswerSnapX.1.2, 47
+  294  set            kAnswerSnapY.1.2, 38
+  295  set            kPackageText.1.2, "This continent is in the western hemisphere."
+  296  set            kTagText.1.2, "It is not North America."
+  297  set            kTargettingNSEW.1.2, 1
+  298  set            kHasKey.1.2, 0
+  299  set            kPixelCompare.1.2, 1
+  300  set            kMapID.1.3, 3730
+  301  set            kAnswer.1.3, 3764
+  302  set            kAnswerSnapX.1.3, 9
+  303  set            kAnswerSnapY.1.3, 16
+  304  set            kPackageText.1.3, "This state is northeast of Vermont (VT)."
+  305  set            kTagText.1.3, "It is not New Hampshire (NH)."
+  306  set            kTargettingNSEW.1.3, 1
+  307  set            kHasKey.1.3, 0
+  308  set            kPixelCompare.1.3, 1
+  309  set            kMapID.1.4, 3730
+  310  set            kAnswer.1.4, 3763
+  311  set            kAnswerSnapX.1.4, 16
+  312  set            kAnswerSnapY.1.4, 24
+  313  set            kPackageText.1.4, " This state borders on the Gulf of Mexico."
+  314  set            kTagText.1.4, "This state borders on Texas (TX)."
+  315  set            kTargettingNSEW.1.4, 0
+  316  set            kHasKey.1.4, 0
+  317  set            kPixelCompare.1.4, 1
+  318  set            kMapID.1.5, 30360
+  319  set            kAnswer.1.5, 30365
+  320  set            kAnswerSnapX.1.5, 39
+  321  set            kAnswerSnapY.1.5, 19
+  322  set            kPackageText.1.5, "This state is farther east than Texas (TX)."
+  323  set            kTagText.1.5, "This state is a peninsula."
+  324  set            kTargettingNSEW.1.5, 1
+  325  set            kHasKey.1.5, 0
+  326  set            kPixelCompare.1.5, 1
+  327  set            kMapID.1.6, 30360
+  328  set            kAnswer.1.6, 30364
+  329  set            kAnswerSnapX.1.6, 19
+  330  set            kAnswerSnapY.1.6, 17
+  331  set            kPackageText.1.6, "This state is west of Kansas (KS)."
+  332  set            kTagText.1.6, "This state is north of New Mexico (NM)."
+  333  set            kTargettingNSEW.1.6, 1
+  334  set            kHasKey.1.6, 0
+  335  set            kPixelCompare.1.6, 1
+  336  set            kMapID.1.7, 30318
+  337  set            kAnswer.1.7, 30332
+  338  set            kAnswerSnapX.1.7, 45
+  339  set            kAnswerSnapY.1.7, 29
+  340  set            kPackageText.1.7, "This country is east of Colombia."
+  341  set            kTagText.1.7, "This country is west of Guyana."
+  342  set            kTargettingNSEW.1.7, 1
+  343  set            kHasKey.1.7, 0
+  344  set            kPixelCompare.1.7, 1
+  345  set            kMapID.1.8, 30318
+  346  set            kAnswer.1.8, 30331
+  347  set            kAnswerSnapX.1.8, 25
+  348  set            kAnswerSnapY.1.8, 34
+  349  set            kPackageText.1.8, "This country is south of Ecuador."
+  350  set            kTagText.1.8, "This country is west of Brazil."
+  351  set            kTargettingNSEW.1.8, 1
+  352  set            kHasKey.1.8, 0
+  353  set            kPixelCompare.1.8, 1
+  354  set            kMapID.1.9, 30453
+  355  set            kAnswer.1.9, 3670
+  356  set            kAnswerSnapX.1.9, 90
+  357  set            kAnswerSnapY.1.9, 50
+  358  set            kPackageText.1.9, "This continent borders on Africa."
+  359  set            kTagText.1.9, "This continent borders on Europe."
+  360  set            kTargettingNSEW.1.9, 0
+  361  set            kHasKey.1.9, 0
+  362  set            kPixelCompare.1.9, 1
+  363  set            kMapID.1.10, 30453
+  364  set            kAnswer.1.10, 3660
+  365  set            kAnswerSnapX.1.10, 72
+  366  set            kAnswerSnapY.1.10, 52
+  367  set            kPackageText.1.10, "This continent borders on the Atlantic and Indian Oceans."
+  368  set            kTagText.1.10, "This continent is not Antarctica."
+  369  set            kTargettingNSEW.1.10, 0
+  370  set            kHasKey.1.10, 0
+  371  set            kPixelCompare.1.10, 1
+  372  set            kMapID.1.11, 3939
+  373  set            kAnswer.1.11, 3941
+  374  set            kAnswerSnapX.1.11, 64
+  375  set            kAnswerSnapY.1.11, 64
+  376  set            kPackageText.1.11, "This country borders on Mongolia and Russia."
+  377  set            kTagText.1.11, "This country borders on the Pacific Ocean."
+  378  set            kTargettingNSEW.1.11, 0
+  379  set            kHasKey.1.11, 0
+  380  set            kPixelCompare.1.11, 1
+  381  set            kMapID.1.12, 3939
+  382  set            kAnswer.1.12, 3943
+  383  set            kAnswerSnapX.1.12, 16
+  384  set            kAnswerSnapY.1.12, 23
+  385  set            kPackageText.1.12, "This country borders on Iraq."
+  386  set            kTagText.1.12, "This country borders on Afghanistan."
+  387  set            kTargettingNSEW.1.12, 0
+  388  set            kHasKey.1.12, 0
+  389  set            kPixelCompare.1.12, 1
+  390  set            kMapID.1.13, 3874
+  391  set            kAnswer.1.13, 3879
+  392  set            kAnswerSnapX.1.13, 15
+  393  set            kAnswerSnapY.1.13, 16
+  394  set            kPackageText.1.13, "This country is north of Tanzania."
+  395  set            kTagText.1.13, "This country is south of Ethiopia."
+  396  set            kTargettingNSEW.1.13, 1
+  397  set            kHasKey.1.13, 0
+  398  set            kPixelCompare.1.13, 1
+  399  set            kMapID.1.14, 3874
+  400  set            kAnswer.1.14, 3883
+  401  set            kAnswerSnapX.1.14, 36
+  402  set            kAnswerSnapY.1.14, 22
+  403  set            kPackageText.1.14, "This country is due north of Nigeria."
+  404  set            kTagText.1.14, "This country is west of Chad."
+  405  set            kTargettingNSEW.1.14, 1
+  406  set            kHasKey.1.14, 0
+  407  set            kPixelCompare.1.14, 1
+  408  set            kMapID.1.15, 3953
+  409  set            kAnswer.1.15, 3988
+  410  set            kAnswerSnapX.1.15, 25
+  411  set            kAnswerSnapY.1.15, 21
+  412  set            kPackageText.1.15, "This country is east of Germany."
+  413  set            kTagText.1.15, "This country is north of Slovakia."
+  414  set            kTargettingNSEW.1.15, 1
+  415  set            kHasKey.1.15, 0
+  416  set            kPixelCompare.1.15, 1
+  417  set            kMapID.1.16, 3953
+  418  set            kAnswer.1.16, 3989
+  419  set            kAnswerSnapX.1.16, 24
+  420  set            kAnswerSnapY.1.16, 21
+  421  set            kPackageText.1.16, "This country is on a peninsula."
+  422  set            kTagText.1.16, "This country is west of Spain."
+  423  set            kTargettingNSEW.1.16, 1
+  424  set            kHasKey.1.16, 0
+  425  set            kPixelCompare.1.16, 1
+  426  set            kMapID.1.17, 30318
+  427  set            kAnswer.1.17, 30324
+  428  set            kAnswerSnapX.1.17, 20
+  429  set            kAnswerSnapY.1.17, 55
+  430  set            kPackageText.1.17, "This country is east of Chile."
+  431  set            kTagText.1.17, "This country is south of Paraguay and Bolivia."
+  432  set            kTargettingNSEW.1.17, 1
+  433  set            kHasKey.1.17, 0
+  434  set            kPixelCompare.1.17, 1
+  435  set            kMapID.2.1, 30453
+  436  set            kAnswer.2.1, 3683
+  437  set            kAnswerSnapX.2.1, 30
+  438  set            kAnswerSnapY.2.1, 40
+  439  set            kPackageText.2.1, "This continent is an island."
+  440  set            kTagText.2.1, "It is not Antarctica."
+  441  set            kTargettingNSEW.2.1, 0
+  442  set            kHasKey.2.1, 0
+  443  set            kPixelCompare.2.1, 1
+  444  set            kMapID.2.2, 3730
+  445  set            kAnswer.2.2, 3864
+  446  set            kAnswerSnapX.2.2, 16
+  447  set            kAnswerSnapY.2.2, 25
+  448  set            kPackageText.2.2, "This state shares a border with Canada."
+  449  set            kTagText.2.2, "This state borders four great lakes."
+  450  set            kTargettingNSEW.2.2, 0
+  451  set            kHasKey.2.2, 0
+  452  set            kPixelCompare.2.2, 1
+  453  set            kMapID.2.3, 30453
+  454  set            kAnswer.2.3, 30457
+  455  set            kAnswerSnapX.2.3, 66
+  456  set            kAnswerSnapY.2.3, 115
+  457  set            kPackageText.2.3, "North America and South America border on this ocean."
+  458  set            kTagText.2.3, "It is not the Pacific Ocean."
+  459  set            kTargettingNSEW.2.3, 1
+  460  set            kHasKey.2.3, 0
+  461  set            kPixelCompare.2.3, 1
+  462  set            kMapID.2.4, 30453
+  463  set            kAnswer.2.4, 30455
+  464  set            kAnswerSnapX.2.4, 195
+  465  set            kAnswerSnapY.2.4, 21
+  466  set            kPackageText.2.4, "Three continents border on this ocean."
+  467  set            kTagText.2.4, "This ocean is in the northern hemisphere."
+  468  set            kTargettingNSEW.2.4, 1
+  469  set            kHasKey.2.4, 0
+  470  set            kPixelCompare.2.4, 1
+  471  set            kMapID.2.5, 30453
+  472  set            kAnswer.2.5, 30460
+  473  set            kAnswerSnapX.2.5, 84
+  474  set            kAnswerSnapY.2.5, 64
+  475  set            kPackageText.2.5, "This ocean borders on Africa."
+  476  set            kTagText.2.5, "This ocean also borders on Australia."
+  477  set            kTargettingNSEW.2.5, 0
+  478  set            kHasKey.2.5, 0
+  479  set            kPixelCompare.2.5, 1
+  480  set            kMapID.2.6, 3939, (-1)
+  481  set            kAnswer.2.6, 3932
+  482  set            kAnswerSnapX.2.6, 25
+  483  set            kAnswerSnapY.2.6, 43
+  484  set            kPackageText.2.6, "This country is on the largest peninsula in Asia."
+  485  set            kTagText.2.6, "The peninsula is in the Indian Ocean."
+  486  set            kTargettingNSEW.2.6, 0
+  487  set            kHasKey.2.6, 0
+  488  set            kPixelCompare.2.6, 1
+  489  set            kMapID.2.7, 30318
+  490  set            kAnswer.2.7, 30322
+  491  set            kAnswerSnapX.2.7, 14
+  492  set            kAnswerSnapY.2.7, 14
+  493  set            kPackageText.2.7, "This country does not share a border with Chile."
+  494  set            kTagText.2.7, "This country is landlocked."
+  495  set            kTargettingNSEW.2.7, 0
+  496  set            kHasKey.2.7, 0
+  497  set            kPixelCompare.2.7, 1
+  498  set            kMapID.2.8, 30280
+  499  set            kAnswer.2.8, 30281
+  500  set            kAnswerSnapX.2.8, 16
+  501  set            kAnswerSnapY.2.8, 2
+  502  set            kPackageText.2.8, "This city is on an island."
+  503  set            kTagText.2.8, "This city is on the Tropic of Cancer."
+  504  set            kTargettingNSEW.2.8, 1
+  505  set            kHasKey.2.8, 0
+  506  set            kPixelCompare.2.8, 0
+  507  set            kMapID.2.9, 3898
+  508  set            kAnswer.2.9, 3877
+  509  set            kAnswerSnapX.2.9, 19
+  510  set            kAnswerSnapY.2.9, 22
+  511  set            kPackageText.2.9, "The Nile river flows through this country."
+  512  set            kTagText.2.9, "This country borders on the Mediterranean Sea."
+  513  set            kTargettingNSEW.2.9, 0
+  514  set            kHasKey.2.9, 0
+  515  set            kPixelCompare.2.9, 1
+  516  set            kMapID.2.10, 3898
+  517  set            kAnswer.2.10, 3889
+  518  set            kAnswerSnapX.2.10, 51
+  519  set            kAnswerSnapY.2.10, 8
+  520  set            kPackageText.2.10, "The country borders on the largest lake in Africa."
+  521  set            kTagText.2.10, "This country borders on Kenya and Sudan."
+  522  set            kTargettingNSEW.2.10, 0
+  523  set            kHasKey.2.10, 0
+  524  set            kPixelCompare.2.10, 1
+  525  set            kMapID.2.11, 3953
+  526  set            kAnswer.2.11, 3984
+  527  set            kAnswerSnapX.2.11, 45
+  528  set            kAnswerSnapY.2.11, 46
+  529  set            kPackageText.2.11, " This country is a peninsula in the Mediterranean Sea."
+  530  set            kTagText.2.11, " The country borders on France."
+  531  set            kTargettingNSEW.2.11, 0
+  532  set            kHasKey.2.11, 0
+  533  set            kPixelCompare.2.11, 1
+  534  set            kMapID.2.12, 30347
+  535  set            kAnswer.2.12, 3802
+  536  set            kAnswerSnapX.2.12, 45
+  537  set            kAnswerSnapY.2.12, 72
+  538  set            kPackageText.2.12, "This country is east of Vietnam."
+  539  set            kTagText.2.12, " This country is made up of islands."
+  540  set            kTargettingNSEW.2.12, 1
+  541  set            kHasKey.2.12, 0
+  542  set            kPixelCompare.2.12, 1
+  543  set            kMapID.2.13, 30264
+  544  set            kAnswer.2.13, 30271
+  545  set            kAnswerSnapX.2.13, 46
+  546  set            kAnswerSnapY.2.13, 31
+  547  set            kPackageText.2.13, "This country is larger than Kuwait."
+  548  set            kTagText.2.13, "This country is south of Saudi Arabia."
+  549  set            kTargettingNSEW.2.13, 1
+  550  set            kHasKey.2.13, 0
+  551  set            kPixelCompare.2.13, 1
+  552  set            kMapID.2.14, 30280
+  553  set            kAnswer.2.14, 30285
+  554  set            kAnswerSnapX.2.14, 28
+  555  set            kAnswerSnapY.2.14, 14
+  556  set            kPackageText.2.14, "This city is farther west than Havana."
+  557  set            kTagText.2.14, "This city is in the United States of America."
+  558  set            kTargettingNSEW.2.14, 1
+  559  set            kHasKey.2.14, 0
+  560  set            kPixelCompare.2.14, 0
+  561  set            kMapID.2.15, 30301
+  562  set            kAnswer.2.15, 30304
+  563  set            kAnswerSnapX.2.15, 25
+  564  set            kAnswerSnapY.2.15, 57
+  565  set            kPackageText.2.15, "Australia is farther west than this country."
+  566  set            kTagText.2.15, "This country is smaller than Australia. "
+  567  set            kTargettingNSEW.2.15, 1
+  568  set            kHasKey.2.15, 0
+  569  set            kPixelCompare.2.15, 1
+  570  set            kMapID.3.1, 30453
+  571  set            kAnswer.3.1, 3828
+  572  set            kAnswerSnapX.3.1, 47
+  573  set            kAnswerSnapY.3.1, 38
+  574  set            kPackageText.3.1, "This continent does not border on the Arctic or Indian Oceans."
+  575  set            kTagText.3.1, "This continent is north of Antarctica."
+  576  set            kTargettingNSEW.3.1, 1
+  577  set            kHasKey.3.1, 0
+  578  set            kPixelCompare.3.1, 1
+  579  set            kMapID.3.2, 30453
+  580  set            kAnswer.3.2, 3733
+  581  set            kAnswerSnapX.3.2, 55
+  582  set            kAnswerSnapY.3.2, 40
+  583  set            kPackageText.3.2, "This continent does not border on the Pacific or Indian Oceans."
+  584  set            kTagText.3.2, "This continent borders on the Atlantic Ocean."
+  585  set            kTargettingNSEW.3.2, 0
+  586  set            kHasKey.3.2, 0
+  587  set            kPixelCompare.3.2, 1
+  588  set            kMapID.3.3, 3806
+  589  set            kAnswer.3.3, 3667
+  590  set            kAnswerSnapX.3.3, 22
+  591  set            kAnswerSnapY.3.3, 51
+  592  set            kPackageText.3.3, "This country has a population between 10 and 100 million."
+  593  set            kTagText.3.3, "This country shares a border with Paraguay."
+  594  set            kTargettingNSEW.3.3, 0
+  595  set            kHasKey.3.3, 1
+  596  set            kPixelCompare.3.3, 1
+  597  set            kMapID.3.4, 3964
+  598  set            kAnswer.3.4, 3967
+  599  set            kAnswerSnapX.3.4, 4
+  600  set            kAnswerSnapY.3.4, 3
+  601  set            kPackageText.3.4, "This city is in between the Mediterranean Sea and the Black Sea."
+  602  set            kTagText.3.4, "This city is northeast of Athens."
+  603  set            kTargettingNSEW.3.4, 1
+  604  set            kHasKey.3.4, 0
+  605  set            kPixelCompare.3.4, 1
+  606  set            kMapID.3.5, 30294
+  607  set            kAnswer.3.5, 30295
+  608  set            kAnswerSnapX.3.5, 56
+  609  set            kAnswerSnapY.3.5, 26
+  610  set            kPackageText.3.5, "This U.S. state has mostly subarctic and tundra climate zones."
+  611  set            kTagText.3.5, "This state is northernmost state of the United States."
+  612  set            kTargettingNSEW.3.5, 1
+  613  set            kHasKey.3.5, 1
+  614  set            kPixelCompare.3.5, 0
+  615  set            kMapID.3.6, 30441
+  616  set            kAnswer.3.6, 30442
+  617  set            kAnswerSnapX.3.6, 56
+  618  set            kAnswerSnapY.3.6, 52
+  619  set            kPackageText.3.6, "This continent has the largest desert area."
+  620  set            kTagText.3.6, "This continent is east of the Atlantic Ocean."
+  621  set            kTargettingNSEW.3.6, 1
+  622  set            kHasKey.3.6, 1
+  623  set            kPixelCompare.3.6, 1
+  624  set            kMapID.3.7, 30441
+  625  set            kAnswer.3.7, 30450
+  626  set            kAnswerSnapX.3.7, 66
+  627  set            kAnswerSnapY.3.7, 60
+  628  set            kPackageText.3.7, "This continent has a large tundra area."
+  629  set            kTagText.3.7, "This continent does not border on the Indian Ocean."
+  630  set            kTargettingNSEW.3.7, 0
+  631  set            kHasKey.3.7, 1
+  632  set            kPixelCompare.3.7, 1
+  633  set            kMapID.3.8, 3917
+  634  set            kAnswer.3.8, 3920
+  635  set            kAnswerSnapX.3.8, 120
+  636  set            kAnswerSnapY.3.8, 16
+  637  set            kPackageText.3.8, "This country gets 20 to 80 inches of rain per year."
+  638  set            kTagText.3.8, "This country is landlocked."
+  639  set            kTargettingNSEW.3.8, 0
+  640  set            kHasKey.3.8, 1
+  641  set            kPixelCompare.3.8, 0
+  642  set            kMapID.3.9, 30333
+  643  set            kAnswer.3.9, 30334
+  644  set            kAnswerSnapX.3.9, 94
+  645  set            kAnswerSnapY.3.9, 7
+  646  set            kPackageText.3.9, "This is the highest mountain peak in South America."
+  647  set            kTagText.3.9, "This mountain is in Argentina."
+  648  set            kTargettingNSEW.3.9, 0
+  649  set            kHasKey.3.9, 1
+  650  set            kPixelCompare.3.9, 0
+  651  set            kMapID.3.10, (-1)
+  652  set            kAnswer.3.10, 30326
+  653  set            kAnswerSnapX.3.10, 74
+  654  set            kAnswerSnapY.3.10, 58
+  655  set            kPackageText.3.10, "Parts of this country get more than 80 inches of rain per year."
+  656  set            kTagText.3.10, "This country does not border on the Pacific Ocean."
+  657  set            kTargettingNSEW.3.10, 0
+  658  set            kHasKey.3.10, 1
+  659  set            kPixelCompare.3.10, 1
+  660  set            kMapID.3.11, 3917
+  661  set            kAnswer.3.11, 3921
+  662  set            kAnswerSnapX.3.11, 22
+  663  set            kAnswerSnapY.3.11, 32
+  664  set            kPackageText.3.11, "This country gets 0 to 60 inches of rain per year."
+  665  set            kTagText.3.11, "This country is landlocked."
+  666  set            kTargettingNSEW.3.11, 0
+  667  set            kHasKey.3.11, 1
+  668  set            kPixelCompare.3.11, 0
+  669  set            kMapID.3.12, (-1)
+  670  set            kAnswer.3.12, 30327
+  671  set            kAnswerSnapX.3.12, 31
+  672  set            kAnswerSnapY.3.12, 60
+  673  set            kPackageText.3.12, "Parts of this country get less then 10 inches of rain per year."
+  674  set            kTagText.3.12, "This country does not border on the Atlantic Ocean."
+  675  set            kTargettingNSEW.3.12, 0
+  676  set            kHasKey.3.12, 1
+  677  set            kPixelCompare.3.12, 1
+  678  set            kMapID.3.13, 30453
+  679  set            kAnswer.3.13, 3775
+  680  set            kAnswerSnapX.3.13, 61
+  681  set            kAnswerSnapY.3.13, 60
+  682  set            kPackageText.3.13, "No continent borders the east or west side of this continent."
+  683  set            kTagText.3.13, "There is no continent north of this continent."
+  684  set            kTargettingNSEW.3.13, 1
+  685  set            kHasKey.3.13, 0
+  686  set            kPixelCompare.3.13, 1
+  687  set            kMapID.4.1, 3730
+  688  set            kAnswer.4.1, 3766
+  689  set            kAnswerSnapX.4.1, 39
+  690  set            kAnswerSnapY.4.1, 24
+  691  set            kPackageText.4.1, "This state borders on Idaho (ID)."
+  692  set            kTagText.4.1, "This state's elevation is 1,500 feet and above."
+  693  set            kTargettingNSEW.4.1, 0
+  694  set            kHasKey.4.1, 1
+  695  set            kPixelCompare.4.1, 1
+  696  set            kMapID.4.2, 3844
+  697  set            kAnswer.4.2, 3813
+  698  set            kAnswerSnapX.4.2, 14
+  699  set            kAnswerSnapY.4.2, 2
+  700  set            kPackageText.4.2, "This city is to the west of Denver."
+  701  set            kTagText.4.2, "This city is in the Mountain Time Zone."
+  702  set            kTargettingNSEW.4.2, 0
+  703  set            kHasKey.4.2, 1
+  704  set            kPixelCompare.4.2, 0
+  705  set            kMapID.4.3, 30440
+  706  set            kAnswer.4.3, 30431
+  707  set            kAnswerSnapX.4.3, 17
+  708  set            kAnswerSnapY.4.3, 23
+  709  set            kPackageText.4.3, "This state is in the Pacific Time Zone."
+  710  set            kTagText.4.3, "This state does not border on the Pacific Ocean."
+  711  set            kTargettingNSEW.4.3, 0
+  712  set            kHasKey.4.3, 1
+  713  set            kPixelCompare.4.3, 0
+  714  set            kMapID.4.4, 3730
+  715  set            kAnswer.4.4, 3737
+  716  set            kAnswerSnapX.4.4, 50
+  717  set            kAnswerSnapY.4.4, 24
+  718  set            kPackageText.4.4, "The highest elevation in this state is about 350 feet."
+  719  set            kTagText.4.4, "This state borders on the Atlantic Ocean."
+  720  set            kTargettingNSEW.4.4, 0
+  721  set            kHasKey.4.4, 1
+  722  set            kPixelCompare.4.4, 1
+  723  set            kMapID.4.5, 3844
+  724  set            kAnswer.4.5, 3680
+  725  set            kAnswerSnapX.4.5, 14
+  726  set            kAnswerSnapY.4.5, 2
+  727  set            kPackageText.4.5, "This city is to the west of New Orleans."
+  728  set            kTagText.4.5, "This city is in the Central Time Zone."
+  729  set            kTargettingNSEW.4.5, 0
+  730  set            kHasKey.4.5, 1
+  731  set            kPixelCompare.4.5, 0
+  732  set            kMapID.4.6, 3730
+  733  set            kAnswer.4.6, 3768
+  734  set            kAnswerSnapX.4.6, 23
+  735  set            kAnswerSnapY.4.6, 26
+  736  set            kPackageText.4.6, " This state's elevation is 1,500 feet and above."
+  737  set            kTagText.4.6, "This state borders on California (CA)."
+  738  set            kTargettingNSEW.4.6, 0
+  739  set            kHasKey.4.6, 1
+  740  set            kPixelCompare.4.6, 1
+  741  set            kMapID.4.7, 30389
+  742  set            kAnswer.4.7, 30402
+  743  set            kAnswerSnapX.4.7, 39
+  744  set            kAnswerSnapY.4.7, 22
+  745  set            kPackageText.4.7, "This state borders on Canada."
+  746  set            kTagText.4.7, "This state has the risk of hurricanes."
+  747  set            kTargettingNSEW.4.7, 0
+  748  set            kHasKey.4.7, 1
+  749  set            kPixelCompare.4.7, 0
+  750  set            kMapID.4.8, 30389
+  751  set            kAnswer.4.8, 30416
+  752  set            kAnswerSnapX.4.8, 18
+  753  set            kAnswerSnapY.4.8, 29
+  754  set            kPackageText.4.8, "This state experiences tornados."
+  755  set            kTagText.4.8, "Part of this state is in an earthquake/volcano risk zone."
+  756  set            kTargettingNSEW.4.8, 0
+  757  set            kHasKey.4.8, 1
+  758  set            kPixelCompare.4.8, 0
+  759  set            kMapID.4.9, 30440
+  760  set            kAnswer.4.9, 30424
+  761  set            kAnswerSnapX.4.9, 27
+  762  set            kAnswerSnapY.4.9, 33
+  763  set            kPackageText.4.9, "When it is 6:00 p.m. in Maine (ME), it is 1:00 p.m. in this state."
+  764  set            kTagText.4.9, "This state is the farthest west of all 50 states."
+  765  set            kTargettingNSEW.4.9, 1
+  766  set            kHasKey.4.9, 1
+  767  set            kPixelCompare.4.9, 0
+  768  set            kMapID.4.10, 30389
+  769  set            kAnswer.4.10, 30392
+  770  set            kAnswerSnapX.4.10, 19
+  771  set            kAnswerSnapY.4.10, 19
+  772  set            kPackageText.4.10, "This state faces the fewest natural hazards."
+  773  set            kTagText.4.10, "This is not a coastal state."
+  774  set            kTargettingNSEW.4.10, 0
+  775  set            kHasKey.4.10, 1
+  776  set            kPixelCompare.4.10, 0
+  777  set            kMapID.4.11, 3844
+  778  set            kAnswer.4.11, 3779
+  779  set            kAnswerSnapX.4.11, 2
+  780  set            kAnswerSnapY.4.11, 2
+  781  set            kPackageText.4.11, "This city is farther west than Boston."
+  782  set            kTagText.4.11, "This city is in the Eastern Time Zone."
+  783  set            kTargettingNSEW.4.11, 1
+  784  set            kHasKey.4.11, 1
+  785  set            kPixelCompare.4.11, 0
+  786  set            kMapID.4.12, 3844
+  787  set            kAnswer.4.12, 3816
+  788  set            kAnswerSnapX.4.12, 2
+  789  set            kAnswerSnapY.4.12, 9
+  790  set            kPackageText.4.12, "This city is farther south than Portland."
+  791  set            kTagText.4.12, "This city is in the same time zone as Los Angeles."
+  792  set            kTargettingNSEW.4.12, 1
+  793  set            kHasKey.4.12, 1
+  794  set            kPixelCompare.4.12, 0
+  795  set            kMapID.4.13, 3844
+  796  set            kAnswer.4.13, 3722
+  797  set            kAnswerSnapX.4.13, 15
+  798  set            kAnswerSnapY.4.13, 14
+  799  set            kPackageText.4.13, "This city is to the east of Salt Lake City."
+  800  set            kTagText.4.13, "This city is in the Mountain Time Zone."
+  801  set            kTargettingNSEW.4.13, 1
+  802  set            kHasKey.4.13, 1
+  803  set            kPixelCompare.4.13, 0
+  804  call           globalInit@211
+  805  call           pInit@808
+  806  call           pStart@911
+  807  call_global    EndTransition
+
+  808  sub            pInit@808
+  809  set            kBackgroundID, 3500
+  810  set            kJoniSetID, 3505
+  811  set            kSantiagoSetID, 3506
+  812  set            kOwenSetID, 3507
+  813  set            kLeslieSetID, 3508
+  814  set            kSocratesSetID, 3510
+  815  set            kLaptrapSetID, 3509
+  816  set            kExportressSetID, 3512
+  817  set            kSantiagoWalkInID, 3541
+  818  set            kJoniWalkInID, 3540
+  819  set            kOwenWalkInID, 3542
+  820  set            kLeslieWalkInID, 3543
+  821  set            kLaptrapWalkInID, 3544
+  822  set            kSocratesWalkInID, 3545
+  823  set            kSantiagoWalkOutID, 3553
+  824  set            kJoniWalkOutID, 3551
+  825  set            kOwenWalkOutID, 3554
+  826  set            kLeslieWalkOutID, 3555
+  827  set            kLaptrapWalkOutID, 3557
+  828  set            kSocratesWalkOutID, 3556
+  829  set            kSantiagoFidgetID, 3640
+  830  set            kLeslieFidgetAID, 3642
+  831  set            kLeslieFidgetBID, 3637
+  832  set            kOwenFidgetAID, 3643
+  833  set            kOwenFidgetBID, 3636
+  834  set            kSocratesFidgetAID, 3644
+  835  set            kSocratesFidgetBID, 3638
+  836  set            kSocratesFidgetCID, 3639
+  837  set            kExportressFidgetID, 3645
+  838  set            kJoniBlinkID, 3650
+  839  set            kSantiagoBlinkID, 3651
+  840  set            kOwenBlinkID, 3652
+  841  set            kLeslieBlinkID, 3653
+  842  set            kSocratesBlinkID, 3654
+  843  set            kExportressBlinkID, 3656
+  844  set            kExpReplayNoCoinID, 3532
+  845  set            kPushPinID, 3520
+  846  set            kPackageID, 3521
+  847  set            kConveyorID, 3522
+  848  set            kExpIntro1SpchID, 3800
+  849  set            kExpIntro2SpchID, 3802
+  850  set            kExpReturnNoCoinSpchID, 3809
+  851  set            kJoniIntroSpchID, 3801
+  852  set            kExpReplayNoCoinSpchID, 3814
+  853  set            kExpHelp1SpchID, 3837
+  854  set            kExpHelp2SpchID, 3838
+  855  set            kSanTalk1aSpchID, 3842
+  856  set            kLesTalk1bSpchID, 3843
+  857  set            kLTExit1SpchID, 3853
+  858  set            kBeltSfxID, 3503
+  859  set            kPickUpSfxID, 3500
+  860  set            kSnapSfxID, 3501
+  861  set            kGoHomeSfxID, 3502
+  862  set            kNumPuzzlesPerRound, 2
+  863  set            kNumNavHotspots, 3
+  864  set            kCorrectAttribute, "A"
+  865  set            kWrongAttribute, "X"
+  866  set            kPackageTextRectXOff, 66
+  867  set            kPackageTextRectYOff, 35
+  868  set            kPackageTextRectW, 126
+  869  set            kPackageTextRectH, 68
+  870  set            kTagTextRectXOff, 226
+  871  set            kTagTextRectYOff, 79
+  872  set            kTagTextRectW, 146
+  873  set            kTagTextRectH, 50
+  874  set            kPushPinX, 500
+  875  set            kPushPinY, 300
+  876  set            kPushPinHotPointXOff, 0
+  877  set            kPushPinHotPointYOff, 38
+  878  set            kPackageEndX, 740
+  879  set            kPackageXVel, 10
+  880  set            kPackageXAccel, 0
+  881  set            kBackpackHotspotX1, 11
+  882  set            kBackpackHotspotY1, 268
+  883  set            kBackpackHotspotX2, 45
+  884  set            kBackpackHotspotY2, 329
+  885  set            backpackX, 453
+  886  set            backpackY, 8
+  887  set            objectBoxX, 145
+  888  set            objectBoxY, 361
+  889  set            objectBoxW, 88
+  890  set            objectBoxH, 28
+  891  set            kNavHotspotZ, 20
+  892  set            kMapZ, 30
+  893  set            kContainersZ, 40
+  894  set            kOverlaysZ, 41
+  895  set            kAnswerStaticZ, 50
+  896  set            objectZ, 60
+  897  set            kExportressZ, 70
+  898  set            kLeslieZ, 80
+  899  set            kLaptrapZ, 90
+  900  set            kOwenZ, 100
+  901  set            kSantiagoZ, 110
+  902  set            kJoniZ, 120
+  903  set            kClosedBackpackZ, 130
+  904  set            kSocratesZ, 140
+  905  set            kConveyorZ, 150
+  906  set            kPackageZ, 160
+  907  set            kTextZ, 170
+  908  set            kAnswerMovingZ, 180
+  909  set            backpackZ, 500
+  910  return
+
+  911  sub            pStart@911
+  912  call_global    CacheDLL, "CWS4P.rsc"
+  913  set            gCurLocation, "CWS4"
+  914  get_prop       gPort, inGame, gameMode
+  915  set            practiceMode, (1-gameMode)
+  916  send           gPort, autoLevel, "CWS4"
+  917  get_prop       gPort, currentLevel, "CWS4", level
+  918  get_prop       gPort, visitedCount, "CWS4", visit
+  919  if             (practiceMode=0)
+  920  jump_if_false  -> 924
+  921  set_prop       gPort, currentLocation, "CWS4"
+  922  set_prop       gPort, visitedCount, (visit+1)
+  923  end
+  924  set_prop       gScenePort, backgroundClicked, pInterruptScene@1065
+  925  set_prop       gScenePort, backgroundMusicID, kOasis1BMusicID
+  926  set_prop       gScenePort, paused, ePauseScene@1546
+  927  set_prop       gScenePort, resumed, eResumeScene@1563
+  928  set            sfxTag, (-1)
+  929  set            characterClickCtr, 1
+  930  set            socratesClickCtr, 1
+  931  set            round, 0
+  932  set            numPuzzlesSolved, 0
+  933  get_prop       gPort, wsNextItemInQueue, "CWS4", item
+  934  if             (item=0)
+  935  jump_if_false  -> 938
+  936  set            noItemGivenOnSolve, kTrue
+  937  jump           -> 940
+  938  end
+  939  set            noItemGivenOnSolve, kFalse
+  940  call_global    Scene, kBackgroundID
+  941  set            sQueue, RQueue, 1
+  942  set_prop       sQueue, finished, eSQueueDone@1219
+  943  set            sQueueFinished, "empty"
+  944  set            package, RAnimation, kPackageID
+  945  set_prop       package, touchy, kFalse
+  946  set_prop       package, z, kPackageZ
+  947  get_prop       package, width, packageWidth
+  948  set            kPackageStartX, (-packageWidth)
+  949  set            conveyor, RAnimation, kConveyorID
+  950  set_prop       conveyor, touchy, kFalse
+  951  set_prop       conveyor, z, kConveyorZ
+  952  set_prop       conveyor, repeatCount, (-1)
+  953  call_global    SetAnswerPickUpSound, kPickUpSfxID
+  954  call_global    SetAnswerSnapSound, kSnapSfxID
+  955  call_global    SetAnswerGoHomeSound, kGoHomeSfxID
+  956  get_prop       gPort, currentDataset, "CWS4", level, whichDataset
+  957  if             (whichDataset=0)
+  958  jump_if_false  -> 963
+  959  call_global    RandomNumber, 1, kNumDatasets.level
+  960  set            whichDataset, $result
+  961  set_prop       gPort, currentDataset, "CWS4", level, whichDataset
+  962  end
+  963  call           pNextDataset@1109
+  964  call           pSetupPuzzle@1118
+  965  if             (practiceMode=0)
+  966  jump_if_false  -> 979
+  967  loop           i, 1, kNumNavHotspots
+  968  loop_test      i, 1, kNumNavHotspots
+  969  jump_if_false  -> 974
+  970  set            navHotspots.i, RHotSpot, kNavHotspotsX1.i, kNavHotspotsY1.i, kNavHotspotsX2.i, kNavHotspotsY2.i, kNavHotspotZ
+  971  set_prop       navHotspots.i, mouseDown, eNavHotspotClicked@1491
+  972  send           navHotspots.i, setAOCursor, kWestCursor
+  973  jump           -> 968
+  974  set_prop       navHotspots.3, z, kConveyorZ
+  975  set            closedBackpack, RHotSpot, kBackpackHotspotX1, kBackpackHotspotY1, kBackpackHotspotX2, kBackpackHotspotY2, kClosedBackpackZ
+  976  set_prop       closedBackpack, mouseDown, eBackpackOpened@119
+  977  send           closedBackpack, setAOCursor, kFingerCursor
+  978  end
+  979  if             (practiceMode=0)
+  980  jump_if_false  -> 1015
+  981  set            joni, RCharacter, kJoniSetID, kJoniZ
+  982  set_prop       joni, mouseDown, eCharacterClicked@1392
+  983  set_prop       joni, movable, kFalse
+  984  send           joni, addFidgetGroup, 1, kBlinkMinTime, kBlinkMaxTime
+  985  send           joni, addFidget, 1, kJoniBlinkID
+  986  set            santiago, RCharacter, kSantiagoSetID, kSantiagoZ
+  987  set_prop       santiago, mouseDown, eCharacterClicked@1392
+  988  set_prop       santiago, movable, kFalse
+  989  send           santiago, addFidgetGroup, 1, kBlinkMinTime, kBlinkMaxTime
+  990  send           santiago, addFidget, 1, kSantiagoBlinkID
+  991  send           santiago, addFidgetGroup, 2, kFidgetMinTime, kFidgetMaxTime
+  992  send           santiago, addFidget, 2, kSantiagoFidgetID
+  993  set            owen, RCharacter, kOwenSetID, kOwenZ
+  994  set_prop       owen, mouseDown, eCharacterClicked@1392
+  995  set_prop       owen, movable, kFalse
+  996  send           owen, addFidgetGroup, 1, kBlinkMinTime, kBlinkMaxTime
+  997  send           owen, addFidget, 1, kOwenBlinkID
+  998  send           owen, addFidgetGroup, 2, kFidgetMinTime, kFidgetMaxTime
+  999  send           owen, addFidget, 2, kOwenFidgetAID
+ 1000  send           owen, addFidget, 2, kOwenFidgetBID
+ 1001  set            leslie, RCharacter, kLeslieSetID, kLeslieZ
+ 1002  set_prop       leslie, mouseDown, eCharacterClicked@1392
+ 1003  set_prop       leslie, movable, kFalse
+ 1004  send           leslie, addFidgetGroup, 1, kBlinkMinTime, kBlinkMaxTime
+ 1005  send           leslie, addFidget, 1, kLeslieBlinkID
+ 1006  send           leslie, addFidgetGroup, 2, kFidgetMinTime, kFidgetMaxTime
+ 1007  send           leslie, addFidget, 2, kLeslieFidgetAID
+ 1008  send           leslie, addFidget, 2, kLeslieFidgetBID
+ 1009  set            laptrap, RCharacter, kLaptrapSetID, kLaptrapZ
+ 1010  set_prop       laptrap, mouseDown, eLaptrapClicked@1464
+ 1011  set_prop       laptrap, movable, kFalse
+ 1012  set_prop       laptrap, animateSettled, kTrue
+ 1013  send           laptrap, setAOCursor, kFingerCursor, kFingerCursor
+ 1014  end
+ 1015  set            socrates, RCharacter, kSocratesSetID, kSocratesZ
+ 1016  set_prop       socrates, mouseDown, eSocratesClicked@1420
+ 1017  set_prop       socrates, movable, kFalse
+ 1018  send           socrates, addFidgetGroup, 1, kBlinkMinTime, kBlinkMaxTime
+ 1019  send           socrates, addFidget, 1, kSocratesBlinkID
+ 1020  send           socrates, addFidgetGroup, 2, kFidgetMinTime, kFidgetMaxTime
+ 1021  send           socrates, addFidget, 2, kSocratesFidgetAID
+ 1022  send           socrates, addFidget, 2, kSocratesFidgetBID
+ 1023  send           socrates, addFidget, 2, kSocratesFidgetCID
+ 1024  set            exportress, RCharacter, kExportressSetID, kExportressZ
+ 1025  set_prop       exportress, mouseDown, eExportressClicked@1407
+ 1026  set_prop       exportress, movable, kFalse
+ 1027  send           exportress, addFidgetGroup, 1, kBlinkMinTime, kBlinkMaxTime
+ 1028  send           exportress, addFidget, 1, kExportressBlinkID
+ 1029  send           exportress, addFidgetGroup, 2, kFidgetMinTime, kFidgetMaxTime
+ 1030  send           exportress, addFidget, 2, kExportressFidgetID
+ 1031  call           pAddCharSpeechAnims@1094
+ 1032  if             practiceMode
+ 1033  jump_if_false  -> 1038
+ 1034  set            chooseActButton, RPButton, kUseAOCoords, kUseAOCoords, kPMChooseActButtonID
+ 1035  set_prop       chooseActButton, z, kChooseActButtonZ
+ 1036  set_prop       chooseActButton, hit, eLaptrapClicked@1464
+ 1037  end
+ 1038  if             (practiceMode=0)
+ 1039  jump_if_false  -> 1042
+ 1040  call           pInitObjectsAndBackpack@63, 1, "closedBackpack"
+ 1041  end
+ 1042  if             (practiceMode=0)
+ 1043  jump_if_false  -> 1062
+ 1044  call_global    CacheDLL, "CWS4i.rsc"
+ 1045  send           sQueue, add, VerbAction, "puzzle", kTrue, "anchorAnswers"
+ 1046  set            joniWalkInQAct, RQueue, 1, kTrue
+ 1047  send           joniWalkInQAct, add, PropertyAction, "closedBackpack", visible, kFalse
+ 1048  send           joniWalkInQAct, add, CharacterAnimAction, "joni", kJoniWalkInID
+ 1049  send           joniWalkInQAct, add, PropertyAction, "closedBackpack", visible, kTrue
+ 1050  set            walkInCAct, RCompositeAction, kTrue
+ 1051  send           walkInCAct, add, "joniWalkInQAct"
+ 1052  send           walkInCAct, add, CharacterAnimAction, "santiago", kSantiagoWalkInID
+ 1053  send           walkInCAct, add, CharacterAnimAction, "owen", kOwenWalkInID
+ 1054  send           walkInCAct, add, CharacterAnimAction, "leslie", kLeslieWalkInID
+ 1055  send           walkInCAct, add, CharacterAnimAction, "socrates", kSocratesWalkInID
+ 1056  send           walkInCAct, add, CharacterAnimAction, "laptrap", kLaptrapWalkInID
+ 1057  send           sQueue, add, "walkInCAct"
+ 1058  send           sQueue, add, VerbAction, "puzzle", kTrue, "unanchorAnswers"
+ 1059  set            sQueueFinished, "eWalkinDone"
+ 1060  send           sQueue, start
+ 1061  jump           -> 1064
+ 1062  end
+ 1063  call           eWalkinDone@1228
+ 1064  return
+
+ 1065  sub            pInterruptScene@1065
+ 1066  set            sceneInterrupted, kTrue
+ 1067  set            stopInterruptingScene, kFalse
+ 1068  get_prop       sQueue, actionCount, numActions
+ 1069  loop           (numActions>0)
+ 1070  loop_test      (numActions>0)
+ 1071  jump_if_false  -> 1093
+ 1072  if             stopInterruptingScene
+ 1073  jump_if_false  -> 1077
+ 1074  set            sceneInterrupted, kFalse
+ 1075  jump           -> 1093
+ 1076  end
+ 1077  send           sQueue, halt
+ 1078  get_prop       sQueue, isActive, active
+ 1079  if             active
+ 1080  jump_if_false  -> 1084
+ 1081  set            sceneInterrupted, kFalse
+ 1082  jump           -> 1093
+ 1083  end
+ 1084  send           sQueue, clear
+ 1085  if             (sQueueFinished#"empty")
+ 1086  jump_if_false  -> 1091
+ 1087  set            finishedEvent, sQueueFinished
+ 1088  set            sQueueFinished, "empty"
+ 1089  call           finishedEvent
+ 1090  end
+ 1091  get_prop       sQueue, actionCount, numActions
+ 1092  jump           -> 1070
+ 1093  return
+
+ 1094  sub            pAddCharSpeechAnims@1094
+ 1095  if             (practiceMode=0)
+ 1096  jump_if_false  -> 1102
+ 1097  send           joni, addSpeechAnim, 3575
+ 1098  send           santiago, addSpeechAnim, 3577
+ 1099  send           leslie, addSpeechAnim, 3578
+ 1100  send           laptrap, addSpeechAnim, 30471
+ 1101  end
+ 1102  send           exportress, addSpeechAnim, 3570
+ 1103  send           exportress, addSpeechAnim, 3571
+ 1104  send           exportress, addSpeechAnim, 3572
+ 1105  send           exportress, addSpeechAnim, 3573
+ 1106  send           exportress, addSpeechAnim, 3574
+ 1107  send           socrates, addSpeechAnim, 3576
+ 1108  return
+
+ 1109  sub            pNextDataset@1109
+ 1110  get_prop       gPort, currentDataset, "CWS4", level, curDataset
+ 1111  set            curDataset, (curDataset+1)
+ 1112  if             (curDataset>kNumDatasets.level)
+ 1113  jump_if_false  -> 1116
+ 1114  set            curDataset, 1
+ 1115  end
+ 1116  set_prop       gPort, currentDataset, "CWS4", level, curDataset
+ 1117  return
+
+ 1118  sub            pSetupPuzzle@1118
+ 1119  set            puzzle, RPuzzle, RPuzzle
+ 1120  set            pushPin, RGraphicAnswer, kPushPinX, kPushPinY, kAnswerStaticZ, kPushPinID, kCorrectAttribute
+ 1121  set_prop       pushPin, isUsingHotPoint, kTrue
+ 1122  set_prop       pushPin, hotPointX, kPushPinHotPointXOff
+ 1123  set_prop       pushPin, hotPointY, kPushPinHotPointYOff
+ 1124  set_prop       pushPin, dropped, eAnswerDropped@1261
+ 1125  set_prop       pushPin, pickedUp, eAnswerPickedUp@1264
+ 1126  send           puzzle, addAnswer, "pushPin"
+ 1127  set            i, 1
+ 1128  loop           1
+ 1129  loop_test      1
+ 1130  jump_if_false  -> 1157
+ 1131  set            containerID, kDistractors.level.whichDataset.i
+ 1132  if             (containerID=(-1))
+ 1133  jump_if_false  -> 1136
+ 1134  jump           -> 1157
+ 1135  end
+ 1136  set            containers.i, RAttributeContainer, containerID, kContainersZ, kWrongAttribute
+ 1137  set            containerSnapX, kDistractorsSnapX.level.whichDataset.i
+ 1138  if             (containerSnapX<0)
+ 1139  jump_if_false  -> 1143
+ 1140  get_prop       containers.i, width, w
+ 1141  set            containerSnapX, (w/2)
+ 1142  end
+ 1143  set            containerSnapY, kDistractorsSnapY.level.whichDataset.i
+ 1144  if             (containerSnapY<0)
+ 1145  jump_if_false  -> 1149
+ 1146  get_prop       containers.i, height, h
+ 1147  set            containerSnapY, (h/2)
+ 1148  end
+ 1149  set_prop       containers.i, answerAnchorPointX, containerSnapX
+ 1150  set_prop       containers.i, answerAnchorPointY, containerSnapY
+ 1151  set_prop       containers.i, anchorAnswerAtPoint, kTrue
+ 1152  set_prop       containers.i, doPixelCompare, kPixelCompare.level.whichDataset
+ 1153  set_prop       containers.i, answerPlaced, ePuzzleWrong@1268
+ 1154  send           puzzle, addContainer, ("containers."+i)
+ 1155  set            i, (i+1)
+ 1156  jump           -> 1129
+ 1157  set            containers.i, RAttributeContainer, kAnswer.level.whichDataset, kContainersZ, kCorrectAttribute
+ 1158  set            containerSnapX, kAnswerSnapX.level.whichDataset
+ 1159  if             (containerSnapX<0)
+ 1160  jump_if_false  -> 1164
+ 1161  get_prop       containers.i, width, w
+ 1162  set            containerSnapX, (w/2)
+ 1163  end
+ 1164  set            containerSnapY, kAnswerSnapY.level.whichDataset
+ 1165  if             (containerSnapY<0)
+ 1166  jump_if_false  -> 1170
+ 1167  get_prop       containers.i, height, h
+ 1168  set            containerSnapY, (h/2)
+ 1169  end
+ 1170  set_prop       containers.i, answerAnchorPointX, containerSnapX
+ 1171  set_prop       containers.i, answerAnchorPointY, containerSnapY
+ 1172  set_prop       containers.i, anchorAnswerAtPoint, kTrue
+ 1173  set_prop       containers.i, doPixelCompare, kPixelCompare.level.whichDataset
+ 1174  set_prop       containers.i, answerPlaced, ePuzzleSolved@1276
+ 1175  send           puzzle, addContainer, ("containers."+i)
+ 1176  set            mapID, kMapID.level.whichDataset
+ 1177  if             (mapID>(-1))
+ 1178  jump_if_false  -> 1183
+ 1179  set            map, RAnimation, mapID
+ 1180  set_prop       map, touchy, kFalse
+ 1181  set_prop       map, z, kMapZ
+ 1182  end
+ 1183  set            i, 1
+ 1184  loop           1
+ 1185  loop_test      1
+ 1186  jump_if_false  -> 1197
+ 1187  set            overlayID, kOverlays.level.whichDataset.i
+ 1188  if             (overlayID=(-1))
+ 1189  jump_if_false  -> 1192
+ 1190  jump           -> 1197
+ 1191  end
+ 1192  set            overlays.i, RAnimation, overlayID
+ 1193  set_prop       overlays.i, touchy, kFalse
+ 1194  set_prop       overlays.i, z, kOverlaysZ
+ 1195  set            i, (i+1)
+ 1196  jump           -> 1185
+ 1197  get_prop       package, x, packageX
+ 1198  get_prop       package, y, packageY
+ 1199  set            packageText, RText, kPackageText.level.whichDataset, kPackageTextColor, (packageX+kPackageTextRectXOff), (packageY+kPackageTextRectYOff), kPackageTextRectW, kPackageTextRectH, kTrue
+ 1200  send           packageText, setFont, kPackageFontName, kPackageFontStyle, kPackageFontSize
+ 1201  set_prop       packageText, z, kTextZ
+ 1202  set_prop       packageText, touchy, kFalse
+ 1203  set            tagText, RText, kTagText.level.whichDataset, kTagTextColor, (packageX+kTagTextRectXOff), (packageY+kTagTextRectYOff), kTagTextRectW, kTagTextRectH, kTrue
+ 1204  send           tagText, setFont, kTagFontName, kTagFontStyle, kTagFontSize
+ 1205  set_prop       tagText, z, kTextZ
+ 1206  set_prop       tagText, touchy, kFalse
+ 1207  set            NSEWProblem, kTargettingNSEW.level.whichDataset
+ 1208  set            hasKey, kHasKey.level.whichDataset
+ 1209  return
+
+ 1210  sub            pCleanPuzzle@1210
+ 1211  delete         puzzle
+ 1212  delete         pushPin
+ 1213  delete         [, containers
+ 1214  delete         map
+ 1215  delete         [, overlays
+ 1216  delete         packageText
+ 1217  delete         tagText
+ 1218  return
+
+ 1219  sub            eSQueueDone@1219
+ 1220  send           sQueue, clear
+ 1221  if             (sQueueFinished#"empty")
+ 1222  jump_if_false  -> 1227
+ 1223  set            finishedEvent, sQueueFinished
+ 1224  set            sQueueFinished, "empty"
+ 1225  call           finishedEvent
+ 1226  end
+ 1227  return
+
+ 1228  sub            eWalkinDone@1228
+ 1229  set            stopInterruptingScene, kTrue
+ 1230  delete         walkInCAct
+ 1231  delete         joniWalkInQAct
+ 1232  call_global    UncacheDLL, "CWS4i.rsc"
+ 1233  if             practiceMode
+ 1234  jump_if_false  -> 1243
+ 1235  send           sQueue, add, CharacterSpeechAction, "exportress", kExpIntro1SpchID
+ 1236  if             (level<3)
+ 1237  jump_if_false  -> 1240
+ 1238  send           sQueue, add, CharacterSpeechAction, "exportress", kExpHelp1SpchID
+ 1239  jump           -> 1242
+ 1240  end
+ 1241  send           sQueue, add, CharacterSpeechAction, "exportress", kExpHelp2SpchID
+ 1242  jump           -> 1259
+ 1243  end
+ 1244  if             (visit=0)
+ 1245  jump_if_false  -> 1250
+ 1246  send           sQueue, add, CharacterSpeechAction, "exportress", kExpIntro1SpchID
+ 1247  send           sQueue, add, CharacterSpeechAction, "joni", kJoniIntroSpchID
+ 1248  send           sQueue, add, CharacterSpeechAction, "exportress", kExpIntro2SpchID
+ 1249  jump           -> 1259
+ 1250  end
+ 1251  get_prop       gPort, wsNextItemInQueue, item
+ 1252  if             (item=0)
+ 1253  jump_if_false  -> 1256
+ 1254  send           sQueue, add, CharacterSpeechAction, "exportress", kExpReturnNoCoinSpchID
+ 1255  jump           -> 1259
+ 1256  end
+ 1257  set            whichVisit, ((visit-1)%4+1)
+ 1258  send           sQueue, add, CharacterSpeechAction, "exportress", kExpReturnSpchIDs.whichVisit
+ 1259  send           sQueue, start
+ 1260  return
+
+ 1261  sub            eAnswerDropped@1261
+ 1262  set_prop       $1, z, kAnswerStaticZ
+ 1263  return
+
+ 1264  sub            eAnswerPickedUp@1264
+ 1265  call           pInterruptScene@1065
+ 1266  set_prop       $1, z, kAnswerMovingZ
+ 1267  return
+
+ 1268  sub            ePuzzleWrong@1268
+ 1269  call           pInterruptScene@1065
+ 1270  send           gPort, incorrectGuess, "CWS4"
+ 1271  call_global    RandomNumber, 1, 3
+ 1272  send           sQueue, add, CharacterSpeechAction, "exportress", kExpWrongSpchIDs.RESULT
+ 1273  send           sQueue, add, VerbAction, "puzzle", kTrue, "reset"
+ 1274  send           sQueue, start
+ 1275  return
+
+ 1276  sub            ePuzzleSolved@1276
+ 1277  call           pInterruptScene@1065
+ 1278  send           puzzle, anchorAnswers
+ 1279  set            numPuzzlesSolved, (numPuzzlesSolved+1)
+ 1280  send           gPort, correctGuess, "CWS4"
+ 1281  set            packageMultiTrinket, OMMultiTrinket, OMMultiTrinket
+ 1282  set_prop       packageMultiTrinket, touchy, kFalse
+ 1283  set_prop       packageMultiTrinket, z, kPackageZ
+ 1284  set_prop       packageMultiTrinket, isCorralled, kFalse
+ 1285  send           packageMultiTrinket, addTrinket, "package"
+ 1286  send           packageMultiTrinket, addTrinket, "packageText", 10
+ 1287  send           packageMultiTrinket, addTrinket, "tagText", 10
+ 1288  get_prop       package, x, originalPackageX
+ 1289  send           sQueue, add, MoveXAction, "conveyor", "packageMultiTrinket", originalPackageX, kPackageXVel, kPackageXAccel, kPackageEndX
+ 1290  call_global    PlaySound, kBeltSfxID, kTrue
+ 1291  set            sfxTag, $result
+ 1292  set            sQueueFinished, "ePackageOut"
+ 1293  send           sQueue, start
+ 1294  return
+
+ 1295  sub            ePackageOut@1295
+ 1296  call_global    KillSound, sfxTag
+ 1297  set            sfxTag, (-1)
+ 1298  delete         packageMultiTrinket
+ 1299  if             practiceMode
+ 1300  jump_if_false  -> 1304
+ 1301  call_global    RandomNumber, 1, 4
+ 1302  send           sQueue, add, CharacterSpeechAction, "exportress", kPModeExpRightSpchIDs.RESULT
+ 1303  jump           -> 1314
+ 1304  end
+ 1305  get_prop       gPort, wsNextItemInQueue, item
+ 1306  if             ((numPuzzlesSolved=kNumPuzzlesPerRound)*(item#0))
+ 1307  jump_if_false  -> 1311
+ 1308  call_global    RandomNumber, 1, 3
+ 1309  send           sQueue, add, CharacterSpeechAction, "exportress", kExpRightEarnCoinSpchIDs.RESULT
+ 1310  jump           -> 1314
+ 1311  end
+ 1312  call_global    RandomNumber, 1, 3
+ 1313  send           sQueue, add, CharacterSpeechAction, "exportress", kExpRightNoCoinSpchIDs.RESULT
+ 1314  set            sQueueFinished, "eNewPuzzle"
+ 1315  send           sQueue, start
+ 1316  return
+
+ 1317  sub            eNewPuzzle@1317
+ 1318  set            socratesClickCtr, 1
+ 1319  call           pCleanPuzzle@1210
+ 1320  send           gPort, autoLevel, "CWS4"
+ 1321  get_prop       gPort, currentLevel, "CWS4", curLevel
+ 1322  get_prop       gPort, currentDataset, "CWS4", curLevel, whichDataset
+ 1323  if             (level#curLevel)
+ 1324  jump_if_false  -> 1333
+ 1325  set            level, curLevel
+ 1326  if             (whichDataset=0)
+ 1327  jump_if_false  -> 1332
+ 1328  call_global    RandomNumber, 1, kNumDatasets.level
+ 1329  set            whichDataset, $result
+ 1330  set_prop       gPort, currentDataset, "CWS4", level, whichDataset
+ 1331  end
+ 1332  end
+ 1333  call           pNextDataset@1109
+ 1334  call           pSetupPuzzle@1118
+ 1335  if             (practiceMode=0)
+ 1336  jump_if_false  -> 1347
+ 1337  if             (numPuzzlesSolved=kNumPuzzlesPerRound)
+ 1338  jump_if_false  -> 1346
+ 1339  get_prop       gPort, wsNextItemInQueue, item
+ 1340  if             (item#0)
+ 1341  jump_if_false  -> 1345
+ 1342  send           gPort, removeNextObjectFromQueue
+ 1343  call           pNewObjectAtLocation@114, item
+ 1344  end
+ 1345  end
+ 1346  end
+ 1347  set            packageMultiTrinket, OMMultiTrinket, OMMultiTrinket
+ 1348  set_prop       packageMultiTrinket, touchy, kFalse
+ 1349  set_prop       packageMultiTrinket, z, kPackageZ
+ 1350  set_prop       packageMultiTrinket, isCorralled, kFalse
+ 1351  send           packageMultiTrinket, addTrinket, "package"
+ 1352  send           packageMultiTrinket, addTrinket, "packageText", 10
+ 1353  send           packageMultiTrinket, addTrinket, "tagText", 10
+ 1354  send           sQueue, add, MoveXAction, "conveyor", "packageMultiTrinket", kPackageStartX, kPackageXVel, kPackageXAccel, originalPackageX
+ 1355  call_global    PlaySound, kBeltSfxID, kTrue
+ 1356  set            sfxTag, $result
+ 1357  set            sQueueFinished, "ePackageIn"
+ 1358  send           sQueue, start
+ 1359  return
+
+ 1360  sub            ePackageIn@1360
+ 1361  call_global    KillSound, sfxTag
+ 1362  set            sfxTag, (-1)
+ 1363  delete         packageMultiTrinket
+ 1364  if             practiceMode
+ 1365  jump_if_false  -> 1370
+ 1366  call_global    RandomNumber, 1, 4
+ 1367  send           sQueue, add, CharacterSpeechAction, "exportress", kExpReplaySpchIDs.RESULT
+ 1368  send           sQueue, start
+ 1369  jump           -> 1391
+ 1370  end
+ 1371  if             (numPuzzlesSolved=kNumPuzzlesPerRound)
+ 1372  jump_if_false  -> 1391
+ 1373  set            numPuzzlesSolved, 0
+ 1374  set            round, (round+1)
+ 1375  get_prop       gPort, wsNextItemInQueue, item
+ 1376  if             (item#0)
+ 1377  jump_if_false  -> 1381
+ 1378  call_global    RandomNumber, 1, 4
+ 1379  send           sQueue, add, CharacterSpeechAction, "exportress", kExpReplaySpchIDs.RESULT
+ 1380  jump           -> 1389
+ 1381  end
+ 1382  if             (noItemGivenOnSolve=kFalse)
+ 1383  jump_if_false  -> 1387
+ 1384  set            noItemGivenOnSolve, kTrue
+ 1385  send           sQueue, add, CharacterSpeechAction, "exportress", kExpReplayNoCoinSpchID
+ 1386  jump           -> 1389
+ 1387  end
+ 1388  send           sQueue, add, CharacterAnimAction, "exportress", kExpReplayNoCoinID
+ 1389  send           sQueue, start
+ 1390  end
+ 1391  return
+
+ 1392  sub            eCharacterClicked@1392
+ 1393  call           pInterruptScene@1065
+ 1394  if             sceneInterrupted
+ 1395  jump_if_false  -> 1406
+ 1396  if             (characterClickCtr=1)
+ 1397  jump_if_false  -> 1401
+ 1398  send           sQueue, add, CharacterSpeechAction, "santiago", kSanTalk1aSpchID
+ 1399  set            characterClickCtr, 2
+ 1400  jump           -> 1404
+ 1401  end
+ 1402  send           sQueue, add, CharacterSpeechAction, "leslie", kLesTalk1bSpchID
+ 1403  set            characterClickCtr, 1
+ 1404  send           sQueue, start
+ 1405  end
+ 1406  return
+
+ 1407  sub            eExportressClicked@1407
+ 1408  call           pInterruptScene@1065
+ 1409  if             sceneInterrupted
+ 1410  jump_if_false  -> 1419
+ 1411  if             (level<3)
+ 1412  jump_if_false  -> 1415
+ 1413  send           sQueue, add, CharacterSpeechAction, "exportress", kExpHelp1SpchID
+ 1414  jump           -> 1417
+ 1415  end
+ 1416  send           sQueue, add, CharacterSpeechAction, "exportress", kExpHelp2SpchID
+ 1417  send           sQueue, start
+ 1418  end
+ 1419  return
+
+ 1420  sub            eSocratesClicked@1420
+ 1421  call           pInterruptScene@1065
+ 1422  if             sceneInterrupted
+ 1423  jump_if_false  -> 1463
+ 1424  if             NSEWProblem
+ 1425  jump_if_false  -> 1444
+ 1426  if             (hasKey=1)
+ 1427  jump_if_false  -> 1435
+ 1428  send           sQueue, add, CharacterSpeechAction, "socrates", kSocHelpSpchIDs.socratesClickCtr
+ 1429  set            socratesClickCtr, (socratesClickCtr+1)
+ 1430  if             (socratesClickCtr=4)
+ 1431  jump_if_false  -> 1434
+ 1432  set            socratesClickCtr, 1
+ 1433  end
+ 1434  jump           -> 1443
+ 1435  end
+ 1436  send           sQueue, add, CharacterSpeechAction, "socrates", kSocHelpSpchIDs.socratesClickCtr
+ 1437  if             (socratesClickCtr=1)
+ 1438  jump_if_false  -> 1441
+ 1439  set            socratesClickCtr, 3
+ 1440  jump           -> 1443
+ 1441  end
+ 1442  set            socratesClickCtr, 1
+ 1443  jump           -> 1461
+ 1444  end
+ 1445  if             (hasKey=1)
+ 1446  jump_if_false  -> 1459
+ 1447  if             (socratesClickCtr=1)
+ 1448  jump_if_false  -> 1451
+ 1449  set            socratesClickCtr, 2
+ 1450  end
+ 1451  send           sQueue, add, CharacterSpeechAction, "socrates", kSocHelpSpchIDs.socratesClickCtr
+ 1452  if             (socratesClickCtr=2)
+ 1453  jump_if_false  -> 1456
+ 1454  set            socratesClickCtr, 3
+ 1455  jump           -> 1458
+ 1456  end
+ 1457  set            socratesClickCtr, 2
+ 1458  jump           -> 1461
+ 1459  end
+ 1460  send           sQueue, add, CharacterSpeechAction, "socrates", kSocHelpSpchIDs.3
+ 1461  send           sQueue, start
+ 1462  end
+ 1463  return
+
+ 1464  sub            eLaptrapClicked@1464
+ 1465  call           pInterruptScene@1065
+ 1466  if             sceneInterrupted
+ 1467  jump_if_false  -> 1471
+ 1468  call           gOpenLaptrap@221
+ 1469  set_prop       gLaptrap, closed, eLaptrapClosed@1472
+ 1470  end
+ 1471  return
+
+ 1472  sub            eLaptrapClosed@1472
+ 1473  call           gCloseLaptrap@235
+ 1474  get_prop       gPort, currentLevel, "CWS4", curLevel
+ 1475  if             (level#curLevel)
+ 1476  jump_if_false  -> 1490
+ 1477  call           pCleanPuzzle@1210
+ 1478  set            level, curLevel
+ 1479  set            socratesClickCtr, 1
+ 1480  get_prop       gPort, currentDataset, "CWS4", level, whichDataset
+ 1481  if             (whichDataset=0)
+ 1482  jump_if_false  -> 1487
+ 1483  call_global    RandomNumber, 1, kNumDatasets.level
+ 1484  set            whichDataset, $result
+ 1485  set_prop       gPort, currentDataset, "CWS4", level, whichDataset
+ 1486  end
+ 1487  call           pNextDataset@1109
+ 1488  call           pSetupPuzzle@1118
+ 1489  end
+ 1490  return
+
+ 1491  sub            eNavHotspotClicked@1491
+ 1492  call           pInterruptScene@1065
+ 1493  if             sceneInterrupted
+ 1494  jump_if_false  -> 1518
+ 1495  call_global    CacheDLL, "CWS4o.rsc"
+ 1496  send           puzzle, anchorAnswers
+ 1497  get_prop       gPort, itemsPresentCount, numItems
+ 1498  if             (numItems>0)
+ 1499  jump_if_false  -> 1506
+ 1500  get_prop       gPort, itemPlacedInBackpack, usedBackpack
+ 1501  if             (usedBackpack=kFalse)
+ 1502  jump_if_false  -> 1505
+ 1503  send           sQueue, add, CharacterSpeechAction, "laptrap", kLTExit1SpchID
+ 1504  end
+ 1505  end
+ 1506  set            walkOutCAct, RCompositeAction, kTrue
+ 1507  send           walkOutCAct, add, PropertyAction, "closedBackpack", visible, kFalse
+ 1508  send           walkOutCAct, add, CharacterAnimAction, "santiago", kSantiagoWalkOutID, 1, kFalse
+ 1509  send           walkOutCAct, add, CharacterAnimAction, "joni", kJoniWalkOutID, 1, kFalse
+ 1510  send           walkOutCAct, add, CharacterAnimAction, "owen", kOwenWalkOutID, 1, kFalse
+ 1511  send           walkOutCAct, add, CharacterAnimAction, "leslie", kLeslieWalkOutID, 1, kFalse
+ 1512  send           walkOutCAct, add, CharacterAnimAction, "socrates", kSocratesWalkOutID, 1, kFalse
+ 1513  send           walkOutCAct, add, CharacterAnimAction, "laptrap", kLaptrapWalkOutID, 1, kFalse
+ 1514  send           sQueue, add, "walkOutCAct"
+ 1515  set            sQueueFinished, "eWalkOutDone"
+ 1516  send           sQueue, start
+ 1517  end
+ 1518  return
+
+ 1519  sub            eWalkOutDone@1519
+ 1520  delete         walkOutCAct
+ 1521  call_global    UncacheDLL, "CWS4o.rsc"
+ 1522  if             (sfxTag#(-1))
+ 1523  jump_if_false  -> 1526
+ 1524  call_global    KillSound, sfxTag
+ 1525  end
+ 1526  call_global    SetAnswerPickUpSound, (-1)
+ 1527  call_global    SetAnswerSnapSound, (-1)
+ 1528  call_global    SetAnswerGoHomeSound, (-1)
+ 1529  set_prop       gPort, previousLocation, "CWS4"
+ 1530  call_global    StartTransition
+ 1531  load_script    "CLOC06.mps"
+ 1532  return
+
+ 1533  sub            eExitToMapLoc@1533
+ 1534  if             (sfxTag#(-1))
+ 1535  jump_if_false  -> 1538
+ 1536  call_global    KillSound, sfxTag
+ 1537  end
+ 1538  call_global    SetAnswerPickUpSound, (-1)
+ 1539  call_global    SetAnswerSnapSound, (-1)
+ 1540  call_global    SetAnswerGoHomeSound, (-1)
+ 1541  set_prop       gPort, previousLocation, "CWS4"
+ 1542  call_global    StartTransition
+ 1543  get_prop       gLaptrap, selectedLocation, location
+ 1544  load_script    (location+".mps")
+ 1545  return
+
+ 1546  sub            ePauseScene@1546
+ 1547  send           sQueue, pause
+ 1548  if             (practiceMode=0)
+ 1549  jump_if_false  -> 1556
+ 1550  send           joni, pause
+ 1551  send           santiago, pause
+ 1552  send           owen, pause
+ 1553  send           leslie, pause
+ 1554  send           laptrap, pause
+ 1555  end
+ 1556  send           socrates, pause
+ 1557  send           exportress, pause
+ 1558  if             (sfxTag#(-1))
+ 1559  jump_if_false  -> 1562
+ 1560  call_global    PauseSound, sfxTag
+ 1561  end
+ 1562  return
+
+ 1563  sub            eResumeScene@1563
+ 1564  send           sQueue, resume
+ 1565  if             (practiceMode=0)
+ 1566  jump_if_false  -> 1573
+ 1567  send           joni, resume
+ 1568  send           santiago, resume
+ 1569  send           owen, resume
+ 1570  send           leslie, resume
+ 1571  send           laptrap, resume
+ 1572  end
+ 1573  send           socrates, resume
+ 1574  send           exportress, resume
+ 1575  if             (sfxTag#(-1))
+ 1576  jump_if_false  -> 1579
+ 1577  call_global    ResumeSound, sfxTag
+ 1578  end
+ 1579  return

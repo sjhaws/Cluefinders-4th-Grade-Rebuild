@@ -1,0 +1,738 @@
+    0  start
+    1  call_global    UncacheAllDLLs
+    2  set            kOMFontNormal, 0
+    3  set            kOMFontBold, 1
+    4  set            kOMFontItalic, 2
+    5  set            kOMFontUnderlined, 4
+    6  set            kNormalCursor, 25
+    7  set            kHotCursor, 26
+    8  set            kFingerCursor, 27
+    9  set            kOpenHandCursor, 28
+   10  set            kClosedHandCursor, 29
+   11  set            kNorthCursor, 30
+   12  set            kEastCursor, 31
+   13  set            kWestCursor, 32
+   14  set            kSouthCursor, 33
+   15  set            kNorthWestCursor, 34
+   16  set            kNorthEastCursor, 35
+   17  set            kSouthWestCursor, 36
+   18  set            kSouthEastCursor, 37
+   19  set            kHourglassCursor, 38
+   20  set            kCairo1BMusicID, 30515
+   21  set            kCairo2BMusicID, 30516
+   22  set            kCairo3BMusicID, 30517
+   23  set            kOasis1BMusicID, 30518
+   24  set            kOasis2BMusicID, 30519
+   25  set            kOasis3BMusicID, 30520
+   26  set            kPyramid1BMusicID, 30521
+   27  set            kPyramid2BMusicID, 30522
+   28  set            kPyramid3BMusicID, 30523
+   29  set            kPMChooseActButtonID, 5
+   30  set            kBlinkMinTime, 3
+   31  set            kBlinkMaxTime, 5
+   32  set            kFidgetMinTime, 45
+   33  set            kFidgetMaxTime, 60
+   34  set            kTrue, 1
+   35  set            kFalse, 0
+   36  set            kOn, 1
+   37  set            kOff, 0
+   38  set            kScreenWidth, 640
+   39  set            kScreenHeight, 480
+   40  set            kUseAOCoords, 11111
+   41  set            kNumCRounds, 5
+   42  set            kNumItemsPerCRound, 12
+   43  set            kNumCStatueDatasets, 10
+   44  set            kNumORounds, 5
+   45  set            kNumItemsPerORound, 12
+   46  set            kBackpackDef, 1
+   47  set            kMaxItemsInBackpack, 12
+   48  set            kMaxItemsInWS, 6
+   49  set            kMaxItemsInHub, 12
+   50  set            kMaxItemW, 36
+   51  set            kMaxItemH, 28
+   52  set            kCGlyphStart, 1
+   53  set            kCGlyphEnd, 12
+   54  set            kGemStart, 13
+   55  set            kGemEnd, 28
+   56  set            kItemInBPSfxID, 30524
+   57  set            kItemPickUpSfxID, 30525
+   58  set            openBackpack, 0
+   59  set            closedBackpack, 0
+   60  set            closedBackpackName, 0
+   61  set            objectIndex, 1
+   62  set            toBackpackOnly, 1
+
+   63  sub            pInitObjectsAndBackpack@63, toBackpack, backpackName
+   64  loop           i, 1, kMaxItemsInWS
+   65  loop_test      i, 1, kMaxItemsInWS
+   66  jump_if_false  -> 73
+   67  get_prop       gPort, itemPresent, i, objectToDisplay
+   68  if             (objectToDisplay#0)
+   69  jump_if_false  -> 72
+   70  call           pDisplayObject@76, kFalse
+   71  end
+   72  jump           -> 65
+   73  set            toBackpackOnly, toBackpack
+   74  set            closedBackpackName, backpackName
+   75  return
+
+   76  sub            pDisplayObject@76, animate
+   77  if             (objectBoxW>kMaxItemW)
+   78  jump_if_false  -> 82
+   79  call_global    RandomNumber, 1, (objectBoxW-kMaxItemW)
+   80  set            xOff, $result
+   81  jump           -> 84
+   82  end
+   83  set            xOff, 0
+   84  set            ox, (objectBoxX+xOff)
+   85  if             (objectBoxH>kMaxItemH)
+   86  jump_if_false  -> 90
+   87  call_global    RandomNumber, 1, (objectBoxH-kMaxItemH)
+   88  set            yOff, $result
+   89  jump           -> 92
+   90  end
+   91  set            yOff, 0
+   92  set            oy, (objectBoxY+yOff)
+   93  set            object.objectIndex, RAnimation, ox, oy, objectAOIDs.objectToDisplay
+   94  set_prop       object.objectIndex, "z", objectZ
+   95  set_prop       object.objectIndex, userData, (" "+ox+"#"+oy+":"+objectToDisplay)
+   96  set_prop       object.objectIndex, "mouseDown", eObjectPickedUp@133
+   97  set_prop       object.objectIndex, "mouseUp", eObjectDropped@137
+   98  send           object.objectIndex, setAOCursor, kOpenHandCursor, kClosedHandCursor
+   99  if             animate
+  100  jump_if_false  -> 112
+  101  send           object.objectIndex, play
+  102  set            port, RWorldPort, RWorldPort
+  103  get_prop       port, currentLocation, location
+  104  delete         port
+  105  if             ((location="CWS1")+(location="CWS2")+(location="CWS3")+(location="CWS4"))
+  106  jump_if_false  -> 109
+  107  call_global    PlaySound, 1000
+  108  jump           -> 111
+  109  end
+  110  call_global    PlaySound, 11000
+  111  end
+  112  set            objectIndex, (objectIndex+1)
+  113  return
+
+  114  sub            pNewObjectAtLocation@114, newID
+  115  send           gPort, addObject, newID
+  116  set            objectToDisplay, newID
+  117  call           pDisplayObject@76, kTrue
+  118  return
+
+  119  sub            eBackpackOpened@119
+  120  if             (openBackpack=0)
+  121  jump_if_false  -> 129
+  122  set            openBackpack, RBackPack, backpackX, backpackY, backpackZ
+  123  set_prop       openBackpack, closed, eBackpackClosed@130
+  124  if             (toBackpackOnly=0)
+  125  jump_if_false  -> 128
+  126  set_prop       openBackpack, objectDropped, eBackpackObjectDropped
+  127  end
+  128  end
+  129  return
+
+  130  sub            eBackpackClosed@130
+  131  set            openBackpack, 0
+  132  return
+
+  133  sub            eObjectPickedUp@133
+  134  set_prop       $1, "z", 10000
+  135  call_global    PlaySound, kItemPickUpSfxID
+  136  return
+
+  137  sub            eObjectDropped@137
+  138  get_prop       $1, userData, ud
+  139  set            p1, ("#"@ud)
+  140  set            p2, (":"@ud)
+  141  set            t2, (p1-1)
+  142  set            ox, ud|1|t2
+  143  set            t1, (p1+1)
+  144  set            t2, (p2-p1-1)
+  145  set            oy, ud|t1|t2
+  146  set            t1, (p2+1)
+  147  set            id, ud|t1
+  148  set_prop       $1, "z", objectZ
+  149  if             (toBackpackOnly=1)
+  150  jump_if_false  -> 195
+  151  if             (openBackpack#0)
+  152  jump_if_false  -> 176
+  153  call_global    IntersectTest, "RECEIVER", "openBackpack"
+  154  set            test, $result
+  155  if             (test=1)
+  156  jump_if_false  -> 159
+  157  send           openBackpack, addObject, id
+  158  jump           -> 175
+  159  end
+  160  if             (closedBackpack#0)
+  161  jump_if_false  -> 173
+  162  get_prop       closedBackpack, visible, test
+  163  if             (test=1)
+  164  jump_if_false  -> 172
+  165  call_global    IntersectTest, "RECEIVER", "closedBackpack"
+  166  set            test, $result
+  167  if             (test=1)
+  168  jump_if_false  -> 171
+  169  send           openBackpack, addObject, id
+  170  end
+  171  end
+  172  jump           -> 175
+  173  end
+  174  set            test, 0
+  175  jump           -> 194
+  176  end
+  177  if             (closedBackpack#0)
+  178  jump_if_false  -> 192
+  179  get_prop       closedBackpack, visible, test
+  180  if             (test=1)
+  181  jump_if_false  -> 191
+  182  call_global    IntersectTest, "RECEIVER", "closedBackpack"
+  183  set            test, $result
+  184  if             (test=1)
+  185  jump_if_false  -> 190
+  186  set            openBackpack, RBackPack, backpackX, backpackY, backpackZ
+  187  send           openBackpack, addObject, id
+  188  set            openBackpack, 0
+  189  end
+  190  end
+  191  jump           -> 194
+  192  end
+  193  set            test, 0
+  194  jump           -> 197
+  195  end
+  196  set            test, 0
+  197  if             (test=1)
+  198  jump_if_false  -> 207
+  199  get_prop       $1, name, Name
+  200  set            p, (1+"."@Name)
+  201  set            n, Name|p
+  202  delete         object.n
+  203  send           gPort, removeObjectFromLocation, id
+  204  set_prop       gPort, itemPlacedInBackpack, kTrue
+  205  call_global    PlaySound, kItemInBPSfxID
+  206  jump           -> 210
+  207  end
+  208  set_prop       $1, x, ox
+  209  set_prop       $1, y, oy
+  210  return
+
+  211  sub            globalInit@211
+  212  set            gCurLocation, 0
+  213  set            laptrap, 0
+  214  set            gPort, RWorldPort, RWorldPort
+  215  set            gScenePort, RScenePort, RScenePort
+  216  return
+
+  217  sub            globalDispose@217
+  218  delete         gPort
+  219  delete         gScenePort
+  220  return
+
+  221  sub            gOpenLaptrap@221
+  222  if             (laptrap#0)
+  223  jump_if_false  -> 226
+  224  set_prop       laptrap, visible, kFalse
+  225  end
+  226  if             (gCurLocation=0)
+  227  jump_if_false  -> 230
+  228  set            gLaptrap, RLapTrap, 10000
+  229  jump           -> 232
+  230  end
+  231  set            gLaptrap, RLapTrap, 10000, gCurLocation
+  232  set_prop       gLaptrap, closed, gCloseLaptrap@235
+  233  set_prop       gLaptrap, locationSelected, eExitToMapLoc@681
+  234  return
+
+  235  sub            gCloseLaptrap@235
+  236  if             (laptrap#0)
+  237  jump_if_false  -> 240
+  238  set_prop       laptrap, visible, kTrue
+  239  end
+  240  delete         gLaptrap
+  241  return
+
+  242  sub            gNewGame@242
+  243  call_global    RandomNumber, 1, kNumCStatueDatasets
+  244  set_prop       gPort, CStatueDataset, $result
+  245  return
+
+  246  sub            gGameCompleted@246
+  247  send           gPort, newGame
+  248  get_prop       gPort, CStatueDataset, curDataset
+  249  set            curDataset, (curDataset+1)
+  250  if             (curDataset>kNumCStatueDatasets)
+  251  jump_if_false  -> 254
+  252  set            curDataset, 1
+  253  end
+  254  set_prop       gPort, CStatueDataset, curDataset
+  255  set_prop       gPort, CLOC01StatueUp, 0
+  256  set_prop       gPort, CBA2OpenVisitedCount, 0
+  257  set_prop       gPort, "CMALevel", 0
+  258  set_prop       gPort, "CMASolved", 0
+  259  set_prop       gPort, "PLOC2VisitedCount", 0
+  260  set_prop       gPort, "OMASolved", 0
+  261  set_prop       gPort, "OMAPracModeEntryCount", 0
+  262  set_prop       gPort, "OMALevel", 0
+  263  loop           i, 1, 4
+  264  loop_test      i, 1, 4
+  265  jump_if_false  -> 268
+  266  set_prop       gPort, ("OMAGatorDown"+i), 0
+  267  jump           -> 264
+  268  set_prop       gPort, "PWS2CompletedCount", 0
+  269  set_prop       gPort, "PWS2Round1visits", 0
+  270  set_prop       gPort, "PWS2Round2visits", 0
+  271  set_prop       gPort, "PWS2Round3visits", 0
+  272  set_prop       gPort, "PWS2Round4visits", 0
+  273  return
+  274  call           globalInit@211
+  275  call           pInit@278
+  276  call           pStart@325
+  277  call_global    EndTransition
+
+  278  sub            pInit@278
+  279  set            kBackgroundID, 7900
+  280  set            kJoniSetID, 7901
+  281  set            kSantiagoSetID, 7902
+  282  set            kOwenSetID, 7903
+  283  set            kLeslieSetID, 7904
+  284  set            kSocratesSetID, 7905
+  285  set            kLaptrapSetID, 7906
+  286  set            kSanFidgID, 7952
+  287  set            kJoniFidgID, 7953
+  288  set            kSocFidgAID, 7956
+  289  set            kSocFidgBID, 7957
+  290  set            kJoniBlinkID, 7960
+  291  set            kSanBlinkID, 7961
+  292  set            kOwenBlinkID, 7962
+  293  set            kLesBlinkID, 7963
+  294  set            kSocBlinkID, 7964
+  295  set            kMinFidgID, 7958
+  296  set            kPurrFidgID, 7959
+  297  set            kEarlyClick1ID, 7965
+  298  set            kEarlyClick2ID, 7966
+  299  set            kBadClick1ID, 7967
+  300  set            kBadClick2ID, 7968
+  301  set            kClickSfxID, 7900
+  302  set            kBackpackHotspotX1, 164
+  303  set            kBackpackHotspotY1, 316
+  304  set            kBackpackHotspotX2, 183
+  305  set            kBackpackHotspotY2, 355
+  306  set            backpackX, 243
+  307  set            backpackY, 8
+  308  set            kNumPrevLocs, 2
+  309  set            kNavHotspotCursors.1, kWestCursor
+  310  set            kNavHotspotCursors.2, kSouthEastCursor
+  311  set            kNumStatueParts, 9
+  312  set            kNavHotspotZ, 4
+  313  set            kStatuePartsZ, 6
+  314  set            kPurrinaZ, 8
+  315  set            kMinionZ, 10
+  316  set            kLaptrapZ, 12
+  317  set            kSocratesZ, 14
+  318  set            kLeslieZ, 16
+  319  set            kOwenZ, 18
+  320  set            kJoniZ, 20
+  321  set            kClosedBackpackZ, 22
+  322  set            kSantiagoZ, 24
+  323  set            backpackZ, 500
+  324  return
+
+  325  sub            pStart@325
+  326  call_global    CacheDLL, "CLOC09P.rsc"
+  327  set_prop       gPort, currentLocation, "CLOC09"
+  328  set_prop       gScenePort, backgroundClicked, pInterruptScene@448
+  329  set_prop       gScenePort, backgroundMusicID, kCairo3BMusicID
+  330  set_prop       gScenePort, paused, ePauseScene@688
+  331  set_prop       gScenePort, resumed, eResumeScene@698
+  332  set            sfxTag, (-1)
+  333  set            numPartClicks, 0
+  334  set            wrongCtr, 1
+  335  call           pSetState@485
+  336  call_global    Scene, kBackgroundID
+  337  set            sQueue, RQueue, 1
+  338  set_prop       sQueue, finished, eSQueueDone@522
+  339  set            sQueueFinished, "empty"
+  340  set            k, 1
+  341  loop           i, 1, kNumPrevLocs
+  342  loop_test      i, 1, kNumPrevLocs
+  343  jump_if_false  -> 354
+  344  loop           j, 1, kNumNavHotspots.i
+  345  loop_test      j, 1, kNumNavHotspots.i
+  346  jump_if_false  -> 353
+  347  set            navHotspots.k, RHotSpot, kNavHotspotsX1.i.j, kNavHotspotsY1.i.j, kNavHotspotsX2.i.j, kNavHotspotsY2.i.j, kNavHotspotZ
+  348  set_prop       navHotspots.k, userData, i
+  349  set_prop       navHotspots.k, mouseDown, eNavHotspotClicked@654
+  350  send           navHotspots.k, setAOCursor, kNavHotspotCursors.i
+  351  set            k, (k+1)
+  352  jump           -> 345
+  353  jump           -> 342
+  354  set            closedBackpack, RHotSpot, kBackpackHotspotX1, kBackpackHotspotY1, kBackpackHotspotX2, kBackpackHotspotY2, kClosedBackpackZ
+  355  set_prop       closedBackpack, mouseDown, eBackpackOpened@119
+  356  send           closedBackpack, setAOCursor, kFingerCursor
+  357  loop           i, 1, kNumStatueParts
+  358  loop_test      i, 1, kNumStatueParts
+  359  jump_if_false  -> 367
+  360  set            statueParts.i, RAnimation, kStatuePartIDs.i
+  361  set_prop       statueParts.i, movable, kFalse
+  362  set_prop       statueParts.i, z, kStatuePartsZ
+  363  set_prop       statueParts.i, mouseDown, eStatuePartClicked@536
+  364  set_prop       statueParts.i, userData, i
+  365  send           statueParts.i, setAOCursor, kHotCursor, kHotCursor
+  366  jump           -> 358
+  367  set            joni, RCharacter, kJoniSetID, kJoniZ
+  368  set_prop       joni, mouseDown, eCharacterClicked@581
+  369  set_prop       joni, movable, kFalse
+  370  send           joni, addFidgetGroup, 1, kBlinkMinTime, kBlinkMaxTime
+  371  send           joni, addFidget, 1, kJoniBlinkID
+  372  send           joni, addFidgetGroup, 2, kFidgetMinTime, kFidgetMaxTime
+  373  send           joni, addFidget, 2, kJoniFidgID
+  374  set            santiago, RCharacter, kSantiagoSetID, kSantiagoZ
+  375  set_prop       santiago, mouseDown, eCharacterClicked@581
+  376  set_prop       santiago, movable, kFalse
+  377  send           santiago, addFidgetGroup, 1, kBlinkMinTime, kBlinkMaxTime
+  378  send           santiago, addFidget, 1, kSanBlinkID
+  379  send           santiago, addFidgetGroup, 2, kFidgetMinTime, kFidgetMaxTime
+  380  send           santiago, addFidget, 2, kSanFidgID
+  381  set            owen, RCharacter, kOwenSetID, kOwenZ
+  382  set_prop       owen, mouseDown, eCharacterClicked@581
+  383  set_prop       owen, movable, kFalse
+  384  send           owen, addFidgetGroup, 1, kBlinkMinTime, kBlinkMaxTime
+  385  send           owen, addFidget, 1, kOwenBlinkID
+  386  set            leslie, RCharacter, kLeslieSetID, kLeslieZ
+  387  set_prop       leslie, mouseDown, eCharacterClicked@581
+  388  set_prop       leslie, movable, kFalse
+  389  send           leslie, addFidgetGroup, 1, kBlinkMinTime, kBlinkMaxTime
+  390  send           leslie, addFidget, 1, kLesBlinkID
+  391  set            socrates, RCharacter, kSocratesSetID, kSocratesZ
+  392  set_prop       socrates, mouseDown, eSocratesClicked@614
+  393  set_prop       socrates, movable, kFalse
+  394  send           socrates, addFidgetGroup, 1, kBlinkMinTime, kBlinkMaxTime
+  395  send           socrates, addFidget, 1, kSocBlinkID
+  396  send           socrates, addFidgetGroup, 2, kFidgetMinTime, kFidgetMaxTime
+  397  send           socrates, addFidget, 2, kSocFidgAID
+  398  send           socrates, addFidget, 2, kSocFidgBID
+  399  set            laptrap, RCharacter, kLaptrapSetID, kLaptrapZ
+  400  set_prop       laptrap, mouseDown, eLaptrapClicked@647
+  401  set_prop       laptrap, movable, kFalse
+  402  set_prop       laptrap, animateSettled, kTrue
+  403  send           laptrap, setAOCursor, kFingerCursor, kFingerCursor
+  404  call           pAddCharSpeechAnims@477
+  405  set            ambientQueue, RQueue, (-1)
+  406  send           ambientQueue, add, DelayAction, 10000
+  407  send           ambientQueue, add, AnimAction, kPurrFidgID, kPurrinaZ, 1
+  408  get_prop       gPort, hubRoundsCompleted, "CHUB", numRoundsCompleted
+  409  if             (numRoundsCompleted>2)
+  410  jump_if_false  -> 418
+  411  get_prop       gPort, CCutawayMoviePlayed, moviePlayed
+  412  if             ((numRoundsCompleted>3)+(moviePlayed=kTrue))
+  413  jump_if_false  -> 417
+  414  send           ambientQueue, add, DelayAction, 10000
+  415  send           ambientQueue, add, AnimAction, kMinFidgID, kMinionZ, 1
+  416  end
+  417  end
+  418  send           ambientQueue, start
+  419  get_prop       gPort, previousLocation, prevLoc
+  420  loop           whichLoc, 1, kNumPrevLocs
+  421  loop_test      whichLoc, 1, kNumPrevLocs
+  422  jump_if_false  -> 428
+  423  if             (kPreviousLocations.whichLoc=prevLoc)
+  424  jump_if_false  -> 427
+  425  jump           -> 428
+  426  end
+  427  jump           -> 421
+  428  if             (whichLoc>kNumPrevLocs)
+  429  jump_if_false  -> 432
+  430  set            whichLoc, 1
+  431  end
+  432  call_global    CacheDLL, ("CLOC09i"+whichLoc+".rsc")
+  433  set            joniWalkInQAct, RQueue, 1, kTrue
+  434  send           joniWalkInQAct, add, PropertyAction, "closedBackpack", "visible", kFalse
+  435  send           joniWalkInQAct, add, CharacterAnimAction, "joni", kJoniWalkInIDs.whichLoc
+  436  send           joniWalkInQAct, add, PropertyAction, "closedBackpack", "visible", kTrue
+  437  set            walkInCAct, RCompositeAction, kTrue
+  438  send           walkInCAct, add, "joniWalkInQAct"
+  439  send           walkInCAct, add, CharacterAnimAction, "santiago", kSantiagoWalkInIDs.whichLoc
+  440  send           walkInCAct, add, CharacterAnimAction, "owen", kOwenWalkInIDs.whichLoc
+  441  send           walkInCAct, add, CharacterAnimAction, "leslie", kLeslieWalkInIDs.whichLoc
+  442  send           walkInCAct, add, CharacterAnimAction, "socrates", kSocratesWalkInIDs.whichLoc
+  443  send           walkInCAct, add, CharacterAnimAction, "laptrap", kLaptrapWalkInIDs.whichLoc
+  444  send           sQueue, add, "walkInCAct"
+  445  set            sQueueFinished, "eWalkInDone"
+  446  send           sQueue, start
+  447  return
+
+  448  sub            pInterruptScene@448
+  449  set            sceneInterrupted, kTrue
+  450  set            stopInterruptingScene, kFalse
+  451  get_prop       sQueue, actionCount, numActions
+  452  loop           (numActions>0)
+  453  loop_test      (numActions>0)
+  454  jump_if_false  -> 476
+  455  if             stopInterruptingScene
+  456  jump_if_false  -> 460
+  457  set            sceneInterrupted, kFalse
+  458  jump           -> 476
+  459  end
+  460  send           sQueue, halt
+  461  get_prop       sQueue, isActive, active
+  462  if             active
+  463  jump_if_false  -> 467
+  464  set            sceneInterrupted, kFalse
+  465  jump           -> 476
+  466  end
+  467  send           sQueue, clear
+  468  if             (sQueueFinished#"empty")
+  469  jump_if_false  -> 474
+  470  set            finishedEvent, sQueueFinished
+  471  set            sQueueFinished, "empty"
+  472  call           finishedEvent
+  473  end
+  474  get_prop       sQueue, actionCount, numActions
+  475  jump           -> 453
+  476  return
+
+  477  sub            pAddCharSpeechAnims@477
+  478  send           joni, addSpeechAnim, 7921
+  479  send           santiago, addSpeechAnim, 7920
+  480  send           leslie, addSpeechAnim, 7922
+  481  send           owen, addSpeechAnim, 7923
+  482  send           laptrap, addSpeechAnim, 7924
+  483  send           socrates, addSpeechAnim, 7925
+  484  return
+
+  485  sub            pSetState@485
+  486  get_prop       gPort, hubRoundsCompleted, "CHUB", numRoundsCompleted
+  487  if             (numRoundsCompleted<kNumCRounds)
+  488  jump_if_false  -> 507
+  489  set            numCairoGlyphsInBackpack, 0
+  490  loop           i, 0, (kMaxItemsInBackpack-1)
+  491  loop_test      i, 0, (kMaxItemsInBackpack-1)
+  492  jump_if_false  -> 499
+  493  get_prop       gPort, backpackItemPresent, i, item
+  494  if             ((item>(kCGlyphStart-1))*(item<(kCGlyphEnd+1)))
+  495  jump_if_false  -> 498
+  496  set            numCairoGlyphsInBackpack, (numCairoGlyphsInBackpack+1)
+  497  end
+  498  jump           -> 491
+  499  get_prop       gPort, itemsPresentCount, "CHUB", numCairoGlyphsOnTable
+  500  if             ((numCairoGlyphsInBackpack+numCairoGlyphsOnTable)<kNumItemsPerCRound)
+  501  jump_if_false  -> 504
+  502  set            state, 1
+  503  jump           -> 506
+  504  end
+  505  set            state, 2
+  506  jump           -> 521
+  507  end
+  508  get_prop       gPort, "CMASolved", CMASolved
+  509  if             CMASolved
+  510  jump_if_false  -> 513
+  511  set            state, 5
+  512  jump           -> 521
+  513  end
+  514  get_prop       gPort, visitedCount, "CMA", CMAVisit
+  515  if             (CMAVisit>0)
+  516  jump_if_false  -> 519
+  517  set            state, 4
+  518  jump           -> 521
+  519  end
+  520  set            state, 3
+  521  return
+
+  522  sub            eSQueueDone@522
+  523  send           sQueue, clear
+  524  if             (sQueueFinished#"empty")
+  525  jump_if_false  -> 530
+  526  set            finishedEvent, sQueueFinished
+  527  set            sQueueFinished, "empty"
+  528  call           finishedEvent
+  529  end
+  530  return
+
+  531  sub            eWalkInDone@531
+  532  delete         walkInCAct
+  533  delete         joniWalkInQAct
+  534  call_global    UncacheDLL, ("CLOC09i"+whichLoc+".rsc")
+  535  return
+
+  536  sub            eStatuePartClicked@536
+  537  call           pInterruptScene@448
+  538  if             sceneInterrupted
+  539  jump_if_false  -> 549
+  540  get_prop       $1, userData, partClicked
+  541  call_global    KillSound, sfxTag
+  542  call_global    PlaySound, kClickSfxID
+  543  set            sfxTag, $result
+  544  get_prop       $1, name, partName
+  545  send           sQueue, add, PlayAnimAction, partName, kFalse
+  546  set            sQueueFinished, "eCheckParts"
+  547  send           sQueue, start
+  548  end
+  549  return
+
+  550  sub            eCheckParts@550
+  551  if             (state<4)
+  552  jump_if_false  -> 580
+  553  set            numPartClicks, (numPartClicks+1)
+  554  if             (numPartClicks=5)
+  555  jump_if_false  -> 579
+  556  set            numPartClicks, 0
+  557  if             (state<3)
+  558  jump_if_false  -> 568
+  559  if             (wrongCtr=1)
+  560  jump_if_false  -> 564
+  561  send           sQueue, add, CharacterSpeechAction, "santiago", kEarlyClick1ID
+  562  set            wrongCtr, 2
+  563  jump           -> 567
+  564  end
+  565  send           sQueue, add, CharacterSpeechAction, "leslie", kEarlyClick2ID
+  566  set            wrongCtr, 1
+  567  jump           -> 577
+  568  end
+  569  if             (wrongCtr=1)
+  570  jump_if_false  -> 574
+  571  send           sQueue, add, CharacterSpeechAction, "owen", kBadClick1ID
+  572  set            wrongCtr, 2
+  573  jump           -> 577
+  574  end
+  575  send           sQueue, add, CharacterSpeechAction, "santiago", kBadClick2ID
+  576  set            wrongCtr, 1
+  577  send           sQueue, start
+  578  end
+  579  end
+  580  return
+
+  581  sub            eCharacterClicked@581
+  582  call           pInterruptScene@448
+  583  if             sceneInterrupted
+  584  jump_if_false  -> 613
+  585  if             (state=1)
+  586  jump_if_false  -> 590
+  587  call_global    RandomNumber, 1, 5
+  588  send           sQueue, add, CharacterSpeechAction, kWhoClickKidsASpch.RESULT, kClickKidsASpchIDs.RESULT
+  589  jump           -> 611
+  590  end
+  591  if             (state=2)
+  592  jump_if_false  -> 596
+  593  call_global    RandomNumber, 1, 5
+  594  send           sQueue, add, CharacterSpeechAction, kWhoClickKidsBSpch.RESULT, kClickKidsBSpchIDs.RESULT
+  595  jump           -> 611
+  596  end
+  597  if             (state=3)
+  598  jump_if_false  -> 602
+  599  call_global    RandomNumber, 1, 5
+  600  send           sQueue, add, CharacterSpeechAction, kWhoClickKidsCSpch.RESULT, kClickKidsCSpchIDs.RESULT
+  601  jump           -> 611
+  602  end
+  603  if             (state=4)
+  604  jump_if_false  -> 608
+  605  call_global    RandomNumber, 1, 5
+  606  send           sQueue, add, CharacterSpeechAction, kWhoClickKidsDSpch.RESULT, kClickKidsDSpchIDs.RESULT
+  607  jump           -> 611
+  608  end
+  609  call_global    RandomNumber, 1, 5
+  610  send           sQueue, add, CharacterSpeechAction, kWhoClickKidsESpch.RESULT, kClickKidsESpchIDs.RESULT
+  611  send           sQueue, start
+  612  end
+  613  return
+
+  614  sub            eSocratesClicked@614
+  615  call           pInterruptScene@448
+  616  if             sceneInterrupted
+  617  jump_if_false  -> 646
+  618  if             (state=1)
+  619  jump_if_false  -> 623
+  620  call_global    RandomNumber, 1, 5
+  621  send           sQueue, add, CharacterSpeechAction, "socrates", kClickSocASpchIDs.RESULT
+  622  jump           -> 644
+  623  end
+  624  if             (state=2)
+  625  jump_if_false  -> 629
+  626  call_global    RandomNumber, 1, 5
+  627  send           sQueue, add, CharacterSpeechAction, "socrates", kClickSocBSpchIDs.RESULT
+  628  jump           -> 644
+  629  end
+  630  if             (state=3)
+  631  jump_if_false  -> 635
+  632  call_global    RandomNumber, 1, 5
+  633  send           sQueue, add, CharacterSpeechAction, "socrates", kClickSocCSpchIDs.RESULT
+  634  jump           -> 644
+  635  end
+  636  if             (state=4)
+  637  jump_if_false  -> 641
+  638  call_global    RandomNumber, 1, 5
+  639  send           sQueue, add, CharacterSpeechAction, "socrates", kClickSocDSpchIDs.RESULT
+  640  jump           -> 644
+  641  end
+  642  call_global    RandomNumber, 1, 5
+  643  send           sQueue, add, CharacterSpeechAction, "socrates", kClickSocESpchIDs.RESULT
+  644  send           sQueue, start
+  645  end
+  646  return
+
+  647  sub            eLaptrapClicked@647
+  648  call           pInterruptScene@448
+  649  if             sceneInterrupted
+  650  jump_if_false  -> 653
+  651  call           gOpenLaptrap@221
+  652  end
+  653  return
+
+  654  sub            eNavHotspotClicked@654
+  655  call           pInterruptScene@448
+  656  if             sceneInterrupted
+  657  jump_if_false  -> 672
+  658  get_prop       $1, userData, whichWay
+  659  call_global    CacheDLL, ("CLOC09o"+whichWay+".rsc")
+  660  set            walkOutCAct, RCompositeAction, kTrue
+  661  send           walkOutCAct, add, PropertyAction, "closedBackpack", "visible", kFalse
+  662  send           walkOutCAct, add, CharacterAnimAction, "santiago", kSantiagoWalkOutIDs.whichWay, 1, kFalse
+  663  send           walkOutCAct, add, CharacterAnimAction, "joni", kJoniWalkOutIDs.whichWay, 1, kFalse
+  664  send           walkOutCAct, add, CharacterAnimAction, "owen", kOwenWalkOutIDs.whichWay, 1, kFalse
+  665  send           walkOutCAct, add, CharacterAnimAction, "leslie", kLeslieWalkOutIDs.whichWay, 1, kFalse
+  666  send           walkOutCAct, add, CharacterAnimAction, "socrates", kSocratesWalkOutIDs.whichWay, 1, kFalse
+  667  send           walkOutCAct, add, CharacterAnimAction, "laptrap", kLaptrapWalkOutIDs.whichWay, 1, kFalse
+  668  send           sQueue, add, "walkOutCAct"
+  669  set            sQueueFinished, "eWalkOutDone"
+  670  send           sQueue, start
+  671  end
+  672  return
+
+  673  sub            eWalkOutDone@673
+  674  delete         walkOutCAct
+  675  call_global    UncacheDLL, ("CLOC09o"+whichWay+".rsc")
+  676  call_global    KillSound, sfxTag
+  677  set_prop       gPort, previousLocation, "CLOC09"
+  678  call_global    StartTransition
+  679  load_script    (kPreviousLocations.whichWay+".mps")
+  680  return
+
+  681  sub            eExitToMapLoc@681
+  682  call_global    KillSound, sfxTag
+  683  set_prop       gPort, previousLocation, "CLOC09"
+  684  call_global    StartTransition
+  685  get_prop       gLaptrap, selectedLocation, location
+  686  load_script    (location+".mps")
+  687  return
+
+  688  sub            ePauseScene@688
+  689  send           sQueue, pause
+  690  send           ambientQueue, pause
+  691  send           joni, pause
+  692  send           santiago, pause
+  693  send           owen, pause
+  694  send           leslie, pause
+  695  send           laptrap, pause
+  696  send           socrates, pause
+  697  return
+
+  698  sub            eResumeScene@698
+  699  send           sQueue, resume
+  700  send           ambientQueue, resume
+  701  send           joni, resume
+  702  send           santiago, resume
+  703  send           owen, resume
+  704  send           leslie, resume
+  705  send           laptrap, resume
+  706  send           socrates, resume
+  707  return

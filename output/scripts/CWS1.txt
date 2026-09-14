@@ -1,0 +1,2199 @@
+    0  start
+    1  call_global    UncacheAllDLLs
+    2  set            kOMFontNormal, 0
+    3  set            kOMFontBold, 1
+    4  set            kOMFontItalic, 2
+    5  set            kOMFontUnderlined, 4
+    6  set            kNormalCursor, 25
+    7  set            kHotCursor, 26
+    8  set            kFingerCursor, 27
+    9  set            kOpenHandCursor, 28
+   10  set            kClosedHandCursor, 29
+   11  set            kNorthCursor, 30
+   12  set            kEastCursor, 31
+   13  set            kWestCursor, 32
+   14  set            kSouthCursor, 33
+   15  set            kNorthWestCursor, 34
+   16  set            kNorthEastCursor, 35
+   17  set            kSouthWestCursor, 36
+   18  set            kSouthEastCursor, 37
+   19  set            kHourglassCursor, 38
+   20  set            kCairo1BMusicID, 30515
+   21  set            kCairo2BMusicID, 30516
+   22  set            kCairo3BMusicID, 30517
+   23  set            kOasis1BMusicID, 30518
+   24  set            kOasis2BMusicID, 30519
+   25  set            kOasis3BMusicID, 30520
+   26  set            kPyramid1BMusicID, 30521
+   27  set            kPyramid2BMusicID, 30522
+   28  set            kPyramid3BMusicID, 30523
+   29  set            kPMChooseActButtonID, 5
+   30  set            kBlinkMinTime, 3
+   31  set            kBlinkMaxTime, 5
+   32  set            kFidgetMinTime, 45
+   33  set            kFidgetMaxTime, 60
+   34  set            kTrue, 1
+   35  set            kFalse, 0
+   36  set            kOn, 1
+   37  set            kOff, 0
+   38  set            kScreenWidth, 640
+   39  set            kScreenHeight, 480
+   40  set            kUseAOCoords, 11111
+   41  set            kNumCRounds, 5
+   42  set            kNumItemsPerCRound, 12
+   43  set            kNumCStatueDatasets, 10
+   44  set            kNumORounds, 5
+   45  set            kNumItemsPerORound, 12
+   46  set            kBackpackDef, 1
+   47  set            kMaxItemsInBackpack, 12
+   48  set            kMaxItemsInWS, 6
+   49  set            kMaxItemsInHub, 12
+   50  set            kMaxItemW, 36
+   51  set            kMaxItemH, 28
+   52  set            kCGlyphStart, 1
+   53  set            kCGlyphEnd, 12
+   54  set            kGemStart, 13
+   55  set            kGemEnd, 28
+   56  set            kItemInBPSfxID, 30524
+   57  set            kItemPickUpSfxID, 30525
+   58  set            openBackpack, 0
+   59  set            closedBackpack, 0
+   60  set            closedBackpackName, 0
+   61  set            objectIndex, 1
+   62  set            toBackpackOnly, 1
+
+   63  sub            pInitObjectsAndBackpack@63, toBackpack, backpackName
+   64  loop           i, 1, kMaxItemsInWS
+   65  loop_test      i, 1, kMaxItemsInWS
+   66  jump_if_false  -> 73
+   67  get_prop       gPort, itemPresent, i, objectToDisplay
+   68  if             (objectToDisplay#0)
+   69  jump_if_false  -> 72
+   70  call           pDisplayObject@76, kFalse
+   71  end
+   72  jump           -> 65
+   73  set            toBackpackOnly, toBackpack
+   74  set            closedBackpackName, backpackName
+   75  return
+
+   76  sub            pDisplayObject@76, animate
+   77  if             (objectBoxW>kMaxItemW)
+   78  jump_if_false  -> 82
+   79  call_global    RandomNumber, 1, (objectBoxW-kMaxItemW)
+   80  set            xOff, $result
+   81  jump           -> 84
+   82  end
+   83  set            xOff, 0
+   84  set            ox, (objectBoxX+xOff)
+   85  if             (objectBoxH>kMaxItemH)
+   86  jump_if_false  -> 90
+   87  call_global    RandomNumber, 1, (objectBoxH-kMaxItemH)
+   88  set            yOff, $result
+   89  jump           -> 92
+   90  end
+   91  set            yOff, 0
+   92  set            oy, (objectBoxY+yOff)
+   93  set            object.objectIndex, RAnimation, ox, oy, objectAOIDs.objectToDisplay
+   94  set_prop       object.objectIndex, "z", objectZ
+   95  set_prop       object.objectIndex, userData, (" "+ox+"#"+oy+":"+objectToDisplay)
+   96  set_prop       object.objectIndex, "mouseDown", eObjectPickedUp@133
+   97  set_prop       object.objectIndex, "mouseUp", eObjectDropped@137
+   98  send           object.objectIndex, setAOCursor, kOpenHandCursor, kClosedHandCursor
+   99  if             animate
+  100  jump_if_false  -> 112
+  101  send           object.objectIndex, play
+  102  set            port, RWorldPort, RWorldPort
+  103  get_prop       port, currentLocation, location
+  104  delete         port
+  105  if             ((location="CWS1")+(location="CWS2")+(location="CWS3")+(location="CWS4"))
+  106  jump_if_false  -> 109
+  107  call_global    PlaySound, 1000
+  108  jump           -> 111
+  109  end
+  110  call_global    PlaySound, 11000
+  111  end
+  112  set            objectIndex, (objectIndex+1)
+  113  return
+
+  114  sub            pNewObjectAtLocation@114, newID
+  115  send           gPort, addObject, newID
+  116  set            objectToDisplay, newID
+  117  call           pDisplayObject@76, kTrue
+  118  return
+
+  119  sub            eBackpackOpened@119
+  120  if             (openBackpack=0)
+  121  jump_if_false  -> 129
+  122  set            openBackpack, RBackPack, backpackX, backpackY, backpackZ
+  123  set_prop       openBackpack, closed, eBackpackClosed@130
+  124  if             (toBackpackOnly=0)
+  125  jump_if_false  -> 128
+  126  set_prop       openBackpack, objectDropped, eBackpackObjectDropped
+  127  end
+  128  end
+  129  return
+
+  130  sub            eBackpackClosed@130
+  131  set            openBackpack, 0
+  132  return
+
+  133  sub            eObjectPickedUp@133
+  134  set_prop       $1, "z", 10000
+  135  call_global    PlaySound, kItemPickUpSfxID
+  136  return
+
+  137  sub            eObjectDropped@137
+  138  get_prop       $1, userData, ud
+  139  set            p1, ("#"@ud)
+  140  set            p2, (":"@ud)
+  141  set            t2, (p1-1)
+  142  set            ox, ud|1|t2
+  143  set            t1, (p1+1)
+  144  set            t2, (p2-p1-1)
+  145  set            oy, ud|t1|t2
+  146  set            t1, (p2+1)
+  147  set            id, ud|t1
+  148  set_prop       $1, "z", objectZ
+  149  if             (toBackpackOnly=1)
+  150  jump_if_false  -> 195
+  151  if             (openBackpack#0)
+  152  jump_if_false  -> 176
+  153  call_global    IntersectTest, "RECEIVER", "openBackpack"
+  154  set            test, $result
+  155  if             (test=1)
+  156  jump_if_false  -> 159
+  157  send           openBackpack, addObject, id
+  158  jump           -> 175
+  159  end
+  160  if             (closedBackpack#0)
+  161  jump_if_false  -> 173
+  162  get_prop       closedBackpack, visible, test
+  163  if             (test=1)
+  164  jump_if_false  -> 172
+  165  call_global    IntersectTest, "RECEIVER", "closedBackpack"
+  166  set            test, $result
+  167  if             (test=1)
+  168  jump_if_false  -> 171
+  169  send           openBackpack, addObject, id
+  170  end
+  171  end
+  172  jump           -> 175
+  173  end
+  174  set            test, 0
+  175  jump           -> 194
+  176  end
+  177  if             (closedBackpack#0)
+  178  jump_if_false  -> 192
+  179  get_prop       closedBackpack, visible, test
+  180  if             (test=1)
+  181  jump_if_false  -> 191
+  182  call_global    IntersectTest, "RECEIVER", "closedBackpack"
+  183  set            test, $result
+  184  if             (test=1)
+  185  jump_if_false  -> 190
+  186  set            openBackpack, RBackPack, backpackX, backpackY, backpackZ
+  187  send           openBackpack, addObject, id
+  188  set            openBackpack, 0
+  189  end
+  190  end
+  191  jump           -> 194
+  192  end
+  193  set            test, 0
+  194  jump           -> 197
+  195  end
+  196  set            test, 0
+  197  if             (test=1)
+  198  jump_if_false  -> 207
+  199  get_prop       $1, name, Name
+  200  set            p, (1+"."@Name)
+  201  set            n, Name|p
+  202  delete         object.n
+  203  send           gPort, removeObjectFromLocation, id
+  204  set_prop       gPort, itemPlacedInBackpack, kTrue
+  205  call_global    PlaySound, kItemInBPSfxID
+  206  jump           -> 210
+  207  end
+  208  set_prop       $1, x, ox
+  209  set_prop       $1, y, oy
+  210  return
+
+  211  sub            globalInit@211
+  212  set            gCurLocation, 0
+  213  set            laptrap, 0
+  214  set            gPort, RWorldPort, RWorldPort
+  215  set            gScenePort, RScenePort, RScenePort
+  216  return
+
+  217  sub            globalDispose@217
+  218  delete         gPort
+  219  delete         gScenePort
+  220  return
+
+  221  sub            gOpenLaptrap@221
+  222  if             (laptrap#0)
+  223  jump_if_false  -> 226
+  224  set_prop       laptrap, visible, kFalse
+  225  end
+  226  if             (gCurLocation=0)
+  227  jump_if_false  -> 230
+  228  set            gLaptrap, RLapTrap, 10000
+  229  jump           -> 232
+  230  end
+  231  set            gLaptrap, RLapTrap, 10000, gCurLocation
+  232  set_prop       gLaptrap, closed, gCloseLaptrap@235
+  233  set_prop       gLaptrap, locationSelected, eExitToMapLoc@2128
+  234  return
+
+  235  sub            gCloseLaptrap@235
+  236  if             (laptrap#0)
+  237  jump_if_false  -> 240
+  238  set_prop       laptrap, visible, kTrue
+  239  end
+  240  delete         gLaptrap
+  241  return
+
+  242  sub            gNewGame@242
+  243  call_global    RandomNumber, 1, kNumCStatueDatasets
+  244  set_prop       gPort, CStatueDataset, $result
+  245  return
+
+  246  sub            gGameCompleted@246
+  247  send           gPort, newGame
+  248  get_prop       gPort, CStatueDataset, curDataset
+  249  set            curDataset, (curDataset+1)
+  250  if             (curDataset>kNumCStatueDatasets)
+  251  jump_if_false  -> 254
+  252  set            curDataset, 1
+  253  end
+  254  set_prop       gPort, CStatueDataset, curDataset
+  255  set_prop       gPort, CLOC01StatueUp, 0
+  256  set_prop       gPort, CBA2OpenVisitedCount, 0
+  257  set_prop       gPort, "CMALevel", 0
+  258  set_prop       gPort, "CMASolved", 0
+  259  set_prop       gPort, "PLOC2VisitedCount", 0
+  260  set_prop       gPort, "OMASolved", 0
+  261  set_prop       gPort, "OMAPracModeEntryCount", 0
+  262  set_prop       gPort, "OMALevel", 0
+  263  loop           i, 1, 4
+  264  loop_test      i, 1, 4
+  265  jump_if_false  -> 268
+  266  set_prop       gPort, ("OMAGatorDown"+i), 0
+  267  jump           -> 264
+  268  set_prop       gPort, "PWS2CompletedCount", 0
+  269  set_prop       gPort, "PWS2Round1visits", 0
+  270  set_prop       gPort, "PWS2Round2visits", 0
+  271  set_prop       gPort, "PWS2Round3visits", 0
+  272  set_prop       gPort, "PWS2Round4visits", 0
+  273  return
+  274  set            kProblemFontName, "Geneva"
+  275  set            kProblemFontSize, 14
+  276  set            kProblemFontStyle, kOMFontNormal
+  277  set            kProblemTextColor, 10
+  278  set            kCupFontName, "Chicago"
+  279  set            kCupFontSize, 12
+  280  set            kCupFontStyle, kOMFontNormal
+  281  set            kCupTextColor, 10
+  282  set            div, "Ö"
+  283  set            problem.1.1, "90 + 40 = ?"
+  284  set            solution.1.1, 130
+  285  set            minNumMoves.1.1, 3
+  286  set            problem.1.2, "110 + 50 = ?"
+  287  set            solution.1.2, 160
+  288  set            minNumMoves.1.2, 3
+  289  set            problem.1.3, "270 + 90 = ?"
+  290  set            solution.1.3, 360
+  291  set            minNumMoves.1.3, 3
+  292  set            problem.1.4, "140 + 60 = ?"
+  293  set            solution.1.4, 200
+  294  set            minNumMoves.1.4, 3
+  295  set            problem.1.5, "200 + 30 = ?"
+  296  set            solution.1.5, 230
+  297  set            minNumMoves.1.5, 3
+  298  set            problem.1.6, "130 + 90 = ?"
+  299  set            solution.1.6, 220
+  300  set            minNumMoves.1.6, 3
+  301  set            problem.1.7, "230 + 50 = ?"
+  302  set            solution.1.7, 280
+  303  set            minNumMoves.1.7, 3
+  304  set            problem.1.8, "140 + 30 = ?"
+  305  set            solution.1.8, 170
+  306  set            minNumMoves.1.8, 3
+  307  set            problem.1.9, "320 + 50 = ?"
+  308  set            solution.1.9, 370
+  309  set            minNumMoves.1.9, 3
+  310  set            problem.1.10, "290 + 50 = ?"
+  311  set            solution.1.10, 340
+  312  set            minNumMoves.1.10, 3
+  313  set            problem.1.11, "330 + 30 = ?"
+  314  set            solution.1.11, 360
+  315  set            minNumMoves.1.11, 3
+  316  set            problem.1.12, "70 + 60 = ?"
+  317  set            solution.1.12, 130
+  318  set            minNumMoves.1.12, 3
+  319  set            problem.1.13, "190 + 50 = ?"
+  320  set            solution.1.13, 240
+  321  set            minNumMoves.1.13, 3
+  322  set            problem.1.14, "90 + 80 = ?"
+  323  set            solution.1.14, 170
+  324  set            minNumMoves.1.14, 3
+  325  set            problem.1.15, "330 + 30 = ?"
+  326  set            solution.1.15, 360
+  327  set            minNumMoves.1.15, 3
+  328  set            problem.1.16, "140 + 110 = ?"
+  329  set            solution.1.16, 250
+  330  set            minNumMoves.1.16, 3
+  331  set            problem.1.17, "200 + 170 = ?"
+  332  set            solution.1.17, 370
+  333  set            minNumMoves.1.17, 3
+  334  set            problem.1.18, "90 + 30 = ?"
+  335  set            solution.1.18, 120
+  336  set            minNumMoves.1.18, 3
+  337  set            problem.1.19, "270 + 160 = ?"
+  338  set            solution.1.19, 430
+  339  set            minNumMoves.1.19, 3
+  340  set            problem.1.20, "150 + 130 = ?"
+  341  set            solution.1.20, 280
+  342  set            minNumMoves.1.20, 3
+  343  set            problem.1.21, "260 + 50 = ?"
+  344  set            solution.1.21, 310
+  345  set            minNumMoves.1.21, 3
+  346  set            problem.1.22, "150 + 140 = ?"
+  347  set            solution.1.22, 290
+  348  set            minNumMoves.1.22, 3
+  349  set            problem.1.23, "280 + 50 = ?"
+  350  set            solution.1.23, 330
+  351  set            minNumMoves.1.23, 3
+  352  set            problem.1.24, "300 + 80 = ?"
+  353  set            solution.1.24, 380
+  354  set            minNumMoves.1.24, 3
+  355  set            problem.1.25, "230 + 200 = ?"
+  356  set            solution.1.25, 430
+  357  set            minNumMoves.1.25, 3
+  358  set            problem.1.26, "150 + 110 = ?"
+  359  set            solution.1.26, 260
+  360  set            minNumMoves.1.26, 3
+  361  set            problem.1.27, "130 + 100 = ?"
+  362  set            solution.1.27, 230
+  363  set            minNumMoves.1.27, 3
+  364  set            problem.1.28, "170 + 90 = ?"
+  365  set            solution.1.28, 260
+  366  set            minNumMoves.1.28, 3
+  367  set            problem.1.29, "150 + 70 = ?"
+  368  set            solution.1.29, 220
+  369  set            minNumMoves.1.29, 3
+  370  set            problem.1.30, "100 + 50 = ?"
+  371  set            solution.1.30, 150
+  372  set            minNumMoves.1.30, 3
+  373  set            problem.1.31, "140 + 60 = ?"
+  374  set            solution.1.31, 200
+  375  set            minNumMoves.1.31, 3
+  376  set            problem.1.32, "160 + 80 = ?"
+  377  set            solution.1.32, 240
+  378  set            minNumMoves.1.32, 3
+  379  set            problem.1.33, "190 + 120 = ?"
+  380  set            solution.1.33, 310
+  381  set            minNumMoves.1.33, 3
+  382  set            problem.1.34, "160 + 30 = ?"
+  383  set            solution.1.34, 190
+  384  set            minNumMoves.1.34, 3
+  385  set            problem.1.35, "170 + 30 = ?"
+  386  set            solution.1.35, 200
+  387  set            minNumMoves.1.35, 3
+  388  set            problem.1.36, "100 + 90 = ?"
+  389  set            solution.1.36, 190
+  390  set            minNumMoves.1.36, 3
+  391  set            problem.1.37, "160 + 60 = ?"
+  392  set            solution.1.37, 220
+  393  set            minNumMoves.1.37, 3
+  394  set            problem.1.38, "320 + 70 = ?"
+  395  set            solution.1.38, 390
+  396  set            minNumMoves.1.38, 3
+  397  set            problem.1.39, "90 + 30 = ?"
+  398  set            solution.1.39, 120
+  399  set            minNumMoves.1.39, 3
+  400  set            problem.1.40, "140 + 120 = ?"
+  401  set            solution.1.40, 260
+  402  set            minNumMoves.1.40, 3
+  403  set            problem.1.41, "270 + 40 = ?"
+  404  set            solution.1.41, 310
+  405  set            minNumMoves.1.41, 3
+  406  set            problem.1.42, "210 + 90 = ?"
+  407  set            solution.1.42, 300
+  408  set            minNumMoves.1.42, 3
+  409  set            problem.1.43, "110 + 70 = ?"
+  410  set            solution.1.43, 180
+  411  set            minNumMoves.1.43, 3
+  412  set            problem.1.44, "220 + 40 = ?"
+  413  set            solution.1.44, 260
+  414  set            minNumMoves.1.44, 3
+  415  set            problem.1.45, "270 + 70 = ?"
+  416  set            solution.1.45, 340
+  417  set            minNumMoves.1.45, 3
+  418  set            problem.1.46, "200 + 70 = ?"
+  419  set            solution.1.46, 270
+  420  set            minNumMoves.1.46, 3
+  421  set            problem.1.47, "110 + 100 = ?"
+  422  set            solution.1.47, 210
+  423  set            minNumMoves.1.47, 3
+  424  set            problem.1.48, "210 + 70 = ?"
+  425  set            solution.1.48, 280
+  426  set            minNumMoves.1.48, 3
+  427  set            problem.1.49, "210 + 150 = ?"
+  428  set            solution.1.49, 360
+  429  set            minNumMoves.1.49, 3
+  430  set            problem.1.50, "300 + 70 = ?"
+  431  set            solution.1.50, 370
+  432  set            minNumMoves.1.50, 3
+  433  set            problem.1.51, "70 + 50 = ?"
+  434  set            solution.1.51, 120
+  435  set            minNumMoves.1.51, 3
+  436  set            problem.1.52, "180 + 100 = ?"
+  437  set            solution.1.52, 280
+  438  set            minNumMoves.1.52, 3
+  439  set            problem.1.53, "290 + 40 = ?"
+  440  set            solution.1.53, 330
+  441  set            minNumMoves.1.53, 3
+  442  set            problem.1.54, "80 + 30 = ?"
+  443  set            solution.1.54, 110
+  444  set            minNumMoves.1.54, 3
+  445  set            problem.1.55, "180 + 130 = ?"
+  446  set            solution.1.55, 310
+  447  set            minNumMoves.1.55, 3
+  448  set            problem.1.56, "190 + 40 = ?"
+  449  set            solution.1.56, 230
+  450  set            minNumMoves.1.56, 3
+  451  set            problem.1.57, "100 + 60 = ?"
+  452  set            solution.1.57, 160
+  453  set            minNumMoves.1.57, 3
+  454  set            problem.1.58, "210 + 50 = ?"
+  455  set            solution.1.58, 260
+  456  set            minNumMoves.1.58, 3
+  457  set            problem.1.59, "230 + 90 = ?"
+  458  set            solution.1.59, 320
+  459  set            minNumMoves.1.59, 3
+  460  set            problem.1.60, "140 + 100 = ?"
+  461  set            solution.1.60, 240
+  462  set            minNumMoves.1.60, 3
+  463  set            problem.1.61, "160 + 70 = ?"
+  464  set            solution.1.61, 230
+  465  set            minNumMoves.1.61, 3
+  466  set            problem.1.62, "150 + 110 = ?"
+  467  set            solution.1.62, 260
+  468  set            minNumMoves.1.62, 3
+  469  set            problem.1.63, "180 + 140 = ?"
+  470  set            solution.1.63, 320
+  471  set            minNumMoves.1.63, 3
+  472  set            problem.1.64, "270 + 70 = ?"
+  473  set            solution.1.64, 340
+  474  set            minNumMoves.1.64, 3
+  475  set            problem.1.65, "290 + 30 = ?"
+  476  set            solution.1.65, 320
+  477  set            minNumMoves.1.65, 3
+  478  set            problem.1.66, "190 + 80 = ?"
+  479  set            solution.1.66, 270
+  480  set            minNumMoves.1.66, 3
+  481  set            problem.1.67, "270 + 40 = ?"
+  482  set            solution.1.67, 310
+  483  set            minNumMoves.1.67, 3
+  484  set            problem.1.68, "140 + 130 = ?"
+  485  set            solution.1.68, 270
+  486  set            minNumMoves.1.68, 3
+  487  set            problem.1.69, "220 + 30 = ?"
+  488  set            solution.1.69, 250
+  489  set            minNumMoves.1.69, 3
+  490  set            problem.2.1, "4 X 4 = ?"
+  491  set            solution.2.1, 16
+  492  set            minNumMoves.2.1, 3
+  493  set            problem.2.2, "7 X 6 = ?"
+  494  set            solution.2.2, 42
+  495  set            minNumMoves.2.2, 3
+  496  set            problem.2.3, "8 X 7 = ?"
+  497  set            solution.2.3, 56
+  498  set            minNumMoves.2.3, 3
+  499  set            problem.2.4, "3 X 12 = ?"
+  500  set            solution.2.4, 36
+  501  set            minNumMoves.2.4, 3
+  502  set            problem.2.5, "5 X 8 = ?"
+  503  set            solution.2.5, 40
+  504  set            minNumMoves.2.5, 3
+  505  set            problem.2.6, "5 X 4 = ?"
+  506  set            solution.2.6, 20
+  507  set            minNumMoves.2.6, 3
+  508  set            problem.2.7, "7 X 8 = ?"
+  509  set            solution.2.7, 56
+  510  set            minNumMoves.2.7, 3
+  511  set            problem.2.8, "12 X 8 = ?"
+  512  set            solution.2.8, 96
+  513  set            minNumMoves.2.8, 3
+  514  set            problem.2.9, "9 X 4 = ?"
+  515  set            solution.2.9, 36
+  516  set            minNumMoves.2.9, 3
+  517  set            problem.2.10, "11 X 11 = ?"
+  518  set            solution.2.10, 121
+  519  set            minNumMoves.2.10, 3
+  520  set            problem.2.11, "5 X 7 = ?"
+  521  set            solution.2.11, 35
+  522  set            minNumMoves.2.11, 3
+  523  set            problem.2.12, "7 X 6 = ?"
+  524  set            solution.2.12, 42
+  525  set            minNumMoves.2.12, 3
+  526  set            problem.2.13, "5 X 5 = ?"
+  527  set            solution.2.13, 25
+  528  set            minNumMoves.2.13, 3
+  529  set            problem.2.14, "6 X 5 = ?"
+  530  set            solution.2.14, 30
+  531  set            minNumMoves.2.14, 3
+  532  set            problem.2.15, "6 X 7 = ?"
+  533  set            solution.2.15, 42
+  534  set            minNumMoves.2.15, 3
+  535  set            problem.2.16, "3 X 8 = ?"
+  536  set            solution.2.16, 24
+  537  set            minNumMoves.2.16, 3
+  538  set            problem.2.17, "11 X 5 = ?"
+  539  set            solution.2.17, 55
+  540  set            minNumMoves.2.17, 3
+  541  set            problem.2.18, "8 X 6 = ?"
+  542  set            solution.2.18, 48
+  543  set            minNumMoves.2.18, 3
+  544  set            problem.2.19, "4 X 8 = ?"
+  545  set            solution.2.19, 32
+  546  set            minNumMoves.2.19, 3
+  547  set            problem.2.20, "11 X 11 = ?"
+  548  set            solution.2.20, 121
+  549  set            minNumMoves.2.20, 3
+  550  set            problem.2.21, "11 X 10 = ?"
+  551  set            solution.2.21, 110
+  552  set            minNumMoves.2.21, 3
+  553  set            problem.2.22, "11 X 8 = ?"
+  554  set            solution.2.22, 88
+  555  set            minNumMoves.2.22, 3
+  556  set            problem.2.23, "12 X 5 = ?"
+  557  set            solution.2.23, 60
+  558  set            minNumMoves.2.23, 3
+  559  set            problem.2.24, "7 X 8 = ?"
+  560  set            solution.2.24, 56
+  561  set            minNumMoves.2.24, 3
+  562  set            problem.2.25, "8 X 10 = ?"
+  563  set            solution.2.25, 80
+  564  set            minNumMoves.2.25, 3
+  565  set            problem.2.26, "12 X 6 = ?"
+  566  set            solution.2.26, 72
+  567  set            minNumMoves.2.26, 3
+  568  set            problem.2.27, "9 X 12 = ?"
+  569  set            solution.2.27, 108
+  570  set            minNumMoves.2.27, 3
+  571  set            problem.2.28, "8 X 3 = ?"
+  572  set            solution.2.28, 24
+  573  set            minNumMoves.2.28, 3
+  574  set            problem.2.29, "12 X 11 = ?"
+  575  set            solution.2.29, 132
+  576  set            minNumMoves.2.29, 3
+  577  set            problem.2.30, "12 X 9 = ?"
+  578  set            solution.2.30, 108
+  579  set            minNumMoves.2.30, 3
+  580  set            problem.2.31, "7 X 9 = ?"
+  581  set            solution.2.31, 63
+  582  set            minNumMoves.2.31, 3
+  583  set            problem.2.32, "8 X 6 = ?"
+  584  set            solution.2.32, 48
+  585  set            minNumMoves.2.32, 3
+  586  set            problem.2.33, "9 X 8 = ?"
+  587  set            solution.2.33, 72
+  588  set            minNumMoves.2.33, 3
+  589  set            problem.2.34, "10 X 12 = ?"
+  590  set            solution.2.34, 120
+  591  set            minNumMoves.2.34, 3
+  592  set            problem.2.35, "7 X 5 = ?"
+  593  set            solution.2.35, 35
+  594  set            minNumMoves.2.35, 3
+  595  set            problem.2.36, "11 X 5 = ?"
+  596  set            solution.2.36, 55
+  597  set            minNumMoves.2.36, 3
+  598  set            problem.2.37, "6 X 10 = ?"
+  599  set            solution.2.37, 60
+  600  set            minNumMoves.2.37, 3
+  601  set            problem.2.38, "3 X 8 = ?"
+  602  set            solution.2.38, 24
+  603  set            minNumMoves.2.38, 3
+  604  set            problem.2.39, "12 X 9 = ?"
+  605  set            solution.2.39, 108
+  606  set            minNumMoves.2.39, 3
+  607  set            problem.2.40, "5 X 10 = ?"
+  608  set            solution.2.40, 50
+  609  set            minNumMoves.2.40, 3
+  610  set            problem.2.41, "5 X 10 = ?"
+  611  set            solution.2.41, 50
+  612  set            minNumMoves.2.41, 3
+  613  set            problem.2.42, "4 X 12 = ?"
+  614  set            solution.2.42, 48
+  615  set            minNumMoves.2.42, 3
+  616  set            problem.2.43, "3 X 6 = ?"
+  617  set            solution.2.43, 18
+  618  set            minNumMoves.2.43, 3
+  619  set            problem.2.44, "11 X 11 = ?"
+  620  set            solution.2.44, 121
+  621  set            minNumMoves.2.44, 3
+  622  set            problem.2.45, "6 X 9 = ?"
+  623  set            solution.2.45, 54
+  624  set            minNumMoves.2.45, 3
+  625  set            problem.2.46, "12 X 7 = ?"
+  626  set            solution.2.46, 84
+  627  set            minNumMoves.2.46, 3
+  628  set            problem.2.47, "8 X 7 = ?"
+  629  set            solution.2.47, 56
+  630  set            minNumMoves.2.47, 3
+  631  set            problem.2.48, "12 X 12 = ?"
+  632  set            solution.2.48, 144
+  633  set            minNumMoves.2.48, 3
+  634  set            problem.2.49, "8 X 8 = ?"
+  635  set            solution.2.49, 64
+  636  set            minNumMoves.2.49, 3
+  637  set            problem.2.50, "4 X 12 = ?"
+  638  set            solution.2.50, 48
+  639  set            minNumMoves.2.50, 3
+  640  set            problem.2.51, "10 X 10 = ?"
+  641  set            solution.2.51, 100
+  642  set            minNumMoves.2.51, 3
+  643  set            problem.2.52, "5 X 10 = ?"
+  644  set            solution.2.52, 50
+  645  set            minNumMoves.2.52, 3
+  646  set            problem.2.53, "4 X 11 = ?"
+  647  set            solution.2.53, 44
+  648  set            minNumMoves.2.53, 3
+  649  set            problem.2.54, "5 X 8 = ?"
+  650  set            solution.2.54, 40
+  651  set            minNumMoves.2.54, 3
+  652  set            problem.2.55, "9 X 3 = ?"
+  653  set            solution.2.55, 27
+  654  set            minNumMoves.2.55, 3
+  655  set            problem.2.56, "9 X 10 = ?"
+  656  set            solution.2.56, 90
+  657  set            minNumMoves.2.56, 3
+  658  set            problem.2.57, "11 X 3 = ?"
+  659  set            solution.2.57, 33
+  660  set            minNumMoves.2.57, 3
+  661  set            problem.2.58, "6 X 4 = ?"
+  662  set            solution.2.58, 24
+  663  set            minNumMoves.2.58, 3
+  664  set            problem.2.59, "5 X 11 = ?"
+  665  set            solution.2.59, 55
+  666  set            minNumMoves.2.59, 3
+  667  set            problem.2.60, "8 X 10 = ?"
+  668  set            solution.2.60, 80
+  669  set            minNumMoves.2.60, 3
+  670  set            problem.2.61, "11 X 10 = ?"
+  671  set            solution.2.61, 110
+  672  set            minNumMoves.2.61, 3
+  673  set            problem.2.62, "10 X 7 = ?"
+  674  set            solution.2.62, 70
+  675  set            minNumMoves.2.62, 3
+  676  set            problem.2.63, "9 X 8 = ?"
+  677  set            solution.2.63, 72
+  678  set            minNumMoves.2.63, 3
+  679  set            problem.2.64, "8 X 4 = ?"
+  680  set            solution.2.64, 32
+  681  set            minNumMoves.2.64, 3
+  682  set            problem.2.65, "9 X 8 = ?"
+  683  set            solution.2.65, 72
+  684  set            minNumMoves.2.65, 3
+  685  set            problem.2.66, "4 X 12 = ?"
+  686  set            solution.2.66, 48
+  687  set            minNumMoves.2.66, 3
+  688  set            problem.2.67, "12 X 6 = ?"
+  689  set            solution.2.67, 72
+  690  set            minNumMoves.2.67, 3
+  691  set            problem.2.68, "12 X 9 = ?"
+  692  set            solution.2.68, 108
+  693  set            minNumMoves.2.68, 3
+  694  set            problem.2.69, "6 X 4 = ?"
+  695  set            solution.2.69, 24
+  696  set            minNumMoves.2.69, 3
+  697  set            problem.2.70, "5 X 12 = ?"
+  698  set            solution.2.70, 60
+  699  set            minNumMoves.2.70, 3
+  700  set            problem.2.71, "6 X 12 = ?"
+  701  set            solution.2.71, 72
+  702  set            minNumMoves.2.71, 3
+  703  set            problem.2.72, "4 X 4 = ?"
+  704  set            solution.2.72, 16
+  705  set            minNumMoves.2.72, 3
+  706  set            problem.2.73, "4 X 6 = ?"
+  707  set            solution.2.73, 24
+  708  set            minNumMoves.2.73, 3
+  709  set            problem.2.74, "10 X 5 = ?"
+  710  set            solution.2.74, 50
+  711  set            minNumMoves.2.74, 3
+  712  set            problem.2.75, "6 X 7 = ?"
+  713  set            solution.2.75, 42
+  714  set            minNumMoves.2.75, 3
+  715  set            problem.2.76, "5 X 6 = ?"
+  716  set            solution.2.76, 30
+  717  set            minNumMoves.2.76, 3
+  718  set            problem.2.77, "7 X 7 = ?"
+  719  set            solution.2.77, 49
+  720  set            minNumMoves.2.77, 3
+  721  set            problem.2.78, "8 X 11 = ?"
+  722  set            solution.2.78, 88
+  723  set            minNumMoves.2.78, 3
+  724  set            problem.2.79, "10 X 6 = ?"
+  725  set            solution.2.79, 60
+  726  set            minNumMoves.2.79, 3
+  727  set            problem.2.80, "7 X 4 = ?"
+  728  set            solution.2.80, 28
+  729  set            minNumMoves.2.80, 3
+  730  set            problem.2.81, "8 X 12 = ?"
+  731  set            solution.2.81, 96
+  732  set            minNumMoves.2.81, 3
+  733  set            problem.2.82, "5 X 11 = ?"
+  734  set            solution.2.82, 55
+  735  set            minNumMoves.2.82, 3
+  736  set            problem.2.83, "9 X 8 = ?"
+  737  set            solution.2.83, 72
+  738  set            minNumMoves.2.83, 3
+  739  set            problem.2.84, "10 X 3 = ?"
+  740  set            solution.2.84, 30
+  741  set            minNumMoves.2.84, 3
+  742  set            problem.2.85, "6 X 8 = ?"
+  743  set            solution.2.85, 48
+  744  set            minNumMoves.2.85, 3
+  745  set            problem.2.86, "10 X 12 = ?"
+  746  set            solution.2.86, 120
+  747  set            minNumMoves.2.86, 3
+  748  set            problem.2.87, "12 X 5 = ?"
+  749  set            solution.2.87, 60
+  750  set            minNumMoves.2.87, 3
+  751  set            problem.2.88, "6 X 3 = ?"
+  752  set            solution.2.88, 18
+  753  set            minNumMoves.2.88, 3
+  754  set            problem.2.89, "6 X 10 = ?"
+  755  set            solution.2.89, 60
+  756  set            minNumMoves.2.89, 3
+  757  set            problem.2.90, "10 X 6 = ?"
+  758  set            solution.2.90, 60
+  759  set            minNumMoves.2.90, 3
+  760  set            problem.2.91, "7 X 10 = ?"
+  761  set            solution.2.91, 70
+  762  set            minNumMoves.2.91, 3
+  763  set            problem.2.92, "4 X 10 = ?"
+  764  set            solution.2.92, 40
+  765  set            minNumMoves.2.92, 3
+  766  set            problem.2.93, "10 X 11 = ?"
+  767  set            solution.2.93, 110
+  768  set            minNumMoves.2.93, 3
+  769  set            problem.2.94, "10 X 9 = ?"
+  770  set            solution.2.94, 90
+  771  set            minNumMoves.2.94, 3
+  772  set            problem.2.95, "8 X 3 = ?"
+  773  set            solution.2.95, 24
+  774  set            minNumMoves.2.95, 3
+  775  set            problem.2.96, "9 X 8 = ?"
+  776  set            solution.2.96, 72
+  777  set            minNumMoves.2.96, 3
+  778  set            problem.2.97, "10 X 8 = ?"
+  779  set            solution.2.97, 80
+  780  set            minNumMoves.2.97, 3
+  781  set            problem.2.98, "6 X 8 = ?"
+  782  set            solution.2.98, 48
+  783  set            minNumMoves.2.98, 3
+  784  set            problem.2.99, "4 X 7 = ?"
+  785  set            solution.2.99, 28
+  786  set            minNumMoves.2.99, 3
+  787  set            problem.2.100, "8 X 11 = ?"
+  788  set            solution.2.100, 88
+  789  set            minNumMoves.2.100, 3
+  790  set            problem.3.1, ("56 "+div+" 7 = ?")
+  791  set            solution.3.1, 8
+  792  set            minNumMoves.3.1, 3
+  793  set            problem.3.2, ("50 "+div+" 5 = ?")
+  794  set            solution.3.2, 10
+  795  set            minNumMoves.3.2, 3
+  796  set            problem.3.3, ("55 "+div+" 5 = ?")
+  797  set            solution.3.3, 11
+  798  set            minNumMoves.3.3, 3
+  799  set            problem.3.4, ("45 "+div+" 5 = ?")
+  800  set            solution.3.4, 9
+  801  set            minNumMoves.3.4, 3
+  802  set            problem.3.5, ("60 "+div+" 6 = ?")
+  803  set            solution.3.5, 10
+  804  set            minNumMoves.3.5, 3
+  805  set            problem.3.6, ("15 "+div+" 3 = ?")
+  806  set            solution.3.6, 5
+  807  set            minNumMoves.3.6, 3
+  808  set            problem.3.7, ("45 "+div+" 5 = ?")
+  809  set            solution.3.7, 9
+  810  set            minNumMoves.3.7, 3
+  811  set            problem.3.8, ("33 "+div+" 3 = ?")
+  812  set            solution.3.8, 11
+  813  set            minNumMoves.3.8, 3
+  814  set            problem.3.9, ("100 "+div+" 10 = ?")
+  815  set            solution.3.9, 10
+  816  set            minNumMoves.3.9, 3
+  817  set            problem.3.10, ("70 "+div+" 7 = ?")
+  818  set            solution.3.10, 10
+  819  set            minNumMoves.3.10, 3
+  820  set            problem.3.11, ("45 "+div+" 9 = ?")
+  821  set            solution.3.11, 5
+  822  set            minNumMoves.3.11, 3
+  823  set            problem.3.12, ("20 "+div+" 4 = ?")
+  824  set            solution.3.12, 5
+  825  set            minNumMoves.3.12, 3
+  826  set            problem.3.13, ("80 "+div+" 8 = ?")
+  827  set            solution.3.13, 10
+  828  set            minNumMoves.3.13, 3
+  829  set            problem.3.14, ("21 "+div+" 3 = ?")
+  830  set            solution.3.14, 7
+  831  set            minNumMoves.3.14, 3
+  832  set            problem.3.15, ("35 "+div+" 5 = ?")
+  833  set            solution.3.15, 7
+  834  set            minNumMoves.3.15, 3
+  835  set            problem.3.16, ("30 "+div+" 5 = ?")
+  836  set            solution.3.16, 6
+  837  set            minNumMoves.3.16, 3
+  838  set            problem.3.17, ("45 "+div+" 5 = ?")
+  839  set            solution.3.17, 9
+  840  set            minNumMoves.3.17, 3
+  841  set            problem.3.18, ("70 "+div+" 10 = ?")
+  842  set            solution.3.18, 7
+  843  set            minNumMoves.3.18, 3
+  844  set            problem.3.19, ("32 "+div+" 4 = ?")
+  845  set            solution.3.19, 8
+  846  set            minNumMoves.3.19, 3
+  847  set            problem.3.20, ("77 "+div+" 11 = ?")
+  848  set            solution.3.20, 7
+  849  set            minNumMoves.3.20, 3
+  850  set            problem.3.21, ("80 "+div+" 10 = ?")
+  851  set            solution.3.21, 8
+  852  set            minNumMoves.3.21, 3
+  853  set            problem.3.22, ("49 "+div+" 7 = ?")
+  854  set            solution.3.22, 7
+  855  set            minNumMoves.3.22, 3
+  856  set            problem.3.23, ("81 "+div+" 9 = ?")
+  857  set            solution.3.23, 9
+  858  set            minNumMoves.3.23, 3
+  859  set            problem.3.24, ("77 "+div+" 7 = ?")
+  860  set            solution.3.24, 11
+  861  set            minNumMoves.3.24, 3
+  862  set            problem.3.25, ("27 "+div+" 3 = ?")
+  863  set            solution.3.25, 9
+  864  set            minNumMoves.3.25, 3
+  865  set            problem.3.26, ("70 "+div+" 7 = ?")
+  866  set            solution.3.26, 10
+  867  set            minNumMoves.3.26, 3
+  868  set            problem.3.27, ("25 "+div+" 5 = ?")
+  869  set            solution.3.27, 5
+  870  set            minNumMoves.3.27, 3
+  871  set            problem.3.28, ("80 "+div+" 8 = ?")
+  872  set            solution.3.28, 10
+  873  set            minNumMoves.3.28, 3
+  874  set            problem.3.29, ("18 "+div+" 3 = ?")
+  875  set            solution.3.29, 6
+  876  set            minNumMoves.3.29, 3
+  877  set            problem.3.30, ("99 "+div+" 11 = ?")
+  878  set            solution.3.30, 9
+  879  set            minNumMoves.3.30, 3
+  880  set            problem.3.31, ("66 "+div+" 6 = ?")
+  881  set            solution.3.31, 11
+  882  set            minNumMoves.3.31, 3
+  883  set            problem.3.32, ("48 "+div+" 8 = ?")
+  884  set            solution.3.32, 6
+  885  set            minNumMoves.3.32, 3
+  886  set            problem.3.33, ("40 "+div+" 8 = ?")
+  887  set            solution.3.33, 5
+  888  set            minNumMoves.3.33, 3
+  889  set            problem.3.34, ("40 "+div+" 5 = ?")
+  890  set            solution.3.34, 8
+  891  set            minNumMoves.3.34, 3
+  892  set            problem.3.35, ("50 "+div+" 5 = ?")
+  893  set            solution.3.35, 10
+  894  set            minNumMoves.3.35, 3
+  895  set            problem.3.36, ("60 "+div+" 6 = ?")
+  896  set            solution.3.36, 10
+  897  set            minNumMoves.3.36, 3
+  898  set            problem.3.37, ("121 "+div+" 11 = ?")
+  899  set            solution.3.37, 11
+  900  set            minNumMoves.3.37, 3
+  901  set            problem.3.38, ("70 "+div+" 10 = ?")
+  902  set            solution.3.38, 7
+  903  set            minNumMoves.3.38, 3
+  904  set            problem.3.39, ("99 "+div+" 9 = ?")
+  905  set            solution.3.39, 11
+  906  set            minNumMoves.3.39, 3
+  907  set            problem.3.40, ("50 "+div+" 5 = ?")
+  908  set            solution.3.40, 10
+  909  set            minNumMoves.3.40, 3
+  910  set            problem.3.41, ("88 "+div+" 8 = ?")
+  911  set            solution.3.41, 11
+  912  set            minNumMoves.3.41, 3
+  913  set            problem.3.42, ("15 "+div+" 3 = ?")
+  914  set            solution.3.42, 5
+  915  set            minNumMoves.3.42, 3
+  916  set            problem.3.43, ("48 "+div+" 6 = ?")
+  917  set            solution.3.43, 8
+  918  set            minNumMoves.3.43, 3
+  919  set            problem.3.44, ("30 "+div+" 3 = ?")
+  920  set            solution.3.44, 10
+  921  set            minNumMoves.3.44, 3
+  922  set            problem.3.45, ("30 "+div+" 5 = ?")
+  923  set            solution.3.45, 6
+  924  set            minNumMoves.3.45, 3
+  925  set            problem.3.46, ("72 "+div+" 8 = ?")
+  926  set            solution.3.46, 9
+  927  set            minNumMoves.3.46, 3
+  928  set            problem.3.47, ("35 "+div+" 7 = ?")
+  929  set            solution.3.47, 5
+  930  set            minNumMoves.3.47, 3
+  931  set            problem.3.48, ("99 "+div+" 9 = ?")
+  932  set            solution.3.48, 11
+  933  set            minNumMoves.3.48, 3
+  934  set            problem.3.49, ("40 "+div+" 5 = ?")
+  935  set            solution.3.49, 8
+  936  set            minNumMoves.3.49, 3
+  937  set            problem.3.50, ("77 "+div+" 7 = ?")
+  938  set            solution.3.50, 11
+  939  set            minNumMoves.3.50, 3
+  940  set            problem.3.51, ("20 "+div+" 5 = ?")
+  941  set            solution.3.51, 4
+  942  set            minNumMoves.3.51, 3
+  943  set            problem.3.52, ("77 "+div+" 7 = ?")
+  944  set            solution.3.52, 11
+  945  set            minNumMoves.3.52, 3
+  946  set            problem.3.53, ("20 "+div+" 4 = ?")
+  947  set            solution.3.53, 5
+  948  set            minNumMoves.3.53, 3
+  949  set            problem.3.54, ("33 "+div+" 3 = ?")
+  950  set            solution.3.54, 11
+  951  set            minNumMoves.3.54, 3
+  952  set            problem.3.55, ("40 "+div+" 5 = ?")
+  953  set            solution.3.55, 8
+  954  set            minNumMoves.3.55, 3
+  955  set            problem.3.56, ("110 "+div+" 10 = ?")
+  956  set            solution.3.56, 11
+  957  set            minNumMoves.3.56, 3
+  958  set            problem.3.57, ("66 "+div+" 11 = ?")
+  959  set            solution.3.57, 6
+  960  set            minNumMoves.3.57, 3
+  961  set            problem.3.58, ("77 "+div+" 7 = ?")
+  962  set            solution.3.58, 11
+  963  set            minNumMoves.3.58, 3
+  964  set            problem.3.59, ("48 "+div+" 6 = ?")
+  965  set            solution.3.59, 8
+  966  set            minNumMoves.3.59, 3
+  967  set            problem.3.60, ("56 "+div+" 8 = ?")
+  968  set            solution.3.60, 7
+  969  set            minNumMoves.3.60, 3
+  970  set            problem.3.61, ("55 "+div+" 5 = ?")
+  971  set            solution.3.61, 11
+  972  set            minNumMoves.3.61, 3
+  973  set            problem.3.62, ("48 "+div+" 8 = ?")
+  974  set            solution.3.62, 6
+  975  set            minNumMoves.3.62, 3
+  976  set            problem.3.63, ("30 "+div+" 3 = ?")
+  977  set            solution.3.63, 10
+  978  set            minNumMoves.3.63, 3
+  979  set            problem.3.64, ("44 "+div+" 11 = ?")
+  980  set            solution.3.64, 4
+  981  set            minNumMoves.3.64, 3
+  982  set            problem.3.65, ("30 "+div+" 5 = ?")
+  983  set            solution.3.65, 6
+  984  set            minNumMoves.3.65, 3
+  985  set            problem.3.66, ("15 "+div+" 3 = ?")
+  986  set            solution.3.66, 5
+  987  set            minNumMoves.3.66, 3
+  988  set            problem.3.67, ("60 "+div+" 6 = ?")
+  989  set            solution.3.67, 10
+  990  set            minNumMoves.3.67, 3
+  991  set            problem.3.68, ("27 "+div+" 3 = ?")
+  992  set            solution.3.68, 9
+  993  set            minNumMoves.3.68, 3
+  994  set            problem.3.69, ("63 "+div+" 9 = ?")
+  995  set            solution.3.69, 7
+  996  set            minNumMoves.3.69, 3
+  997  set            problem.3.70, ("36 "+div+" 4 = ?")
+  998  set            solution.3.70, 9
+  999  set            minNumMoves.3.70, 3
+ 1000  set            problem.3.71, ("18 "+div+" 3 = ?")
+ 1001  set            solution.3.71, 6
+ 1002  set            minNumMoves.3.71, 3
+ 1003  set            problem.3.72, ("45 "+div+" 9 = ?")
+ 1004  set            solution.3.72, 5
+ 1005  set            minNumMoves.3.72, 3
+ 1006  set            problem.3.73, ("88 "+div+" 8 = ?")
+ 1007  set            solution.3.73, 11
+ 1008  set            minNumMoves.3.73, 3
+ 1009  set            problem.3.74, ("48 "+div+" 8 = ?")
+ 1010  set            solution.3.74, 6
+ 1011  set            minNumMoves.3.74, 3
+ 1012  set            problem.3.75, ("16 "+div+" 4 = ?")
+ 1013  set            solution.3.75, 4
+ 1014  set            minNumMoves.3.75, 3
+ 1015  set            problem.3.76, ("30 "+div+" 5 = ?")
+ 1016  set            solution.3.76, 6
+ 1017  set            minNumMoves.3.76, 3
+ 1018  set            problem.3.77, ("16 "+div+" 4 = ?")
+ 1019  set            solution.3.77, 4
+ 1020  set            minNumMoves.3.77, 3
+ 1021  set            problem.3.78, ("20 "+div+" 5 = ?")
+ 1022  set            solution.3.78, 4
+ 1023  set            minNumMoves.3.78, 3
+ 1024  set            problem.3.79, ("60 "+div+" 6 = ?")
+ 1025  set            solution.3.79, 10
+ 1026  set            minNumMoves.3.79, 3
+ 1027  set            problem.3.80, ("55 "+div+" 5 = ?")
+ 1028  set            solution.3.80, 11
+ 1029  set            minNumMoves.3.80, 3
+ 1030  set            problem.3.81, ("90 "+div+" 10 = ?")
+ 1031  set            solution.3.81, 9
+ 1032  set            minNumMoves.3.81, 3
+ 1033  set            problem.3.82, ("25 "+div+" 5 = ?")
+ 1034  set            solution.3.82, 5
+ 1035  set            minNumMoves.3.82, 3
+ 1036  set            problem.3.83, ("42 "+div+" 6 = ?")
+ 1037  set            solution.3.83, 7
+ 1038  set            minNumMoves.3.83, 3
+ 1039  set            problem.3.84, ("56 "+div+" 8 = ?")
+ 1040  set            solution.3.84, 7
+ 1041  set            minNumMoves.3.84, 3
+ 1042  set            problem.3.85, ("80 "+div+" 8 = ?")
+ 1043  set            solution.3.85, 10
+ 1044  set            minNumMoves.3.85, 3
+ 1045  set            problem.3.86, ("49 "+div+" 7 = ?")
+ 1046  set            solution.3.86, 7
+ 1047  set            minNumMoves.3.86, 3
+ 1048  set            problem.3.87, ("63 "+div+" 7 = ?")
+ 1049  set            solution.3.87, 9
+ 1050  set            minNumMoves.3.87, 3
+ 1051  set            problem.3.88, ("40 "+div+" 5 = ?")
+ 1052  set            solution.3.88, 8
+ 1053  set            minNumMoves.3.88, 3
+ 1054  set            problem.3.89, ("15 "+div+" 3 = ?")
+ 1055  set            solution.3.89, 5
+ 1056  set            minNumMoves.3.89, 3
+ 1057  set            problem.3.90, ("121 "+div+" 11 = ?")
+ 1058  set            solution.3.90, 11
+ 1059  set            minNumMoves.3.90, 3
+ 1060  set            problem.3.91, ("40 "+div+" 5 = ?")
+ 1061  set            solution.3.91, 8
+ 1062  set            minNumMoves.3.91, 3
+ 1063  set            problem.3.92, ("54 "+div+" 6 = ?")
+ 1064  set            solution.3.92, 9
+ 1065  set            minNumMoves.3.92, 3
+ 1066  set            problem.3.93, ("80 "+div+" 10 = ?")
+ 1067  set            solution.3.93, 8
+ 1068  set            minNumMoves.3.93, 3
+ 1069  set            problem.3.94, ("45 "+div+" 5 = ?")
+ 1070  set            solution.3.94, 9
+ 1071  set            minNumMoves.3.94, 3
+ 1072  set            problem.3.95, ("30 "+div+" 5 = ?")
+ 1073  set            solution.3.95, 6
+ 1074  set            minNumMoves.3.95, 3
+ 1075  set            problem.3.96, ("60 "+div+" 10 = ?")
+ 1076  set            solution.3.96, 6
+ 1077  set            minNumMoves.3.96, 3
+ 1078  set            problem.3.97, ("70 "+div+" 7 = ?")
+ 1079  set            solution.3.97, 10
+ 1080  set            minNumMoves.3.97, 3
+ 1081  set            problem.3.98, ("28 "+div+" 4 = ?")
+ 1082  set            solution.3.98, 7
+ 1083  set            minNumMoves.3.98, 3
+ 1084  set            problem.3.99, ("36 "+div+" 6 = ?")
+ 1085  set            solution.3.99, 6
+ 1086  set            minNumMoves.3.99, 3
+ 1087  set            problem.3.100, ("90 "+div+" 9 = ?")
+ 1088  set            solution.3.100, 10
+ 1089  set            minNumMoves.3.100, 3
+ 1090  set            problem.4.1, "360 - 230 = ?"
+ 1091  set            solution.4.1, 130
+ 1092  set            minNumMoves.4.1, 2
+ 1093  set            problem.4.2, "310 - 230 = ?"
+ 1094  set            solution.4.2, 80
+ 1095  set            minNumMoves.4.2, 2
+ 1096  set            problem.4.3, "460 - 290 = ?"
+ 1097  set            solution.4.3, 170
+ 1098  set            minNumMoves.4.3, 2
+ 1099  set            problem.4.4, "220 - 80 = ?"
+ 1100  set            solution.4.4, 140
+ 1101  set            minNumMoves.4.4, 2
+ 1102  set            problem.4.5, "360 - 190 = ?"
+ 1103  set            solution.4.5, 170
+ 1104  set            minNumMoves.4.5, 2
+ 1105  set            problem.4.6, "370 - 250 = ?"
+ 1106  set            solution.4.6, 120
+ 1107  set            minNumMoves.4.6, 2
+ 1108  set            problem.4.7, "390 - 260 = ?"
+ 1109  set            solution.4.7, 130
+ 1110  set            minNumMoves.4.7, 2
+ 1111  set            problem.4.8, "340 - 240 = ?"
+ 1112  set            solution.4.8, 100
+ 1113  set            minNumMoves.4.8, 2
+ 1114  set            problem.4.9, "360 - 180 = ?"
+ 1115  set            solution.4.9, 180
+ 1116  set            minNumMoves.4.9, 2
+ 1117  set            problem.4.10, "300 - 240 = ?"
+ 1118  set            solution.4.10, 60
+ 1119  set            minNumMoves.4.10, 2
+ 1120  set            problem.4.11, "220 - 50 = ?"
+ 1121  set            solution.4.11, 170
+ 1122  set            minNumMoves.4.11, 2
+ 1123  set            problem.4.12, "210 - 100 = ?"
+ 1124  set            solution.4.12, 110
+ 1125  set            minNumMoves.4.12, 2
+ 1126  set            problem.4.13, "410 - 270 = ?"
+ 1127  set            solution.4.13, 140
+ 1128  set            minNumMoves.4.13, 2
+ 1129  set            problem.4.14, "230 - 130 = ?"
+ 1130  set            solution.4.14, 100
+ 1131  set            minNumMoves.4.14, 2
+ 1132  set            problem.4.15, "260 - 80 = ?"
+ 1133  set            solution.4.15, 180
+ 1134  set            minNumMoves.4.15, 2
+ 1135  set            problem.4.16, "330 - 230 = ?"
+ 1136  set            solution.4.16, 100
+ 1137  set            minNumMoves.4.16, 2
+ 1138  set            problem.4.17, "230 - 90 = ?"
+ 1139  set            solution.4.17, 140
+ 1140  set            minNumMoves.4.17, 2
+ 1141  set            problem.4.18, "340 - 200 = ?"
+ 1142  set            solution.4.18, 140
+ 1143  set            minNumMoves.4.18, 2
+ 1144  set            problem.4.19, "340 - 150 = ?"
+ 1145  set            solution.4.19, 190
+ 1146  set            minNumMoves.4.19, 2
+ 1147  set            problem.4.20, "450 - 280 = ?"
+ 1148  set            solution.4.20, 170
+ 1149  set            minNumMoves.4.20, 2
+ 1150  set            problem.4.21, "360 - 180 = ?"
+ 1151  set            solution.4.21, 180
+ 1152  set            minNumMoves.4.21, 2
+ 1153  set            problem.4.22, "340 - 260 = ?"
+ 1154  set            solution.4.22, 80
+ 1155  set            minNumMoves.4.22, 2
+ 1156  set            problem.4.23, "270 - 110 = ?"
+ 1157  set            solution.4.23, 160
+ 1158  set            minNumMoves.4.23, 2
+ 1159  set            problem.4.24, "390 - 210 = ?"
+ 1160  set            solution.4.24, 180
+ 1161  set            minNumMoves.4.24, 2
+ 1162  set            problem.4.25, "370 - 280 = ?"
+ 1163  set            solution.4.25, 90
+ 1164  set            minNumMoves.4.25, 2
+ 1165  set            problem.4.26, "250 - 180 = ?"
+ 1166  set            solution.4.26, 70
+ 1167  set            minNumMoves.4.26, 2
+ 1168  set            problem.4.27, "360 - 280 = ?"
+ 1169  set            solution.4.27, 80
+ 1170  set            minNumMoves.4.27, 2
+ 1171  set            problem.4.28, "350 - 240 = ?"
+ 1172  set            solution.4.28, 110
+ 1173  set            minNumMoves.4.28, 2
+ 1174  set            problem.4.29, "410 - 270 = ?"
+ 1175  set            solution.4.29, 140
+ 1176  set            minNumMoves.4.29, 2
+ 1177  set            problem.4.30, "370 - 210 = ?"
+ 1178  set            solution.4.30, 160
+ 1179  set            minNumMoves.4.30, 2
+ 1180  set            problem.4.31, "350 - 180 = ?"
+ 1181  set            solution.4.31, 170
+ 1182  set            minNumMoves.4.31, 2
+ 1183  set            problem.4.32, "240 - 170 = ?"
+ 1184  set            solution.4.32, 70
+ 1185  set            minNumMoves.4.32, 2
+ 1186  set            problem.4.33, "410 - 270 = ?"
+ 1187  set            solution.4.33, 140
+ 1188  set            minNumMoves.4.33, 2
+ 1189  set            problem.4.34, "270 - 200 = ?"
+ 1190  set            solution.4.34, 70
+ 1191  set            minNumMoves.4.34, 2
+ 1192  set            problem.4.35, "300 - 240 = ?"
+ 1193  set            solution.4.35, 60
+ 1194  set            minNumMoves.4.35, 2
+ 1195  set            problem.4.36, "220 - 80 = ?"
+ 1196  set            solution.4.36, 140
+ 1197  set            minNumMoves.4.36, 2
+ 1198  set            problem.4.37, "360 - 230 = ?"
+ 1199  set            solution.4.37, 130
+ 1200  set            minNumMoves.4.37, 2
+ 1201  set            problem.4.38, "320 - 180 = ?"
+ 1202  set            solution.4.38, 140
+ 1203  set            minNumMoves.4.38, 2
+ 1204  set            problem.4.39, "370 - 250 = ?"
+ 1205  set            solution.4.39, 120
+ 1206  set            minNumMoves.4.39, 2
+ 1207  set            problem.4.40, "440 - 250 = ?"
+ 1208  set            solution.4.40, 190
+ 1209  set            minNumMoves.4.40, 2
+ 1210  set            problem.4.41, "330 - 190 = ?"
+ 1211  set            solution.4.41, 140
+ 1212  set            minNumMoves.4.41, 2
+ 1213  set            problem.4.42, "240 - 110 = ?"
+ 1214  set            solution.4.42, 130
+ 1215  set            minNumMoves.4.42, 2
+ 1216  set            problem.4.43, "330 - 160 = ?"
+ 1217  set            solution.4.43, 170
+ 1218  set            minNumMoves.4.43, 2
+ 1219  set            problem.4.44, "360 - 190 = ?"
+ 1220  set            solution.4.44, 170
+ 1221  set            minNumMoves.4.44, 2
+ 1222  set            problem.4.45, "280 - 110 = ?"
+ 1223  set            solution.4.45, 170
+ 1224  set            minNumMoves.4.45, 2
+ 1225  set            problem.4.46, "320 - 220 = ?"
+ 1226  set            solution.4.46, 100
+ 1227  set            minNumMoves.4.46, 2
+ 1228  set            problem.4.47, "340 - 240 = ?"
+ 1229  set            solution.4.47, 100
+ 1230  set            minNumMoves.4.47, 2
+ 1231  set            problem.4.48, "370 - 250 = ?"
+ 1232  set            solution.4.48, 120
+ 1233  set            minNumMoves.4.48, 2
+ 1234  set            problem.4.49, "220 - 50 = ?"
+ 1235  set            solution.4.49, 170
+ 1236  set            minNumMoves.4.49, 2
+ 1237  set            problem.4.50, "380 - 240 = ?"
+ 1238  set            solution.4.50, 140
+ 1239  set            minNumMoves.4.50, 2
+ 1240  set            problem.4.51, "320 - 160 = ?"
+ 1241  set            solution.4.51, 160
+ 1242  set            minNumMoves.4.51, 2
+ 1243  set            problem.4.52, "360 - 240 = ?"
+ 1244  set            solution.4.52, 120
+ 1245  set            minNumMoves.4.52, 2
+ 1246  set            problem.4.53, "380 - 280 = ?"
+ 1247  set            solution.4.53, 100
+ 1248  set            minNumMoves.4.53, 2
+ 1249  set            problem.4.54, "330 - 210 = ?"
+ 1250  set            solution.4.54, 120
+ 1251  set            minNumMoves.4.54, 2
+ 1252  set            problem.4.55, "210 - 90 = ?"
+ 1253  set            solution.4.55, 120
+ 1254  set            minNumMoves.4.55, 2
+ 1255  set            problem.4.56, "240 - 170 = ?"
+ 1256  set            solution.4.56, 70
+ 1257  set            minNumMoves.4.56, 2
+ 1258  set            problem.4.57, "320 - 200 = ?"
+ 1259  set            solution.4.57, 120
+ 1260  set            minNumMoves.4.57, 2
+ 1261  set            problem.4.58, "380 - 270 = ?"
+ 1262  set            solution.4.58, 110
+ 1263  set            minNumMoves.4.58, 2
+ 1264  set            problem.4.59, "400 - 250 = ?"
+ 1265  set            solution.4.59, 150
+ 1266  set            minNumMoves.4.59, 2
+ 1267  set            problem.4.60, "220 - 60 = ?"
+ 1268  set            solution.4.60, 160
+ 1269  set            minNumMoves.4.60, 2
+ 1270  set            problem.4.61, "430 - 260 = ?"
+ 1271  set            solution.4.61, 170
+ 1272  set            minNumMoves.4.61, 2
+ 1273  set            problem.4.62, "380 - 220 = ?"
+ 1274  set            solution.4.62, 160
+ 1275  set            minNumMoves.4.62, 2
+ 1276  set            problem.4.63, "400 - 270 = ?"
+ 1277  set            solution.4.63, 130
+ 1278  set            minNumMoves.4.63, 2
+ 1279  set            problem.4.64, "260 - 150 = ?"
+ 1280  set            solution.4.64, 110
+ 1281  set            minNumMoves.4.64, 2
+ 1282  set            problem.4.65, "230 - 90 = ?"
+ 1283  set            solution.4.65, 140
+ 1284  set            minNumMoves.4.65, 2
+ 1285  set            problem.4.66, "370 - 230 = ?"
+ 1286  set            solution.4.66, 140
+ 1287  set            minNumMoves.4.66, 2
+ 1288  set            problem.4.67, "460 - 290 = ?"
+ 1289  set            solution.4.67, 170
+ 1290  set            minNumMoves.4.67, 2
+ 1291  set            problem.4.68, "270 - 140 = ?"
+ 1292  set            solution.4.68, 130
+ 1293  set            minNumMoves.4.68, 2
+ 1294  set            problem.4.69, "350 - 200 = ?"
+ 1295  set            solution.4.69, 150
+ 1296  set            minNumMoves.4.69, 2
+ 1297  set            problem.4.70, "230 - 80 = ?"
+ 1298  set            solution.4.70, 150
+ 1299  set            minNumMoves.4.70, 2
+ 1300  set            problem.4.71, "390 - 270 = ?"
+ 1301  set            solution.4.71, 120
+ 1302  set            minNumMoves.4.71, 2
+ 1303  set            problem.4.72, "240 - 130 = ?"
+ 1304  set            solution.4.72, 110
+ 1305  set            minNumMoves.4.72, 2
+ 1306  set            problem.4.73, "290 - 100 = ?"
+ 1307  set            solution.4.73, 190
+ 1308  set            minNumMoves.4.73, 2
+ 1309  set            problem.4.74, "310 - 130 = ?"
+ 1310  set            solution.4.74, 180
+ 1311  set            minNumMoves.4.74, 2
+ 1312  set            problem.4.75, "360 - 290 = ?"
+ 1313  set            solution.4.75, 70
+ 1314  set            minNumMoves.4.75, 2
+ 1315  set            problem.4.76, "300 - 230 = ?"
+ 1316  set            solution.4.76, 70
+ 1317  set            minNumMoves.4.76, 2
+ 1318  set            problem.4.77, "380 - 260 = ?"
+ 1319  set            solution.4.77, 120
+ 1320  set            minNumMoves.4.77, 2
+ 1321  set            problem.4.78, "360 - 200 = ?"
+ 1322  set            solution.4.78, 160
+ 1323  set            minNumMoves.4.78, 2
+ 1324  set            problem.4.79, "380 - 290 = ?"
+ 1325  set            solution.4.79, 90
+ 1326  set            minNumMoves.4.79, 2
+ 1327  set            problem.4.80, "350 - 280 = ?"
+ 1328  set            solution.4.80, 70
+ 1329  set            minNumMoves.4.80, 2
+ 1330  set            problem.4.81, "310 - 140 = ?"
+ 1331  set            solution.4.81, 170
+ 1332  set            minNumMoves.4.81, 2
+ 1333  set            problem.4.82, "300 - 210 = ?"
+ 1334  set            solution.4.82, 90
+ 1335  set            minNumMoves.4.82, 2
+ 1336  set            problem.4.83, "460 - 280 = ?"
+ 1337  set            solution.4.83, 180
+ 1338  set            minNumMoves.4.83, 2
+ 1339  set            problem.4.84, "280 - 120 = ?"
+ 1340  set            solution.4.84, 160
+ 1341  set            minNumMoves.4.84, 2
+ 1342  set            problem.4.85, "370 - 210 = ?"
+ 1343  set            solution.4.85, 160
+ 1344  set            minNumMoves.4.85, 2
+ 1345  set            problem.4.86, "380 - 200 = ?"
+ 1346  set            solution.4.86, 180
+ 1347  set            minNumMoves.4.86, 2
+ 1348  set            problem.4.87, "370 - 260 = ?"
+ 1349  set            solution.4.87, 110
+ 1350  set            minNumMoves.4.87, 2
+ 1351  set            problem.4.88, "290 - 130 = ?"
+ 1352  set            solution.4.88, 160
+ 1353  set            minNumMoves.4.88, 2
+ 1354  set            problem.4.89, "410 - 220 = ?"
+ 1355  set            solution.4.89, 190
+ 1356  set            minNumMoves.4.89, 2
+ 1357  set            problem.4.90, "410 - 220 = ?"
+ 1358  set            solution.4.90, 190
+ 1359  set            minNumMoves.4.90, 2
+ 1360  set            problem.4.91, "290 - 180 = ?"
+ 1361  set            solution.4.91, 110
+ 1362  set            minNumMoves.4.91, 2
+ 1363  set            problem.4.92, "420 - 280 = ?"
+ 1364  set            solution.4.92, 140
+ 1365  set            minNumMoves.4.92, 2
+ 1366  call           globalInit@211
+ 1367  call           pInit@1370
+ 1368  call           pStart@1486
+ 1369  call_global    EndTransition
+
+ 1370  sub            pInit@1370
+ 1371  set            kBackgroundID, 2000
+ 1372  set            kJoniSetID, 2005
+ 1373  set            kSantiagoSetID, 2006
+ 1374  set            kOwenSetID, 2007
+ 1375  set            kLeslieSetID, 2008
+ 1376  set            kLaptrapSetID, 2009
+ 1377  set            kSocratesSetID, 2010
+ 1378  set            kCoffeeGuySetID, 2012
+ 1379  set            kWaiterSetID, 2013
+ 1380  set            kSantiagoWalkInID, 2020
+ 1381  set            kJoniWalkInID, 2021
+ 1382  set            kOwenWalkInID, 2022
+ 1383  set            kLeslieWalkInID, 2023
+ 1384  set            kLaptrapWalkInID, 2024
+ 1385  set            kSocratesWalkInID, 2025
+ 1386  set            kCoffeeGuyFidg2ID, 2136
+ 1387  set            kJoniFidgID, 2121
+ 1388  set            kSocFidgAID, 2122
+ 1389  set            kSocFidgBID, 2123
+ 1390  set            kSocFidgCID, 2130
+ 1391  set            kSanFidgID, 2131
+ 1392  set            kLesFidgAID, 2132
+ 1393  set            kLesFidgBID, 2133
+ 1394  set            kOwenFidgAID, 2134
+ 1395  set            kOwenFidgBID, 2135
+ 1396  set            kJoniBlinkID, 2124
+ 1397  set            kSanBlinkID, 2125
+ 1398  set            kOwenBlinkID, 2126
+ 1399  set            kLesBlinkID, 2127
+ 1400  set            kSocBlinkID, 2128
+ 1401  set            kCoffeeGuyBlinkID, 2137
+ 1402  set            kSantiagoWalkOutID, 2080
+ 1403  set            kJoniWalkOutID, 2081
+ 1404  set            kOwenWalkOutID, 2082
+ 1405  set            kLeslieWalkOutID, 2083
+ 1406  set            kLaptrapWalkOutID, 2084
+ 1407  set            kSocratesWalkOutID, 2085
+ 1408  set            kCoffeeGuyResetID, 2076
+ 1409  set            kWaiterEnterID, 2070
+ 1410  set            kWaiterLeaveID, 2047
+ 1411  set            kChairsID, 2014
+ 1412  set            kCupID, 2045
+ 1413  set            kOwenIntro1SpchID, 2350
+ 1414  set            kCoffeeGuyIntro1aSpchID, 2351
+ 1415  set            kCoffeeGuyIntro1bSpchID, 2400
+ 1416  set            kCoffeeGuyIntro2SpchID, 2352
+ 1417  set            kCoffeeGuyIntro2aSpchID, 2401
+ 1418  set            kCoffeeGuyIntro2bSpchID, 2402
+ 1419  set            kCoffeeGuyIntro3SpchID, 2403
+ 1420  set            kCoffeeGuyIntro3aSpchID, 2404
+ 1421  set            kCoffeeGuyIntro3bSpchID, 2405
+ 1422  set            kCoffeeGuyIntro10SpchID, 2391
+ 1423  set            kCoffeeGuyRight1SpchID, 2356
+ 1424  set            kCoffeeGuyRight7SpchID, 2362
+ 1425  set            kCoffeeGuyNoCoin2SpchID, 2407
+ 1426  set            kWaiterWrong1SpchID, 2363
+ 1427  set            kCoffeeGuyReset5SpchID, 2371
+ 1428  set            kCoffeeGuyHelp1SpchID, 2384
+ 1429  set            kCoffeeGuyHelp1aSpchID, 2408
+ 1430  set            kCoffeeGuyHelp1bSpchID, 2409
+ 1431  set            kCoffeeGuyHelp2SpchID, 2385
+ 1432  set            kCoffeeGuyHelp2aSpchID, 2410
+ 1433  set            kSocHelp1SpchID, 2386
+ 1434  set            kSocHelp2SpchID, 2387
+ 1435  set            kSocHelp3SpchID, 2412
+ 1436  set            kJoniTalk1aSpchID, 2388
+ 1437  set            kOwenTalk1dSpchID, 2414
+ 1438  set            kLesTalk1bSpchID, 2389
+ 1439  set            kOwenTalk1cSpchID, 2413
+ 1440  set            kLTExit1SpchID, 2415
+ 1441  set            kPickUpSfxID, 2000
+ 1442  set            kSnapSfxID, 2001
+ 1443  set            kGoHomeSfxID, 2002
+ 1444  set            kNumNavHotspots, 3
+ 1445  set            kCounterCupStartX, 169
+ 1446  set            kCounterCupY, 247
+ 1447  set            kCupXOffset, 5
+ 1448  set            kCupWidth, 31
+ 1449  set            kCupHeight, 32
+ 1450  set            kTrayCupYOff, 93
+ 1451  set            kTrayXOff, 12
+ 1452  set            kTrayWidth, 148
+ 1453  set            kProblemTextRectX, 93
+ 1454  set            kProblemTextRectY, 68
+ 1455  set            kProblemTextRectW, 148
+ 1456  set            kProblemTextRectH, 81
+ 1457  set            kBackpackHotspotX1, 20
+ 1458  set            kBackpackHotspotY1, 237
+ 1459  set            kBackpackHotspotX2, 55
+ 1460  set            kBackpackHotspotY2, 298
+ 1461  set            backpackX, 453
+ 1462  set            backpackY, 8
+ 1463  set            objectBoxX, 202
+ 1464  set            objectBoxY, 441
+ 1465  set            objectBoxW, 143
+ 1466  set            objectBoxH, 38
+ 1467  set            kNavHotspotZ, 4
+ 1468  set            kTextZ, 6
+ 1469  set            kCoffeeGuyZ, 8
+ 1470  set            kCupZ, 10
+ 1471  set            kLaptrapZ, 12
+ 1472  set            kLeslieZ, 14
+ 1473  set            kOwenZ, 16
+ 1474  set            kSantiagoZ, 18
+ 1475  set            kJoniZ, 20
+ 1476  set            kClosedBackpackZ, 22
+ 1477  set            kSocratesZ, 24
+ 1478  set            kWaiterZ, 26
+ 1479  set            kContainerZ, 28
+ 1480  set            kChairsZ, 38
+ 1481  set            objectZ, 40
+ 1482  set            kChooseActButtonZ, 42
+ 1483  set            kAnswerMovingZ, 44
+ 1484  set            backpackZ, 500
+ 1485  return
+
+ 1486  sub            pStart@1486
+ 1487  call_global    CacheDLL, "CWS1P.rsc"
+ 1488  set            gCurLocation, "CWS1"
+ 1489  get_prop       gPort, inGame, gameMode
+ 1490  set            practiceMode, (1-gameMode)
+ 1491  send           gPort, autoLevel, "CWS1"
+ 1492  get_prop       gPort, currentLevel, "CWS1", level
+ 1493  get_prop       gPort, visitedCount, "CWS1", visit
+ 1494  get_prop       gPort, wsCurrentLevelEntryCount, "CWS1", curLevelVisit
+ 1495  if             (practiceMode=0)
+ 1496  jump_if_false  -> 1501
+ 1497  set_prop       gPort, currentLocation, "CWS1"
+ 1498  set_prop       gPort, visitedCount, (visit+1)
+ 1499  set_prop       gPort, wsCurrentLevelEntryCount, (curLevelVisit+1)
+ 1500  end
+ 1501  set_prop       gScenePort, backgroundClicked, pInterruptScene@1638
+ 1502  set_prop       gScenePort, backgroundMusicID, kOasis3BMusicID
+ 1503  set_prop       gScenePort, paused, ePauseScene@2136
+ 1504  set_prop       gScenePort, resumed, eResumeScene@2149
+ 1505  set            characterClickCtr, 1
+ 1506  set            socratesClickCtr, 1
+ 1507  set            coffeeGuyClickCtr, 1
+ 1508  set            itemGiven, kFalse
+ 1509  set            incorrectGuessMade, kFalse
+ 1510  get_prop       gPort, wsNextItemInQueue, "CWS1", item
+ 1511  if             (item=0)
+ 1512  jump_if_false  -> 1515
+ 1513  set            noItemGivenOnSolve, kTrue
+ 1514  jump           -> 1517
+ 1515  end
+ 1516  set            noItemGivenOnSolve, kFalse
+ 1517  call_global    Scene, kBackgroundID
+ 1518  set            sQueue, RQueue, 1
+ 1519  set_prop       sQueue, finished, eSQueueDone@1816
+ 1520  set            sQueueFinished, "empty"
+ 1521  set            chairs, RAnimation, kChairsID
+ 1522  set_prop       chairs, touchy, kFalse
+ 1523  set_prop       chairs, z, kChairsZ
+ 1524  if             (practiceMode=0)
+ 1525  jump_if_false  -> 1537
+ 1526  loop           i, 1, kNumNavHotspots
+ 1527  loop_test      i, 1, kNumNavHotspots
+ 1528  jump_if_false  -> 1533
+ 1529  set            navHotspots.i, RHotSpot, kNavHotspotsX1.i, kNavHotspotsY1.i, kNavHotspotsX2.i, kNavHotspotsY2.i, kNavHotspotZ
+ 1530  set_prop       navHotspots.i, mouseDown, eNavHotspotClicked@2091
+ 1531  send           navHotspots.i, setAOCursor, kWestCursor
+ 1532  jump           -> 1527
+ 1533  set            closedBackpack, RHotSpot, kBackpackHotspotX1, kBackpackHotspotY1, kBackpackHotspotX2, kBackpackHotspotY2, kClosedBackpackZ
+ 1534  set_prop       closedBackpack, mouseDown, eBackpackOpened@119
+ 1535  send           closedBackpack, setAOCursor, kFingerCursor
+ 1536  end
+ 1537  if             (practiceMode=0)
+ 1538  jump_if_false  -> 1575
+ 1539  set            joni, RCharacter, kJoniSetID, kJoniZ
+ 1540  set_prop       joni, mouseDown, eCharacterClicked@1997
+ 1541  set_prop       joni, movable, kFalse
+ 1542  send           joni, addFidgetGroup, 1, kBlinkMinTime, kBlinkMaxTime
+ 1543  send           joni, addFidget, 1, kJoniBlinkID
+ 1544  send           joni, addFidgetGroup, 2, kFidgetMinTime, kFidgetMaxTime
+ 1545  send           joni, addFidget, 2, kJoniFidgID
+ 1546  set            santiago, RCharacter, kSantiagoSetID, kSantiagoZ
+ 1547  set_prop       santiago, mouseDown, eCharacterClicked@1997
+ 1548  set_prop       santiago, movable, kFalse
+ 1549  send           santiago, addFidgetGroup, 1, kBlinkMinTime, kBlinkMaxTime
+ 1550  send           santiago, addFidget, 1, kSanBlinkID
+ 1551  send           santiago, addFidgetGroup, 2, kFidgetMinTime, kFidgetMaxTime
+ 1552  send           santiago, addFidget, 2, kSanFidgID
+ 1553  set            owen, RCharacter, kOwenSetID, kOwenZ
+ 1554  set_prop       owen, mouseDown, eCharacterClicked@1997
+ 1555  set_prop       owen, movable, kFalse
+ 1556  send           owen, addFidgetGroup, 1, kBlinkMinTime, kBlinkMaxTime
+ 1557  send           owen, addFidget, 1, kOwenBlinkID
+ 1558  send           owen, addFidgetGroup, 2, kFidgetMinTime, kFidgetMaxTime
+ 1559  send           owen, addFidget, 2, kOwenFidgAID
+ 1560  send           owen, addFidget, 2, kOwenFidgBID
+ 1561  set            leslie, RCharacter, kLeslieSetID, kLeslieZ
+ 1562  set_prop       leslie, mouseDown, eCharacterClicked@1997
+ 1563  set_prop       leslie, movable, kFalse
+ 1564  send           leslie, addFidgetGroup, 1, kBlinkMinTime, kBlinkMaxTime
+ 1565  send           leslie, addFidget, 1, kLesBlinkID
+ 1566  send           leslie, addFidgetGroup, 2, kFidgetMinTime, kFidgetMaxTime
+ 1567  send           leslie, addFidget, 2, kLesFidgAID
+ 1568  send           leslie, addFidget, 2, kLesFidgBID
+ 1569  set            laptrap, RCharacter, kLaptrapSetID, kLaptrapZ
+ 1570  set_prop       laptrap, mouseDown, eLaptrapClicked@2062
+ 1571  set_prop       laptrap, movable, kFalse
+ 1572  set_prop       laptrap, animateSettled, kTrue
+ 1573  send           laptrap, setAOCursor, kFingerCursor, kFingerCursor
+ 1574  end
+ 1575  set            socrates, RCharacter, kSocratesSetID, kSocratesZ
+ 1576  set_prop       socrates, mouseDown, eSocratesClicked@2042
+ 1577  set_prop       socrates, movable, kFalse
+ 1578  send           socrates, addFidgetGroup, 1, kBlinkMinTime, kBlinkMaxTime
+ 1579  send           socrates, addFidget, 1, kSocBlinkID
+ 1580  send           socrates, addFidgetGroup, 2, kFidgetMinTime, kFidgetMaxTime
+ 1581  send           socrates, addFidget, 2, kSocFidgAID
+ 1582  send           socrates, addFidget, 2, kSocFidgBID
+ 1583  send           socrates, addFidget, 2, kSocFidgCID
+ 1584  set            coffeeGuy, RCharacter, kCoffeeGuySetID, kCoffeeGuyZ
+ 1585  set_prop       coffeeGuy, mouseDown, eCoffeeGuyClicked@2014
+ 1586  set_prop       coffeeGuy, movable, kFalse
+ 1587  send           coffeeGuy, addFidgetGroup, 1, kBlinkMinTime, kBlinkMaxTime
+ 1588  send           coffeeGuy, addFidget, 1, kCoffeeGuyBlinkID
+ 1589  send           coffeeGuy, addFidgetGroup, 2, kFidgetMinTime, kFidgetMaxTime
+ 1590  send           coffeeGuy, addFidget, 2, kCoffeeGuyFidg2ID
+ 1591  set            waiter, RCharacter, kWaiterSetID, kWaiterZ
+ 1592  set_prop       waiter, touchy, kFalse
+ 1593  call           pAddCharSpeechAnims@1667
+ 1594  if             practiceMode
+ 1595  jump_if_false  -> 1600
+ 1596  set            chooseActButton, RPButton, kUseAOCoords, kUseAOCoords, kPMChooseActButtonID
+ 1597  set_prop       chooseActButton, z, kChooseActButtonZ
+ 1598  set_prop       chooseActButton, hit, eLaptrapClicked@2062
+ 1599  end
+ 1600  if             (practiceMode=0)
+ 1601  jump_if_false  -> 1604
+ 1602  call           pInitObjectsAndBackpack@63, kTrue, "closedBackpack"
+ 1603  end
+ 1604  call_global    SetAnswerPickUpSound, kPickUpSfxID
+ 1605  call_global    SetAnswerGoHomeSound, kGoHomeSfxID
+ 1606  get_prop       gPort, currentDataset, "CWS1", level, whichDataset
+ 1607  if             (whichDataset=0)
+ 1608  jump_if_false  -> 1613
+ 1609  call_global    RandomNumber, 1, kNumDatasets.level
+ 1610  set            whichDataset, $result
+ 1611  set_prop       gPort, currentDataset, "CWS1", level, whichDataset
+ 1612  end
+ 1613  call           pNextDataset@1683
+ 1614  call           pSetupPuzzle@1692
+ 1615  if             (practiceMode=0)
+ 1616  jump_if_false  -> 1635
+ 1617  call_global    CacheDLL, "CWS1i.rsc"
+ 1618  send           sQueue, add, VerbAction, "puzzle", kTrue, "anchorAnswers"
+ 1619  set            joniWalkInQAct, RQueue, 1, kTrue
+ 1620  send           joniWalkInQAct, add, PropertyAction, "closedBackpack", "visible", kFalse
+ 1621  send           joniWalkInQAct, add, CharacterAnimAction, "joni", kJoniWalkInID
+ 1622  send           joniWalkInQAct, add, PropertyAction, "closedBackpack", "visible", kTrue
+ 1623  set            walkInCAct, RCompositeAction, kTrue
+ 1624  send           walkInCAct, add, "joniWalkInQAct"
+ 1625  send           walkInCAct, add, CharacterAnimAction, "santiago", kSantiagoWalkInID
+ 1626  send           walkInCAct, add, CharacterAnimAction, "owen", kOwenWalkInID
+ 1627  send           walkInCAct, add, CharacterAnimAction, "leslie", kLeslieWalkInID
+ 1628  send           walkInCAct, add, CharacterAnimAction, "socrates", kSocratesWalkInID
+ 1629  send           walkInCAct, add, CharacterAnimAction, "laptrap", kLaptrapWalkInID
+ 1630  send           sQueue, add, "walkInCAct"
+ 1631  send           sQueue, add, VerbAction, "puzzle", kTrue, "unanchorAnswers"
+ 1632  set            sQueueFinished, "eEntrySpeeches"
+ 1633  send           sQueue, start
+ 1634  jump           -> 1637
+ 1635  end
+ 1636  call           eEntrySpeeches@1825
+ 1637  return
+
+ 1638  sub            pInterruptScene@1638
+ 1639  set            sceneInterrupted, kTrue
+ 1640  set            stopInterruptingScene, kFalse
+ 1641  get_prop       sQueue, actionCount, numActions
+ 1642  loop           (numActions>0)
+ 1643  loop_test      (numActions>0)
+ 1644  jump_if_false  -> 1666
+ 1645  if             stopInterruptingScene
+ 1646  jump_if_false  -> 1650
+ 1647  set            sceneInterrupted, kFalse
+ 1648  jump           -> 1666
+ 1649  end
+ 1650  send           sQueue, halt
+ 1651  get_prop       sQueue, isActive, active
+ 1652  if             active
+ 1653  jump_if_false  -> 1657
+ 1654  set            sceneInterrupted, kFalse
+ 1655  jump           -> 1666
+ 1656  end
+ 1657  send           sQueue, clear
+ 1658  if             (sQueueFinished#"empty")
+ 1659  jump_if_false  -> 1664
+ 1660  set            finishedEvent, sQueueFinished
+ 1661  set            sQueueFinished, "empty"
+ 1662  call           finishedEvent
+ 1663  end
+ 1664  get_prop       sQueue, actionCount, numActions
+ 1665  jump           -> 1643
+ 1666  return
+
+ 1667  sub            pAddCharSpeechAnims@1667
+ 1668  if             (practiceMode=0)
+ 1669  jump_if_false  -> 1675
+ 1670  send           joni, addSpeechAnim, 2034
+ 1671  send           leslie, addSpeechAnim, 2035
+ 1672  send           owen, addSpeechAnim, 2030
+ 1673  send           laptrap, addSpeechAnim, 2138
+ 1674  end
+ 1675  send           coffeeGuy, addSpeechAnim, 2031
+ 1676  send           coffeeGuy, addSpeechAnim, 2036
+ 1677  send           coffeeGuy, addSpeechAnim, 2037
+ 1678  send           coffeeGuy, addSpeechAnim, 2038
+ 1679  send           coffeeGuy, addSpeechAnim, 2039
+ 1680  send           waiter, addSpeechAnim, 2032
+ 1681  send           socrates, addSpeechAnim, 2033
+ 1682  return
+
+ 1683  sub            pNextDataset@1683
+ 1684  get_prop       gPort, currentDataset, "CWS1", level, curDataset
+ 1685  set            curDataset, (curDataset+1)
+ 1686  if             (curDataset>kNumDatasets.level)
+ 1687  jump_if_false  -> 1690
+ 1688  set            curDataset, 1
+ 1689  end
+ 1690  set_prop       gPort, currentDataset, "CWS1", level, curDataset
+ 1691  return
+
+ 1692  sub            pSetupPuzzle@1692
+ 1693  set            puzzle, RPuzzle, RPuzzle
+ 1694  set_prop       puzzle, puzzleSolved, ePuzzleSolved@1896
+ 1695  set            problemText, RText, problem.level.whichDataset, kProblemTextColor, kProblemTextRectX, kProblemTextRectY, kProblemTextRectW, kProblemTextRectH, kTrue
+ 1696  send           problemText, setFont, kProblemFontName, kProblemFontStyle, kProblemFontSize
+ 1697  set_prop       problemText, z, kTextZ
+ 1698  set_prop       problemText, touchy, kFalse
+ 1699  get_prop       waiter, x, waiterX
+ 1700  set            trayX, (waiterX+kTrayXOff)
+ 1701  get_prop       waiter, y, waiterY
+ 1702  set            trayCupY, (waiterY+kTrayCupYOff)
+ 1703  set            container, RHorizontalValueContainer, trayX, trayCupY, kTrayWidth, kCupHeight, kContainerZ, solution.level.whichDataset
+ 1704  send           puzzle, addContainer, "container"
+ 1705  set            cupX, kCounterCupStartX
+ 1706  set            numCups, 1
+ 1707  loop           1
+ 1708  loop_test      1
+ 1709  jump_if_false  -> 1724
+ 1710  set            cupValue, counterCupSize.level.whichDataset.numCups
+ 1711  if             (cupValue="#")
+ 1712  jump_if_false  -> 1715
+ 1713  jump           -> 1724
+ 1714  end
+ 1715  set            cups.numCups, RGraphicTextAnswer, cupX, kCounterCupY, kCupZ, kCupID, cupValue, "", cupValue
+ 1716  set_prop       cups.numCups, snapSound, kSnapSfxID
+ 1717  set_prop       cups.numCups, dropped, eAnswerDropped@1860
+ 1718  set_prop       cups.numCups, pickedUp, eAnswerPickedUp@1863
+ 1719  send           cups.numCups, setFont, kCupFontName, kCupFontStyle, kCupFontSize, kCupTextColor
+ 1720  send           puzzle, addAnswer, ("cups."+numCups)
+ 1721  set            cupX, (cupX+kCupWidth+kCupXOffset)
+ 1722  set            numCups, (numCups+1)
+ 1723  jump           -> 1708
+ 1724  set            numCounterCups, (numCups-1)
+ 1725  if             (numCounterCups>1)
+ 1726  jump_if_false  -> 1740
+ 1727  loop           i, 1, 2
+ 1728  loop_test      i, 1, 2
+ 1729  jump_if_false  -> 1739
+ 1730  call_global    RandomNumber, 1, numCounterCups
+ 1731  set            idx1, $result
+ 1732  call_global    RandomNumber, 1, numCounterCups
+ 1733  set            idx2, $result
+ 1734  get_prop       cups.idx1, homeX, x1
+ 1735  get_prop       cups.idx2, homeX, x2
+ 1736  set_prop       cups.idx1, homeX, x2
+ 1737  set_prop       cups.idx2, homeX, x1
+ 1738  jump           -> 1728
+ 1739  end
+ 1740  set            numTrayCups, 1
+ 1741  loop           1
+ 1742  loop_test      1
+ 1743  jump_if_false  -> 1754
+ 1744  set            cupValue, trayCupSize.level.whichDataset.numTrayCups
+ 1745  if             (cupValue="#")
+ 1746  jump_if_false  -> 1749
+ 1747  jump           -> 1754
+ 1748  end
+ 1749  set            cups.numCups, RGraphicTextAnswer, cupX, kCounterCupY, kCupZ, kCupID, cupValue, "", cupValue
+ 1750  set            cupX, (cupX+kCupWidth+kCupXOffset)
+ 1751  set            numCups, (numCups+1)
+ 1752  set            numTrayCups, (numTrayCups+1)
+ 1753  jump           -> 1742
+ 1754  set            numTrayCups, (numTrayCups-1)
+ 1755  set            numCups, (numCups-1)
+ 1756  if             (numTrayCups>0)
+ 1757  jump_if_false  -> 1801
+ 1758  loop           i, 1, 2
+ 1759  loop_test      i, 1, 2
+ 1760  jump_if_false  -> 1770
+ 1761  call_global    RandomNumber, (numCounterCups+1), numCups
+ 1762  set            idx1, $result
+ 1763  call_global    RandomNumber, (numCounterCups+1), numCups
+ 1764  set            idx2, $result
+ 1765  get_prop       cups.idx1, homeX, x1
+ 1766  get_prop       cups.idx2, homeX, x2
+ 1767  set_prop       cups.idx1, homeX, x2
+ 1768  set_prop       cups.idx2, homeX, x1
+ 1769  jump           -> 1759
+ 1770  loop           i, 1, numTrayCups
+ 1771  loop_test      i, 1, numTrayCups
+ 1772  jump_if_false  -> 1775
+ 1773  set            cupOrder.i, (i+numCounterCups)
+ 1774  jump           -> 1771
+ 1775  if             (numTrayCups>1)
+ 1776  jump_if_false  -> 1789
+ 1777  loop           i, 1, 2
+ 1778  loop_test      i, 1, 2
+ 1779  jump_if_false  -> 1788
+ 1780  call_global    RandomNumber, 1, numTrayCups
+ 1781  set            idx1, $result
+ 1782  call_global    RandomNumber, 1, numTrayCups
+ 1783  set            idx2, $result
+ 1784  set            temp, cupOrder.idx1
+ 1785  set            cupOrder.idx1, cupOrder.idx2
+ 1786  set            cupOrder.idx2, temp
+ 1787  jump           -> 1778
+ 1788  end
+ 1789  loop           i, 1, numTrayCups
+ 1790  loop_test      i, 1, numTrayCups
+ 1791  jump_if_false  -> 1800
+ 1792  set            idx, cupOrder.i
+ 1793  send           puzzle, addAnswerToContainer, ("cups."+idx), "container"
+ 1794  set_prop       cups.idx, snapSound, kSnapSfxID
+ 1795  set_prop       cups.idx, dropped, eAnswerDropped@1860
+ 1796  set_prop       cups.idx, pickedUp, eAnswerPickedUp@1863
+ 1797  send           cups.idx, setFont, kCupFontName, kCupFontStyle, kCupFontSize, kCupTextColor
+ 1798  send           puzzle, addAnswer, ("cups."+idx)
+ 1799  jump           -> 1790
+ 1800  end
+ 1801  set_prop       container, answerPlaced, eCupPlacedOnTray@1867
+ 1802  set            minNumMoves, minNumMoves.level.whichDataset
+ 1803  set            numMovesMade, numTrayCups
+ 1804  if             (numMovesMade>((2*minNumMoves)-1))
+ 1805  jump_if_false  -> 1809
+ 1806  set            incorrectGuessMade, kTrue
+ 1807  set            numMovesMade, (numMovesMade%minNumMoves)
+ 1808  end
+ 1809  return
+
+ 1810  sub            pCleanPuzzle@1810
+ 1811  delete         puzzle
+ 1812  delete         [, cups
+ 1813  delete         container
+ 1814  delete         problemText
+ 1815  return
+
+ 1816  sub            eSQueueDone@1816
+ 1817  send           sQueue, clear
+ 1818  if             (sQueueFinished#"empty")
+ 1819  jump_if_false  -> 1824
+ 1820  set            finishedEvent, sQueueFinished
+ 1821  set            sQueueFinished, "empty"
+ 1822  call           finishedEvent
+ 1823  end
+ 1824  return
+
+ 1825  sub            eEntrySpeeches@1825
+ 1826  set            stopInterruptingScene, kTrue
+ 1827  delete         walkInCAct
+ 1828  delete         joniWalkInQAct
+ 1829  call_global    UncacheDLL, "CWS1i.rsc"
+ 1830  if             ((curLevelVisit=0)+(practiceMode))
+ 1831  jump_if_false  -> 1849
+ 1832  if             ((visit=0)*(practiceMode=0))
+ 1833  jump_if_false  -> 1838
+ 1834  send           sQueue, add, CharacterSpeechAction, "owen", kOwenIntro1SpchID
+ 1835  send           sQueue, add, CharacterSpeechAction, "coffeeGuy", kCoffeeGuyIntro1aSpchID
+ 1836  send           sQueue, add, CharacterSpeechAction, "coffeeGuy", kCoffeeGuyIntro1bSpchID
+ 1837  end
+ 1838  if             (level<4)
+ 1839  jump_if_false  -> 1844
+ 1840  send           sQueue, add, CharacterSpeechAction, "coffeeGuy", kCoffeeGuyIntro2SpchID
+ 1841  send           sQueue, add, CharacterSpeechAction, "coffeeGuy", kCoffeeGuyIntro2aSpchID
+ 1842  send           sQueue, add, CharacterSpeechAction, "coffeeGuy", kCoffeeGuyIntro2bSpchID
+ 1843  jump           -> 1848
+ 1844  end
+ 1845  send           sQueue, add, CharacterSpeechAction, "coffeeGuy", kCoffeeGuyIntro3SpchID
+ 1846  send           sQueue, add, CharacterSpeechAction, "coffeeGuy", kCoffeeGuyIntro3aSpchID
+ 1847  send           sQueue, add, CharacterSpeechAction, "coffeeGuy", kCoffeeGuyIntro3bSpchID
+ 1848  jump           -> 1858
+ 1849  end
+ 1850  get_prop       gPort, wsNextItemInQueue, item
+ 1851  if             (item#0)
+ 1852  jump_if_false  -> 1856
+ 1853  call_global    RandomNumber, 1, 4
+ 1854  send           sQueue, add, CharacterSpeechAction, "coffeeGuy", kCoffeeGuyIntro6SpchIDs.RESULT
+ 1855  jump           -> 1858
+ 1856  end
+ 1857  send           sQueue, add, CharacterSpeechAction, "coffeeGuy", kCoffeeGuyIntro10SpchID
+ 1858  send           sQueue, start
+ 1859  return
+
+ 1860  sub            eAnswerDropped@1860
+ 1861  set_prop       $1, z, kCupZ
+ 1862  return
+
+ 1863  sub            eAnswerPickedUp@1863
+ 1864  call           pInterruptScene@1638
+ 1865  set_prop       $1, z, kAnswerMovingZ
+ 1866  return
+
+ 1867  sub            eCupPlacedOnTray@1867
+ 1868  get_prop       container, value, correctAnswer
+ 1869  get_prop       container, answerValue, answer
+ 1870  if             (answer#correctAnswer)
+ 1871  jump_if_false  -> 1895
+ 1872  set            numMovesMade, (numMovesMade+1)
+ 1873  if             (incorrectGuessMade=kFalse)
+ 1874  jump_if_false  -> 1882
+ 1875  if             (numMovesMade=2*minNumMoves)
+ 1876  jump_if_false  -> 1881
+ 1877  send           gPort, incorrectGuess, "CWS1"
+ 1878  set            numMovesMade, 0
+ 1879  set            incorrectGuessMade, kTrue
+ 1880  end
+ 1881  jump           -> 1888
+ 1882  end
+ 1883  if             (numMovesMade=minNumMoves)
+ 1884  jump_if_false  -> 1888
+ 1885  send           gPort, incorrectGuess, "CWS1"
+ 1886  set            numMovesMade, 0
+ 1887  end
+ 1888  if             (answer>correctAnswer)
+ 1889  jump_if_false  -> 1894
+ 1890  call           pInterruptScene@1638
+ 1891  send           sQueue, add, CharacterSpeechAction, "waiter", kWaiterWrong1SpchID
+ 1892  send           sQueue, start
+ 1893  end
+ 1894  end
+ 1895  return
+
+ 1896  sub            ePuzzleSolved@1896
+ 1897  call           pInterruptScene@1638
+ 1898  send           puzzle, anchorAnswers
+ 1899  send           gPort, correctGuess, "CWS1"
+ 1900  send           sQueue, add, DelayAction, 200
+ 1901  loop           i, 1, numCups
+ 1902  loop_test      i, 1, numCups
+ 1903  jump_if_false  -> 1910
+ 1904  get_prop       cups.i, isUsed, cupOnTray
+ 1905  if             cupOnTray
+ 1906  jump_if_false  -> 1909
+ 1907  send           sQueue, add, PropertyAction, ("cups."+i), "visible", kFalse
+ 1908  end
+ 1909  jump           -> 1902
+ 1910  send           sQueue, add, CharacterAnimAction, "waiter", kWaiterLeaveID, 1, kFalse
+ 1911  if             practiceMode
+ 1912  jump_if_false  -> 1916
+ 1913  call_global    RandomNumber, 1, 5
+ 1914  send           sQueue, add, CharacterSpeechAction, "coffeeGuy", kPModeRightSpchIDs.RESULT
+ 1915  jump           -> 1931
+ 1916  end
+ 1917  get_prop       gPort, wsNextItemInQueue, item
+ 1918  if             (item#0)
+ 1919  jump_if_false  -> 1929
+ 1920  if             (itemGiven=kFalse)
+ 1921  jump_if_false  -> 1925
+ 1922  set            itemGiven, kTrue
+ 1923  send           sQueue, add, CharacterSpeechAction, "coffeeGuy", kCoffeeGuyRight1SpchID
+ 1924  jump           -> 1928
+ 1925  end
+ 1926  call_global    RandomNumber, 1, 5
+ 1927  send           sQueue, add, CharacterSpeechAction, "coffeeGuy", kCoffeeGuyRight2SpchIDs.RESULT
+ 1928  jump           -> 1931
+ 1929  end
+ 1930  send           sQueue, add, CharacterSpeechAction, "coffeeGuy", kCoffeeGuyNoCoin2SpchID
+ 1931  set            sQueueFinished, "eNewPuzzle"
+ 1932  send           sQueue, start
+ 1933  return
+
+ 1934  sub            eNewPuzzle@1934
+ 1935  set            incorrectGuessMade, kFalse
+ 1936  set            socratesClickCtr, 1
+ 1937  set            coffeeGuyClickCtr, 1
+ 1938  call           pCleanPuzzle@1810
+ 1939  send           gPort, autoLevel, "CWS1"
+ 1940  get_prop       gPort, currentLevel, "CWS1", curLevel
+ 1941  get_prop       gPort, currentDataset, "CWS1", curLevel, whichDataset
+ 1942  if             (level#curLevel)
+ 1943  jump_if_false  -> 1952
+ 1944  set            level, curLevel
+ 1945  if             (whichDataset=0)
+ 1946  jump_if_false  -> 1951
+ 1947  call_global    RandomNumber, 1, kNumDatasets.level
+ 1948  set            whichDataset, $result
+ 1949  set_prop       gPort, currentDataset, "CWS1", level, whichDataset
+ 1950  end
+ 1951  end
+ 1952  call           pNextDataset@1683
+ 1953  call           pSetupPuzzle@1692
+ 1954  loop           i, 1, numCups
+ 1955  loop_test      i, 1, numCups
+ 1956  jump_if_false  -> 1963
+ 1957  get_prop       cups.i, isUsed, cupOnTray
+ 1958  if             cupOnTray
+ 1959  jump_if_false  -> 1962
+ 1960  set_prop       cups.i, visible, kFalse
+ 1961  end
+ 1962  jump           -> 1955
+ 1963  set_prop       waiter, visible, kTrue
+ 1964  send           sQueue, add, CharacterAnimAction, "waiter", kWaiterEnterID
+ 1965  loop           i, 1, numCups
+ 1966  loop_test      i, 1, numCups
+ 1967  jump_if_false  -> 1974
+ 1968  get_prop       cups.i, isUsed, cupOnTray
+ 1969  if             cupOnTray
+ 1970  jump_if_false  -> 1973
+ 1971  send           sQueue, add, PropertyAction, ("cups."+i), "visible", kTrue
+ 1972  end
+ 1973  jump           -> 1966
+ 1974  if             (practiceMode=0)
+ 1975  jump_if_false  -> 1995
+ 1976  get_prop       gPort, wsNextItemInQueue, item
+ 1977  if             (item#0)
+ 1978  jump_if_false  -> 1982
+ 1979  send           gPort, removeNextObjectFromQueue
+ 1980  call           pNewObjectAtLocation@114, item
+ 1981  end
+ 1982  get_prop       gPort, wsNextItemInQueue, item
+ 1983  if             (item#0)
+ 1984  jump_if_false  -> 1988
+ 1985  call_global    RandomNumber, 1, 4
+ 1986  send           sQueue, add, CharacterSpeechAction, "coffeeGuy", kCoffeeGuyReset1SpchIDs.RESULT
+ 1987  jump           -> 1994
+ 1988  end
+ 1989  if             (noItemGivenOnSolve=kFalse)
+ 1990  jump_if_false  -> 1994
+ 1991  set            noItemGivenOnSolve, kTrue
+ 1992  send           sQueue, add, CharacterSpeechAction, "coffeeGuy", kCoffeeGuyRight7SpchID
+ 1993  end
+ 1994  end
+ 1995  send           sQueue, start
+ 1996  return
+
+ 1997  sub            eCharacterClicked@1997
+ 1998  call           pInterruptScene@1638
+ 1999  if             sceneInterrupted
+ 2000  jump_if_false  -> 2013
+ 2001  if             (characterClickCtr=1)
+ 2002  jump_if_false  -> 2007
+ 2003  send           sQueue, add, CharacterSpeechAction, "joni", kJoniTalk1aSpchID
+ 2004  send           sQueue, add, CharacterSpeechAction, "owen", kOwenTalk1dSpchID
+ 2005  set            characterClickCtr, 2
+ 2006  jump           -> 2011
+ 2007  end
+ 2008  send           sQueue, add, CharacterSpeechAction, "leslie", kLesTalk1bSpchID
+ 2009  send           sQueue, add, CharacterSpeechAction, "owen", kOwenTalk1cSpchID
+ 2010  set            characterClickCtr, 1
+ 2011  send           sQueue, start
+ 2012  end
+ 2013  return
+
+ 2014  sub            eCoffeeGuyClicked@2014
+ 2015  call           pInterruptScene@1638
+ 2016  if             sceneInterrupted
+ 2017  jump_if_false  -> 2041
+ 2018  if             (level<4)
+ 2019  jump_if_false  -> 2030
+ 2020  if             (coffeeGuyClickCtr=1)
+ 2021  jump_if_false  -> 2025
+ 2022  send           sQueue, add, CharacterSpeechAction, "coffeeGuy", kCoffeeGuyHelp1SpchID
+ 2023  set            coffeeGuyClickCtr, 2
+ 2024  jump           -> 2029
+ 2025  end
+ 2026  send           sQueue, add, CharacterSpeechAction, "coffeeGuy", kCoffeeGuyHelp1aSpchID
+ 2027  send           sQueue, add, CharacterSpeechAction, "coffeeGuy", kCoffeeGuyHelp1bSpchID
+ 2028  set            coffeeGuyClickCtr, 1
+ 2029  jump           -> 2039
+ 2030  end
+ 2031  if             (coffeeGuyClickCtr=1)
+ 2032  jump_if_false  -> 2036
+ 2033  send           sQueue, add, CharacterSpeechAction, "coffeeGuy", kCoffeeGuyHelp2SpchID
+ 2034  set            coffeeGuyClickCtr, 2
+ 2035  jump           -> 2039
+ 2036  end
+ 2037  send           sQueue, add, CharacterSpeechAction, "coffeeGuy", kCoffeeGuyHelp2aSpchID
+ 2038  set            coffeeGuyClickCtr, 1
+ 2039  send           sQueue, start
+ 2040  end
+ 2041  return
+
+ 2042  sub            eSocratesClicked@2042
+ 2043  call           pInterruptScene@1638
+ 2044  if             sceneInterrupted
+ 2045  jump_if_false  -> 2061
+ 2046  if             (socratesClickCtr=1)
+ 2047  jump_if_false  -> 2051
+ 2048  send           sQueue, add, CharacterSpeechAction, "socrates", kSocHelp1SpchID
+ 2049  set            socratesClickCtr, 2
+ 2050  jump           -> 2059
+ 2051  end
+ 2052  if             (level<4)
+ 2053  jump_if_false  -> 2056
+ 2054  send           sQueue, add, CharacterSpeechAction, "socrates", kSocHelp2SpchID
+ 2055  jump           -> 2058
+ 2056  end
+ 2057  send           sQueue, add, CharacterSpeechAction, "socrates", kSocHelp3SpchID
+ 2058  set            socratesClickCtr, 1
+ 2059  send           sQueue, start
+ 2060  end
+ 2061  return
+
+ 2062  sub            eLaptrapClicked@2062
+ 2063  call           pInterruptScene@1638
+ 2064  if             sceneInterrupted
+ 2065  jump_if_false  -> 2069
+ 2066  call           gOpenLaptrap@221
+ 2067  set_prop       gLaptrap, closed, eLaptrapClosed@2070
+ 2068  end
+ 2069  return
+
+ 2070  sub            eLaptrapClosed@2070
+ 2071  call           gCloseLaptrap@235
+ 2072  get_prop       gPort, currentLevel, "CWS1", curLevel
+ 2073  if             (level#curLevel)
+ 2074  jump_if_false  -> 2090
+ 2075  call           pCleanPuzzle@1810
+ 2076  set            level, curLevel
+ 2077  set            incorrectGuessMade, kFalse
+ 2078  set            socratesClickCtr, 1
+ 2079  set            coffeeGuyClickCtr, 1
+ 2080  get_prop       gPort, currentDataset, "CWS1", level, whichDataset
+ 2081  if             (whichDataset=0)
+ 2082  jump_if_false  -> 2087
+ 2083  call_global    RandomNumber, 1, kNumDatasets.level
+ 2084  set            whichDataset, $result
+ 2085  set_prop       gPort, currentDataset, "CWS1", level, whichDataset
+ 2086  end
+ 2087  call           pNextDataset@1683
+ 2088  call           pSetupPuzzle@1692
+ 2089  end
+ 2090  return
+
+ 2091  sub            eNavHotspotClicked@2091
+ 2092  call           pInterruptScene@1638
+ 2093  if             sceneInterrupted
+ 2094  jump_if_false  -> 2118
+ 2095  call_global    CacheDLL, "CWS1o.rsc"
+ 2096  send           puzzle, anchorAnswers
+ 2097  get_prop       gPort, itemsPresentCount, numItems
+ 2098  if             (numItems>0)
+ 2099  jump_if_false  -> 2106
+ 2100  get_prop       gPort, itemPlacedInBackpack, usedBackpack
+ 2101  if             (usedBackpack=kFalse)
+ 2102  jump_if_false  -> 2105
+ 2103  send           sQueue, add, CharacterSpeechAction, "laptrap", kLTExit1SpchID
+ 2104  end
+ 2105  end
+ 2106  set            walkOutCAct, RCompositeAction, kTrue
+ 2107  send           walkOutCAct, add, PropertyAction, "closedBackpack", "visible", kFalse
+ 2108  send           walkOutCAct, add, CharacterAnimAction, "santiago", kSantiagoWalkOutID, 1, kFalse
+ 2109  send           walkOutCAct, add, CharacterAnimAction, "joni", kJoniWalkOutID, 1, kFalse
+ 2110  send           walkOutCAct, add, CharacterAnimAction, "owen", kOwenWalkOutID, 1, kFalse
+ 2111  send           walkOutCAct, add, CharacterAnimAction, "leslie", kLeslieWalkOutID, 1, kFalse
+ 2112  send           walkOutCAct, add, CharacterAnimAction, "socrates", kSocratesWalkOutID, 1, kFalse
+ 2113  send           walkOutCAct, add, CharacterAnimAction, "laptrap", kLaptrapWalkOutID, 1, kFalse
+ 2114  send           sQueue, add, "walkOutCAct"
+ 2115  set            sQueueFinished, "eWalkOutDone"
+ 2116  send           sQueue, start
+ 2117  end
+ 2118  return
+
+ 2119  sub            eWalkOutDone@2119
+ 2120  delete         walkOutCAct
+ 2121  call_global    UncacheDLL, "CWS1o.rsc"
+ 2122  call_global    SetAnswerPickUpSound, (-1)
+ 2123  call_global    SetAnswerGoHomeSound, (-1)
+ 2124  set_prop       gPort, previousLocation, "CWS1"
+ 2125  call_global    StartTransition
+ 2126  load_script    "CLOC03.mps"
+ 2127  return
+
+ 2128  sub            eExitToMapLoc@2128
+ 2129  call_global    SetAnswerPickUpSound, (-1)
+ 2130  call_global    SetAnswerGoHomeSound, (-1)
+ 2131  set_prop       gPort, previousLocation, "CWS1"
+ 2132  call_global    StartTransition
+ 2133  get_prop       gLaptrap, selectedLocation, location
+ 2134  load_script    (location+".mps")
+ 2135  return
+
+ 2136  sub            ePauseScene@2136
+ 2137  send           sQueue, pause
+ 2138  if             (practiceMode=0)
+ 2139  jump_if_false  -> 2146
+ 2140  send           joni, pause
+ 2141  send           santiago, pause
+ 2142  send           owen, pause
+ 2143  send           leslie, pause
+ 2144  send           laptrap, pause
+ 2145  end
+ 2146  send           socrates, pause
+ 2147  send           coffeeGuy, pause
+ 2148  return
+
+ 2149  sub            eResumeScene@2149
+ 2150  send           sQueue, resume
+ 2151  if             (practiceMode=0)
+ 2152  jump_if_false  -> 2159
+ 2153  send           joni, resume
+ 2154  send           santiago, resume
+ 2155  send           owen, resume
+ 2156  send           leslie, resume
+ 2157  send           laptrap, resume
+ 2158  end
+ 2159  send           socrates, resume
+ 2160  send           coffeeGuy, resume
+ 2161  return
