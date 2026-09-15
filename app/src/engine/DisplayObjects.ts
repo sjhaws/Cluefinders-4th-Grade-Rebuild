@@ -547,24 +547,4 @@ export class RDialog extends DisplayObject {
   }
 }
 
-/** The LapTrap map/menu isn't implemented yet; a click closes the placeholder. */
-export class RLapTrap extends DisplayObject {
-  constructor(engine: GameEngine) {
-    super(engine, 'RLapTrap');
-    const card = new Graphics().rect(0, 0, STAGE_W, STAGE_H).fill({ color: 0x000000, alpha: 0.8 });
-    const caption = new Text({
-      text: "LapTrap isn't implemented yet — click to close",
-      style: { fill: 0xffffff, fontFamily: 'Verdana, sans-serif', fontSize: 14 },
-    });
-    caption.anchor.set(0.5);
-    caption.position.set(STAGE_W / 2, STAGE_H / 2);
-    this.view.addChild(card, caption);
-    this.view.zIndex = 30000;
-  }
-
-  onPointerUp(): void {
-    this.fire('closed');
-  }
-}
-
 export { Container };

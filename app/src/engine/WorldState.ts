@@ -19,6 +19,11 @@ const GLOBALS_KEY = 'cf4.globals';
  */
 const NEW_PLAYER_LOCATION = 'CBA1';
 const BACKPACK_SLOTS = 12;
+/** Properties kept per location (EXE property list); an unkeyed get/set means the current location. */
+const PER_LOCATION = new Set([
+  'visitedcount', 'currentdataset', 'currentlevel', 'hubroundscompleted', 'levelcolor',
+  'wscurrentlevelentrycount', 'wstotalguesscount', 'wstotalcorrectguesscount',
+]);
 const ITEMS_PER_ROUND = 12; // kNumItemsPerCRound / kNumItemsPerORound
 
 const range = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => from + i);
@@ -81,7 +86,13 @@ export class WorldState {
     }
   }
 
+  /** Per-location properties: scripts set them without a key (the current location) and read them by location. */
+  private locationKey(name: string, key: Value | undefined): Value | undefined {
+    return key === undefined && PER_LOCATION.has(name.toLowerCase()) ? this.location() : key;
+  }
+
   get(name: string, key: Value | undefined): Value {
+    key = this.locationKey(name, key);
     const k = propKey(name, key);
     switch (name.toLowerCase()) {
       case 'playerscount': return this.players.length;
@@ -99,6 +110,7 @@ export class WorldState {
   }
 
   set(name: string, key: Value | undefined, value: Value): void {
+    key = this.locationKey(name, key);
     const k = propKey(name, key);
     if (this.globalNames.has(k) || k in this.globals) {
       this.globals[k] = toStored(value);

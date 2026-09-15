@@ -262,8 +262,9 @@ export class ScriptVm {
           case 'get_prop': {
             const obj = this.value(args[0], ctx);
             const prop = this.nameOf(args[1]);
-            const hasKey = args.length >= 4;
-            const key = hasKey ? this.value(args[2], ctx) : undefined;
+            // keys sit between the property name and the value: `currentDataset, "CWS1", level, var`
+            const keys = args.slice(2, -1).map((a) => this.value(a, ctx));
+            const key = keys.length === 0 ? undefined : keys.length === 1 ? keys[0] : keys.map(toText).join('.');
             const last = args[args.length - 1];
             if (!isEngineObject(obj)) {
               this.host.warn(`${this.script.name}:${pc} ${rec.m} ${prop} on non-object ${this.nameOf(args[0])}`);

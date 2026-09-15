@@ -2,6 +2,7 @@ import { Container } from 'pixi.js';
 import type { EngineObject, Value } from './ScriptVm';
 import { toNumber, toText, truthy } from './ScriptVm';
 import type { GameEngine } from './GameEngine';
+import { viewHit } from './hitTest';
 
 export function propKey(name: string, key: Value | undefined): string {
   return key === undefined ? name.toLowerCase() : `${name.toLowerCase()}[${toText(key).toLowerCase()}]`;
@@ -93,7 +94,8 @@ export class DisplayObject extends ScriptObject {
   containsPoint(x: number, y: number): boolean {
     if (!this.view.visible || !this.touchy || this.destroyed) return false;
     const b = this.view.getBounds();
-    return x >= b.minX && x < b.maxX && y >= b.minY && y < b.maxY;
+    if (x < b.minX || x >= b.maxX || y < b.minY || y >= b.maxY) return false;
+    return viewHit(this.view, x, y); // transparent pixels don't count: overlapping characters stay clickable
   }
 
   onPointerDown(x: number, y: number): void {

@@ -2,7 +2,8 @@ import type { Value } from './ScriptVm';
 import { GenericObject, type ScriptObject } from './ScriptObject';
 import type { GameEngine } from './GameEngine';
 import { RScenePort, RWorldPort } from './WorldState';
-import { RAnimation, RDialog, RHotSpot, RLapTrap, RPButton, RSmackerMovie, RText } from './DisplayObjects';
+import { RAnimation, RDialog, RHotSpot, RPButton, RSmackerMovie, RText } from './DisplayObjects';
+import { RLapTrap } from './LapTrap';
 import { RSelList } from './SelList';
 import { RCompositeAction, RKbdInp, RQueue } from './Queue';
 import { RCharacter } from './Character';
@@ -34,7 +35,7 @@ const IMPLEMENTED: Record<string, Factory> = {
   rtext: (e, a) => new RText(e, a),
   rsmackermovie: (e, a) => new RSmackerMovie(e, a),
   rdialog: (e, a) => new RDialog(e, a),
-  rlaptrap: (e) => new RLapTrap(e),
+  rlaptrap: (e, a) => new RLapTrap(e, a),
   rsellist: (e, a) => new RSelList(e, a),
   rqueue: (e) => new RQueue(e),
   rcompositeaction: (e) => new RCompositeAction(e),
