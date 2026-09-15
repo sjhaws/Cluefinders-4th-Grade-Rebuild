@@ -200,10 +200,16 @@ export class GameEngine implements ScriptHost {
         const hi = toNumber(args[1]);
         return lo + Math.floor(Math.random() * (hi - lo + 1));
       }
+      case 'logmessage': // developer logging in the original (e.g. OHUB's "Oasis round: 2")
+        console.debug(`[script] ${args.map(toText).join(' ')}`);
+        return 0;
       case 'intersecttest': {
         // IntersectTest "RECEIVER", "varName": does the object just dropped overlap the receiver?
+        // or IntersectTest "objA", "objB": do two named objects overlap? (OHUB's gem slots)
         const receiver = this.lookupVar(toText(args[1]));
-        const moved = this.dropped;
+        const first = toText(args[0]);
+        const named = first.toUpperCase() === 'RECEIVER' ? null : this.lookupVar(first);
+        const moved = named instanceof DisplayObject ? named : this.dropped;
         if (!(receiver instanceof DisplayObject) || !moved || moved.destroyed || receiver.destroyed) return 0;
         if (!receiver.view.visible) return 0;
         const a = moved.view.getBounds();

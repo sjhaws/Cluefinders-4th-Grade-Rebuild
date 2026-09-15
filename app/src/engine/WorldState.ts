@@ -25,6 +25,9 @@ const PER_LOCATION = new Set([
   'wscurrentlevelentrycount', 'wstotalguesscount', 'wstotalcorrectguesscount',
 ]);
 const ITEMS_PER_ROUND = 12; // kNumItemsPerCRound / kNumItemsPerORound
+/** Gem slots around each OHUB door (OHUB's kNumGemSlots), of which kNumMissingGemSlots are empty. */
+const OHUB_GEM_SLOTS = [39, 39, 39, 39, 44];
+const OHUB_MISSING_SLOTS = 12;
 
 const range = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => from + i);
 
@@ -104,6 +107,9 @@ export class WorldState {
         return this.itemsAt(key === undefined ? this.location() : toText(key)).filter(Boolean).length;
       case 'backpackitempresent': return this.backpack()[toNumber(key)] ?? 0;
       case 'wsnextiteminqueue': return this.queue(key === undefined ? this.location() : toText(key))[0] ?? 0;
+      case 'patternitemcount': return this.gemPattern().gems.length;
+      case 'patternitem': return this.gemPattern().gems[toNumber(key) - 1] ?? 0;
+      case 'missingitemslot': return this.gemPattern().missing[toNumber(key) - 1] ?? 0;
     }
     if (this.globalNames.has(k) || k in this.globals) return this.globals[k] ?? 0;
     return (this.active ? this.active.props[k] : this.session[k]) ?? 0;
@@ -205,10 +211,35 @@ export class WorldState {
    */
   distributeItems(prefix = this.location().charAt(0)): void {
     const region = WORKSHOP_REGIONS.find((r) => r.prefix === prefix) ?? WORKSHOP_REGIONS[0];
-    const ids = shuffle(region.items).slice(0, ITEMS_PER_ROUND);
+    let ids = shuffle(region.items).slice(0, ITEMS_PER_ROUND);
+    if (region.prefix === 'o') {
+      // the Oasis workshops hand out exactly the gems missing from the current OHUB door
+      const { gems, missing } = this.gemPattern();
+      ids = shuffle(missing.map((slot) => gems[(slot - 1) % gems.length]));
+    }
     const per = ITEMS_PER_ROUND / region.workshops.length;
     this.bag()[`distributed:${region.prefix}`] = 1;
     region.workshops.forEach((ws, i) => this.writeList(`queue:${ws}`, ids.slice(i * per, (i + 1) * per)));
+  }
+
+  /**
+   * The gem pattern on the OHUB door being worked on (round = doors opened + 1):
+   * patternItem 1..n repeats around the door's slots and missingItemSlot 1..12
+   * are the empty ones. Made once per round and saved with the player. The
+   * EXE generates this too; its rules aren't recovered, so the pattern length
+   * (2 gems in round 1 up to 6) is an assumption.
+   */
+  gemPattern(): { gems: number[]; missing: number[] } {
+    const round = Math.min(OHUB_GEM_SLOTS.length, toNumber(this.get('hubRoundsCompleted', 'OHUB')) + 1);
+    let gems = this.readList(`pattern:${round}`);
+    let missing = this.readList(`missing:${round}`);
+    if (gems.length === 0 || missing.length !== OHUB_MISSING_SLOTS) {
+      gems = shuffle(range(13, 28)).slice(0, Math.min(6, round + 1));
+      missing = shuffle(range(1, OHUB_GEM_SLOTS[round - 1])).slice(0, OHUB_MISSING_SLOTS).sort((a, b) => a - b);
+      this.writeList(`pattern:${round}`, gems);
+      this.writeList(`missing:${round}`, missing);
+    }
+    return { gems, missing };
   }
 
   activate(nameOrIndex: string): void {
