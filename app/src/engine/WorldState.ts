@@ -69,6 +69,50 @@ function shuffle<T>(items: T[]): T[] {
   return a;
 }
 
+/**
+ * The 16 gems (13-28) form a 4x4 grid: gem = row * 4 + column + 13. Each OHUB
+ * door has its own pattern shape, with rows and columns drawn at random
+ * (EXE VA 0x451a20). Doors 3 and 4 never pair rows that add up to 3.
+ */
+function makeGemPattern(round: number): number[] {
+  const gem = (row: number, col: number) => row * 4 + col + 13;
+  const cols = shuffle([0, 1, 2, 3]);
+  let rows = shuffle([0, 1, 2, 3]);
+  if (round === 3 || round === 4) {
+    while (rows[0] + rows[1] === 3) rows = shuffle(rows);
+  }
+  const [r0, r1, r2] = rows;
+  const [c0, c1, c2] = cols;
+  switch (round) {
+    case 1: return cols.map((c) => gem(r0, c)); // one row, all four columns
+    case 2: return rows.map((r, i) => gem(r, cols[i])); // four different rows and columns
+    case 3: return [gem(r0, c0), gem(r0, c1), gem(r1, c0), gem(r1, c1)]; // a 2x2 block
+    case 4: return [gem(r0, c0), gem(r0, c1), gem(r1, c2)];
+    default: return [gem(r0, c0), gem(r1, c1), gem(r0, c0), gem(r2, c2)]; // A B A C
+  }
+}
+
+/**
+ * Draws a door's 12 empty slots (1-based) from its shuffled slots, reshuffling
+ * until they include an odd slot and aren't evenly spaced around the pattern
+ * (not every gap, taken modulo the pattern length, equal to the first).
+ */
+function pickMissingSlots(slotCount: number, patternLength: number): number[] {
+  for (;;) {
+    const slots = shuffle(range(1, slotCount));
+    const firstGap = Math.abs((slots[1] - slots[0]) % patternLength);
+    let odd = false;
+    let other = false;
+    let irregular = false;
+    for (let i = 0; i < OHUB_MISSING_SLOTS; i++) {
+      if (!odd && slots[i] % 2 === 1) odd = true;
+      else other = true;
+      if (i > 1 && Math.abs((slots[i] - slots[i - 1]) % patternLength) !== firstGap) irregular = true;
+      if (odd && other && irregular) return slots.slice(0, OHUB_MISSING_SLOTS);
+    }
+  }
+}
+
 function load<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);
@@ -240,38 +284,66 @@ export class WorldState {
   }
 
   /**
-   * Deals a round's items out to the region's four workshops, three each.
-   * Inferred: the EXE does this at the start and after each hub round.
+   * RWorldPort distributeItems (EXE VA 0x4509b2), sent by CHUB/OHUB after each
+   * round and done for a new player. The round's 12 items are Cairo glyphs at
+   * random (repeats allowed) or, for the Oasis, the gems missing from the
+   * current OHUB door, slot by slot. Workshops are ranked by the share of
+   * answers they got right since the last deal, and the weaker ones get more
+   * of the items to earn: 3/3/3/3 when the best and worst are within 0.251,
+   * otherwise 4/3/3/2 or 4/4/2/2 (spread under 0.5, split by whether the
+   * middle two are within 0.1), else 5/3/2/2 or 6/2/2/2 (worst two within 0.5).
    */
   distributeItems(prefix = this.location().charAt(0)): void {
     const region = WORKSHOP_REGIONS.find((r) => r.prefix === prefix) ?? WORKSHOP_REGIONS[0];
-    let ids = shuffle(region.items).slice(0, ITEMS_PER_ROUND);
+    let ids: number[];
     if (region.prefix === 'o') {
-      // the Oasis workshops hand out exactly the gems missing from the current OHUB door
       const { gems, missing } = this.gemPattern();
-      ids = shuffle(missing.map((slot) => gems[(slot - 1) % gems.length]));
+      ids = missing.map((slot) => gems[(slot - 1) % gems.length]);
+    } else {
+      ids = Array.from({ length: ITEMS_PER_ROUND }, () => region.items[Math.floor(Math.random() * region.items.length)]);
     }
-    const per = ITEMS_PER_ROUND / region.workshops.length;
+
+    const ranked = region.workshops.map((ws) => {
+      const guesses = toNumber(this.get('wsTotalGuessCount', ws));
+      return { ws, ratio: guesses > 0 ? toNumber(this.get('wsTotalCorrectGuessCount', ws)) / guesses : 1 };
+    });
+    // the EXE's exchange sort: ascending, ties keep workshop order
+    for (let b = 2; b >= 0; b--) {
+      for (let d = b; d <= 2; d++) {
+        if (ranked[d + 1].ratio < ranked[d].ratio) [ranked[d], ranked[d + 1]] = [ranked[d + 1], ranked[d]];
+      }
+    }
+    const r = ranked.map((w) => w.ratio);
+    let counts: number[];
+    if (r[3] - r[0] < 0.251) counts = [3, 3, 3, 3];
+    else if (r[3] - r[0] < 0.5) counts = r[2] - r[1] < 0.1 ? [4, 3, 3, 2] : [4, 4, 2, 2];
+    else counts = r[1] - r[0] < 0.5 ? [5, 3, 2, 2] : [6, 2, 2, 2];
+
     this.bag()[`distributed:${region.prefix}`] = 1;
-    region.workshops.forEach((ws, i) => this.writeList(`queue:${ws}`, ids.slice(i * per, (i + 1) * per)));
+    let next = 0;
+    ranked.forEach(({ ws }, i) => {
+      this.set('wsTotalGuessCount', ws, 0);
+      this.set('wsTotalCorrectGuessCount', ws, 0);
+      this.writeList(`queue:${ws}`, ids.slice(next, next + counts[i]));
+      next += counts[i];
+    });
   }
 
   /**
    * The gem pattern on the OHUB door being worked on (round = doors opened + 1):
    * patternItem 1..n repeats around the door's slots and missingItemSlot 1..12
-   * are the empty ones. Made once per round and saved with the player. The
-   * EXE generates this too; its rules aren't recovered, so the pattern length
-   * (2 gems in round 1 up to 6) is an assumption.
+   * are the empty ones. Made once per round and saved with the player; the
+   * EXE makes all five at the start of a game (VA 0x451a20).
    */
   gemPattern(): { gems: number[]; missing: number[] } {
     const round = Math.min(OHUB_GEM_SLOTS.length, toNumber(this.get('hubRoundsCompleted', 'OHUB')) + 1);
-    let gems = this.readList(`pattern:${round}`);
-    let missing = this.readList(`missing:${round}`);
+    let gems = this.readList(`ohubPattern:${round}`);
+    let missing = this.readList(`ohubMissing:${round}`);
     if (gems.length === 0 || missing.length !== OHUB_MISSING_SLOTS) {
-      gems = shuffle(range(13, 28)).slice(0, Math.min(6, round + 1));
-      missing = shuffle(range(1, OHUB_GEM_SLOTS[round - 1])).slice(0, OHUB_MISSING_SLOTS).sort((a, b) => a - b);
-      this.writeList(`pattern:${round}`, gems);
-      this.writeList(`missing:${round}`, missing);
+      gems = makeGemPattern(round);
+      missing = pickMissingSlots(OHUB_GEM_SLOTS[round - 1], gems.length);
+      this.writeList(`ohubPattern:${round}`, gems);
+      this.writeList(`ohubMissing:${round}`, missing);
     }
     return { gems, missing };
   }
