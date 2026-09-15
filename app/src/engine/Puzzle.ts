@@ -28,11 +28,15 @@ export class RAnswer extends DisplayObject {
   attribute: Value;
   puzzle: RPuzzle | null = null;
   container: RValueContainer | null = null;
+  /** isUsed: placed in a container. Deleting the container doesn't clear it (OWS2 keeps a finished sentence's words). */
+  used = false;
   anchored = false;
   /** A hot point (e.g. a push pin's tip) is where the answer lands instead of its middle. */
   usesHotPoint = false;
   hotPointX = 0;
   hotPointY = 0;
+  /** Graphic pixels outside the answer's own area (extraTop etc.): stacked or lined-up neighbours overlap them. */
+  readonly extra = { left: 0, top: 0, right: 0, bottom: 0 };
   protected readonly graphic = new Sprite();
   protected size: [number, number] = [0, 0];
   private grabOffset: [number, number] | null = null;
@@ -63,6 +67,16 @@ export class RAnswer extends DisplayObject {
 
   get h(): number {
     return this.size[1];
+  }
+
+  /** Width without the extra margins: what the answer takes up in a row. */
+  get logicalW(): number {
+    return this.w - this.extra.left - this.extra.right;
+  }
+
+  /** Height without the extra margins: what the answer takes up in a stack. */
+  get logicalH(): number {
+    return this.h - this.extra.top - this.extra.bottom;
   }
 
   /** Offset from the answer's position to the point where it lands. */
@@ -116,7 +130,7 @@ export class RAnswer extends DisplayObject {
     switch (name.toLowerCase()) {
       case 'homex': return this.homeX;
       case 'homey': return this.homeY;
-      case 'isused': return this.container ? 1 : 0;
+      case 'isused': return this.used ? 1 : 0;
       case 'value': return this.value;
       case 'attribute': return this.attribute;
       case 'width': return this.w;
@@ -124,6 +138,10 @@ export class RAnswer extends DisplayObject {
       case 'isusinghotpoint': return this.usesHotPoint ? 1 : 0;
       case 'hotpointx': return this.hotPointX;
       case 'hotpointy': return this.hotPointY;
+      case 'extraleft': return this.extra.left;
+      case 'extratop': return this.extra.top;
+      case 'extraright': return this.extra.right;
+      case 'extrabottom': return this.extra.bottom;
       default: return super.getProp(name, key);
     }
   }
@@ -141,6 +159,10 @@ export class RAnswer extends DisplayObject {
       case 'isusinghotpoint': this.usesHotPoint = truthy(value); return;
       case 'hotpointx': this.hotPointX = toNumber(value); return;
       case 'hotpointy': this.hotPointY = toNumber(value); return;
+      case 'extraleft': this.extra.left = toNumber(value); return;
+      case 'extratop': this.extra.top = toNumber(value); return;
+      case 'extraright': this.extra.right = toNumber(value); return;
+      case 'extrabottom': this.extra.bottom = toNumber(value); return;
       case 'graphicid':
       case 'graphic':
         this.setGraphic(toNumber(value));
@@ -438,16 +460,25 @@ export class RValueContainer extends DisplayObject {
   /** Called on every move of a dragged answer, over this container or not, so it can preview the drop. */
   hover(_answer: RAnswer, _over: boolean): void {}
 
+  /** An answer already in this container was dragged and dropped on it again. */
+  rearrange(_answer: RAnswer): void {
+    this.layout();
+  }
+
   add(answer: RAnswer): void {
     if (!this.answers.includes(answer)) this.answers.push(answer);
     answer.container = this;
+    answer.used = true;
     this.layout();
   }
 
   remove(answer: RAnswer): void {
     const i = this.answers.indexOf(answer);
     if (i >= 0) this.answers.splice(i, 1);
-    if (answer.container === this) answer.container = null;
+    if (answer.container === this) {
+      answer.container = null;
+      answer.used = false;
+    }
     this.flyOver.delete(answer);
     this.layout();
   }
@@ -543,6 +574,221 @@ export class RHorizontalValueContainer extends RValueContainer {
 }
 
 /**
+ * A column answers stack up in (OWS1), following 4THADV32.EXE's
+ * RStackingContainer: `x, y, w, h, z[, value[, solvedAnswerCount]]`. Answers
+ * sit left-aligned, bottom up, overlapping by their extraTop/extraBottom
+ * pixels; taking one out drops the ones above it (droppedSound). It takes an
+ * answer while the stack still fits its height, and is solved when the values
+ * add up to `value` (with solvedAnswerCount answers, unless that is -1).
+ */
+export class RStackingContainer extends RValueContainer {
+  solvedAnswerCount: number;
+  droppedSound = -1;
+
+  constructor(engine: GameEngine, args: Value[]) {
+    super(engine, 'RStackingContainer', args.slice(0, 5).map(toNumber), args[5] ?? 1);
+    this.solvedAnswerCount = args[6] === undefined ? -1 : toNumber(args[6]);
+  }
+
+  private usedHeight(): number {
+    return this.answers.reduce((sum, a) => sum + a.logicalH, 0);
+  }
+
+  hits(answer: RAnswer): boolean {
+    return this.hitScore(answer) > 0;
+  }
+
+  hitScore(answer: RAnswer): number {
+    const r = this.rect;
+    return overlapArea(answer, r.x, r.y, r.w, r.h);
+  }
+
+  accepts(answer: RAnswer): boolean {
+    return this.enabled && (answer.container === this || this.usedHeight() + answer.logicalH <= this.areaH);
+  }
+
+  isFull(): boolean {
+    return this.answers.length > 0 && this.usedHeight() >= this.areaH;
+  }
+
+  evaluate(): Verdict {
+    const counted = this.solvedAnswerCount === -1 || this.answers.length === this.solvedAnswerCount;
+    if (this.answers.length > 0 && counted && this.answerValue() === toNumber(this.value)) return 'solved';
+    return this.isFull() ? 'wrong' : 'pending';
+  }
+
+  layout(immediate = false): void {
+    const r = this.rect;
+    let level = r.y + r.h;
+    for (const a of this.answers) {
+      level -= a.logicalH;
+      const x = Math.round(r.x - a.extra.left);
+      const y = Math.round(level - a.extra.top);
+      if (immediate) a.placeAt(x, y);
+      else a.moveTo(x, y);
+    }
+  }
+
+  remove(answer: RAnswer): void {
+    const i = this.answers.indexOf(answer);
+    const hadAbove = i >= 0 && i < this.answers.length - 1;
+    super.remove(answer);
+    if (hadAbove && this.droppedSound > 0) this.engine.playSound(this.droppedSound);
+  }
+
+  getProp(name: string, key: Value | undefined): Value {
+    switch (name.toLowerCase()) {
+      case 'solvedanswercount': return this.solvedAnswerCount;
+      case 'droppedsound': return this.droppedSound;
+      case 'highlighted': return 0;
+      default: return super.getProp(name, key);
+    }
+  }
+
+  setProp(name: string, key: Value | undefined, value: Value): void {
+    switch (name.toLowerCase()) {
+      case 'solvedanswercount': this.solvedAnswerCount = toNumber(value); return;
+      case 'droppedsound': this.droppedSound = toNumber(value); return;
+      case 'highlighted': return;
+      default: super.setProp(name, key, value);
+    }
+  }
+}
+
+/**
+ * A row answers line up in (OWS2's sentence), following 4THADV32.EXE's
+ * RHorizontalContainer: `x, y, w, h, z`. A dropped answer goes in by its x
+ * among the others and the row closes up from the left, neighbours overlapping
+ * by their extraLeft/extraRight pixels (slideSound when others shift); deltaZ
+ * restacks them left to right. answerMatchString is the answers' attributes
+ * run together, and the row is solved when it equals an addAnswerMatch string.
+ */
+export class RHorizontalContainer extends RValueContainer {
+  private readonly matches: string[] = [];
+  private deltaZ = 0;
+  private slideSound = -1;
+
+  constructor(engine: GameEngine, args: Value[]) {
+    super(engine, 'RHorizontalContainer', args.slice(0, 5).map(toNumber), 0);
+  }
+
+  private matchString(): string {
+    return this.answers.map((a) => toText(a.attribute)).join('');
+  }
+
+  private usedWidth(): number {
+    return this.answers.reduce((sum, a) => sum + a.logicalW, 0);
+  }
+
+  hits(answer: RAnswer): boolean {
+    return this.hitScore(answer) > 0;
+  }
+
+  hitScore(answer: RAnswer): number {
+    const r = this.rect;
+    return overlapArea(answer, r.x, r.y, r.w, r.h);
+  }
+
+  accepts(answer: RAnswer): boolean {
+    return this.enabled && (answer.container === this || this.usedWidth() + answer.logicalW <= this.areaW);
+  }
+
+  isFull(): boolean {
+    return this.answers.length > 0 && this.usedWidth() >= this.areaW;
+  }
+
+  evaluate(): Verdict {
+    if (this.answers.length > 0 && this.matches.includes(this.matchString())) return 'solved';
+    return this.isFull() ? 'wrong' : 'pending';
+  }
+
+  /** Puts the answer in the row before the first answer to its right. */
+  private insert(answer: RAnswer) {
+    const i = this.answers.indexOf(answer);
+    if (i >= 0) this.answers.splice(i, 1);
+    const left = answer.view.x + answer.extra.left;
+    const at = this.answers.findIndex((a) => a.view.x + a.extra.left > left);
+    this.answers.splice(at < 0 ? this.answers.length : at, 0, answer);
+    if (at >= 0 && this.slideSound > 0) this.engine.playSound(this.slideSound);
+  }
+
+  add(answer: RAnswer): void {
+    this.insert(answer);
+    answer.container = this;
+    answer.used = true;
+    this.layout();
+  }
+
+  rearrange(answer: RAnswer): void {
+    this.insert(answer);
+    this.layout();
+  }
+
+  remove(answer: RAnswer): void {
+    const i = this.answers.indexOf(answer);
+    const hadRight = i >= 0 && i < this.answers.length - 1;
+    super.remove(answer);
+    if (hadRight && this.slideSound > 0) this.engine.playSound(this.slideSound);
+  }
+
+  layout(immediate = false): void {
+    const r = this.rect;
+    let x = r.x;
+    for (const a of this.answers) {
+      const px = Math.round(x - a.extra.left);
+      const py = Math.round(r.y - a.extra.top);
+      if (immediate) a.placeAt(px, py);
+      else a.moveTo(px, py);
+      x += a.logicalW;
+    }
+    this.restack();
+  }
+
+  private restack() {
+    if (this.deltaZ === 0) return;
+    const base = this.view.zIndex + 1;
+    const n = this.answers.length;
+    this.answers.forEach((a, i) => {
+      a.view.zIndex = this.deltaZ > 0 ? base + i * this.deltaZ : base + (n - 1 - i) * -this.deltaZ;
+    });
+  }
+
+  getProp(name: string, key: Value | undefined): Value {
+    switch (name.toLowerCase()) {
+      case 'answermatchstring': return this.matchString();
+      case 'deltaz': return this.deltaZ;
+      case 'slidesound': return this.slideSound;
+      case 'highlighted': return 0;
+      default: return super.getProp(name, key);
+    }
+  }
+
+  setProp(name: string, key: Value | undefined, value: Value): void {
+    switch (name.toLowerCase()) {
+      case 'deltaz':
+        this.deltaZ = toNumber(value);
+        this.restack();
+        return;
+      case 'slidesound': this.slideSound = toNumber(value); return;
+      case 'highlighted': return;
+      default: super.setProp(name, key, value);
+    }
+  }
+
+  send(method: string, args: Value[]): Value {
+    switch (method.toLowerCase()) {
+      case 'addanswermatch':
+        this.matches.push(toText(args[0] ?? ''));
+        return 0;
+      case 'dumpanswermatches': // a debug listing in the original
+        return 0;
+      default:
+        return super.send(method, args);
+    }
+  }
+}
+
+/**
  * A drop target that wants an answer with a matching `attribute`: the right
  * phrase for a question (CWS3), the right country for the pin (CWS4).
  * `x, y, w, h, z, attribute` (a rectangle) or `imageID, z, attribute` (a
@@ -561,14 +807,16 @@ export class RAttributeContainer extends RValueContainer {
   constructor(engine: GameEngine, args: Value[]) {
     const shapeId = args.length >= 6 ? null : toNumber(args[0]);
     super(engine, 'RAttributeContainer', RAttributeContainer.area(engine, args, shapeId), 0);
-    this.attribute = shapeId === null ? args[5] : args[2];
+    this.attribute = shapeId === null ? args[5] : args.length === 5 ? args[4] : args[2];
     if (shapeId === null) {
       this.shape = null;
       return;
     }
     const id = shapeId;
     const shape = new Sprite(Texture.EMPTY);
-    shape.alpha = 0; // the shape is a hit mask; the map underneath shows the place
+    // `imageID, x, y, z, attribute` draws its image (OWS3's answer slots); the
+    // `imageID, z, attribute` shape is a hit mask over a map that shows the place.
+    shape.alpha = args.length === 5 ? 1 : 0;
     this.view.addChild(shape);
     this.shape = shape;
     void engine.loadAseq(id).then((loaded) => {
@@ -579,8 +827,9 @@ export class RAttributeContainer extends RValueContainer {
   /** `x, y, w, h, z` for the rectangle form, or the shape image's position and size. */
   private static area(engine: GameEngine, args: Value[], shapeId: number | null): number[] {
     if (shapeId === null) return args.slice(0, 5).map(toNumber);
-    const [x, y] = engine.originOf(shapeId) ?? [0, 0];
     const [w, h] = engine.frameSize(shapeId) ?? [0, 0];
+    if (args.length === 5) return [toNumber(args[1]), toNumber(args[2]), w, h, toNumber(args[3])];
+    const [x, y] = engine.originOf(shapeId) ?? [0, 0];
     return [x, y, w, h, toNumber(args[1])];
   }
 
@@ -1041,7 +1290,7 @@ export class RPuzzle extends ScriptObject {
     }
     for (const c of this.containers) if (c !== target) c.hover(answer, false);
     if (target && target === from) {
-      target.layout(); // moved within its container: slide back into place
+      target.rearrange(answer); // moved within its container: back into place, or a new spot in a row
       return;
     }
     if (from) {

@@ -94,6 +94,19 @@ export class DisplayObject extends ScriptObject {
     }
   }
 
+  send(method: string, args: Value[]): Value {
+    switch (method.toLowerCase()) {
+      case 'show': // e.g. OWS1's `VerbAction "rewardAnim.n", kTrue, "show"`
+        if (!this.destroyed) this.view.visible = true;
+        return 0;
+      case 'hide':
+        if (!this.destroyed) this.view.visible = false;
+        return 0;
+      default:
+        return super.send(method, args);
+    }
+  }
+
   containsPoint(x: number, y: number): boolean {
     if (!this.view.visible || !this.touchy || this.destroyed) return false;
     const b = this.view.getBounds();

@@ -4,6 +4,7 @@ import { ScriptObject } from './ScriptObject';
 import type { GameEngine } from './GameEngine';
 import { RCharacter } from './Character';
 import { RAnimation } from './DisplayObjects';
+import { RMap } from './Map';
 
 /** One step of an action queue. `start` must call `done` exactly once unless stopped. */
 export interface QueueAction {
@@ -70,6 +71,8 @@ const instant = (): QueueAction => delay(0);
 /** Builds a queue action from `add` arguments: an action class name plus its arguments, or a variable name. */
 export function makeAction(engine: GameEngine, first: Value, args: Value[]): QueueAction {
   const name = toText(first);
+  // the target object's name, bound when the action is added (OWS3 queues "mouse.i" for i = 2..4)
+  const bound = args.length > 0 ? engine.bindName(toText(args[0])) : '';
   switch (name.toLowerCase()) {
     case 'soundaction':
       return new SoundAction(engine, toNumber(args[0]));
@@ -85,17 +88,17 @@ export function makeAction(engine: GameEngine, first: Value, args: Value[]): Que
       return new TaskAction((done) => engine.playMovie(toText(args[0]), done));
     case 'propertyaction':
       return new TaskAction((done) => {
-        const target = engine.lookupVar(toText(args[0]));
+        const target = engine.lookupVar(bound);
         if (isEngineObject(target)) target.setProp(toText(args[1]), undefined, args[2] ?? 0);
         else engine.warn(`PropertyAction: ${toText(args[0])} is not an object`);
         setTimeout(done, 0);
       });
     case 'characteranimaction':
-      return characterAction(engine, args[0], (c) =>
+      return characterAction(engine, bound,(c) =>
         c.playAnim(toNumber(args[1]), args[2] === undefined ? 1 : toNumber(args[2]), args[3] === undefined || truthy(args[3]))
       );
     case 'characterspeechaction':
-      return characterAction(engine, args[0], (c) => c.playSpeech(toNumber(args[1])));
+      return characterAction(engine, bound,(c) => c.playSpeech(toNumber(args[1])));
     case 'animaction': {
       // AnimAction id, z[, repeat]  or  AnimAction id, x, y, z, repeat (e.g. CWS2's shimmer over the solved bolt)
       const n = args.map((a) => toNumber(a));
@@ -106,7 +109,7 @@ export function makeAction(engine: GameEngine, first: Value, args: Value[]): Que
     }
     case 'verbaction': // VerbAction "objectName", wait, "method", args... -- e.g. "puzzle", kTrue, "anchorAnswers"
       return new TaskAction((done) => {
-        const target = engine.lookupVar(toText(args[0]));
+        const target = engine.lookupVar(bound);
         if (isEngineObject(target)) target.send(toText(args[2]), args.slice(3));
         else engine.warn(`VerbAction: ${toText(args[0])} is not an object`);
         setTimeout(done, 0);
@@ -114,9 +117,24 @@ export function makeAction(engine: GameEngine, first: Value, args: Value[]): Que
     case 'movexaction':
     case 'moveyaction':
       return moveAction(engine, name.toLowerCase() === 'movexaction' ? 'x' : 'y', args);
+    case 'mapaction': // MapAction "map", wait: walks the map's moves
+      return new TaskAction((done) => {
+        const target = engine.lookupVar(bound);
+        if (!(target instanceof RMap)) {
+          engine.warn(`MapAction: ${toText(args[0])} is not a map`);
+          setTimeout(done, 0);
+          return;
+        }
+        if (args[1] === undefined || truthy(args[1])) {
+          target.startMove(done);
+          return () => target.detach();
+        }
+        target.startMove(null);
+        setTimeout(done, 0);
+      });
     case 'playanimaction':
       return new TaskAction((done) => {
-        const target = engine.lookupVar(toText(args[0]));
+        const target = engine.lookupVar(bound);
         if (!(target instanceof RAnimation)) {
           engine.warn(`PlayAnimAction: ${toText(args[0])} is not an animation`);
           setTimeout(done, 0);
@@ -336,6 +354,71 @@ export class RCompositeAction extends ScriptObject implements RunnableAsAction {
   stopAction(): void {
     for (const action of this.running) action.stop();
     this.running = [];
+  }
+
+  destroy(): void {
+    this.stopAction();
+    super.destroy();
+  }
+}
+
+/**
+ * Runs one of its actions, picked at random, inside a queue:
+ * `RRandomAction useAllBeforeRepeat[, wait]`. With useAllBeforeRepeat each
+ * action plays once before any plays again (e.g. rotating "right answer" lines).
+ */
+export class RRandomAction extends ScriptObject implements RunnableAsAction {
+  private readonly entries: [Value, Value[]][] = [];
+  private pool: number[] = [];
+  private current: QueueAction | null = null;
+  private useAll: boolean;
+
+  constructor(engine: GameEngine, args: Value[]) {
+    super(engine, 'RRandomAction');
+    this.useAll = truthy(args[0] ?? 0);
+  }
+
+  getProp(name: string, key: Value | undefined): Value {
+    if (name.toLowerCase() === 'useallbeforerepeat') return this.useAll ? 1 : 0;
+    return super.getProp(name, key);
+  }
+
+  setProp(name: string, key: Value | undefined, value: Value): void {
+    if (name.toLowerCase() === 'useallbeforerepeat') this.useAll = truthy(value);
+    else super.setProp(name, key, value);
+  }
+
+  send(method: string, args: Value[]): Value {
+    if (method.toLowerCase() === 'add') {
+      this.entries.push([args[0], args.slice(1)]);
+      this.pool.push(this.entries.length - 1);
+      return 0;
+    }
+    return super.send(method, args);
+  }
+
+  runAsAction(done: () => void): void {
+    if (this.entries.length === 0) {
+      setTimeout(done, 0);
+      return;
+    }
+    if (this.pool.length === 0) this.pool = this.entries.map((_, i) => i);
+    const slot = Math.floor(Math.random() * this.pool.length);
+    const index = this.pool[slot];
+    if (this.useAll) this.pool.splice(slot, 1);
+    const [first, rest] = this.entries[index];
+    const action = makeAction(this.engine, first, rest);
+    this.current = action;
+    action.start(() => {
+      if (this.current !== action) return;
+      this.current = null;
+      done();
+    });
+  }
+
+  stopAction(): void {
+    this.current?.stop();
+    this.current = null;
   }
 
   destroy(): void {

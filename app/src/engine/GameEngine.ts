@@ -274,6 +274,11 @@ export class GameEngine implements ScriptHost {
     return vm.getVar(vm.resolveName(name)); // "answers.i" -> answers.<i>
   }
 
+  /** Fixes a name's variable parts now: a queued `PropertyAction "mouse.i"` added in a loop means that pass's mouse. */
+  bindName(name: string): string {
+    return this.vm ? this.vm.resolveName(name) : name;
+  }
+
   /** An image's stored screen position, known before the image loads (scripts read x/y right away). */
   originOf(id: number): [number, number] | null {
     return this.resources.findAseq(id)?.origin ?? null;

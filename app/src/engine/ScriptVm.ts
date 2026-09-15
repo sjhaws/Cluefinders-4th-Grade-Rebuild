@@ -160,6 +160,9 @@ export class ScriptVm {
     if (this.vars.has(key)) return this.vars.get(key)!;
     if (this.named.has(key)) return this.named.get(key)!;
     if (this.host.isClass(name)) return name; // e.g. `send sQueue, add, SoundAction, ...`
+    // Unquoted literals: OWS2 passes the period's attribute as `Z` and fonts as `Chicago`.
+    // Script variables are camelCase, so only capitalised names read as their own text.
+    if (/^[A-Z]/.test(name)) return name;
     return 0;
   }
 
@@ -351,6 +354,8 @@ export class ScriptVm {
   private constantValue(c: ScriptConstant): Value {
     if (c.type === 3) {
       if (c.kind === 0 && c.extra?.startsWith('+')) return { label: Number(c.value), name: c.text };
+      // A number with text after it stays text, e.g. OWS3's answer "8 miles S" (value 8).
+      if (c.kind === 0 && c.extra !== undefined && !/^\s*-?\d+(\.\d+)?\s*$/.test(c.extra)) return c.extra;
       return Number(c.value);
     }
     if (c.type === 4) return parseFloat(String(c.kind === 0 ? c.extra : c.value));
@@ -404,8 +409,8 @@ export class ScriptVm {
         stack.push(this.value(refs[ref++], ctx));
       } else if (ch === 'z') {
         stack.push(undefined);
-      } else if (ch === '~') {
-        stack.push(truthy(stack.pop()) ? 0 : 1);
+      } else if (ch === '~') { // length of the text, e.g. OWS3's `(~answerText)`, OWS1's `(~t1)`
+        stack.push(toText(stack.pop()).length);
       } else {
         const right = stack.pop();
         const left = stack.pop();
@@ -426,7 +431,11 @@ function applyOperator(op: string, a: Value | undefined, b: Value | undefined): 
       return toNumber(a) - toNumber(b);
     case '*':
       return toNumber(a) * toNumber(b);
-    case '/': {
+    case '/': { // real division: OWS1 shows v/100 as "3.5 in."; scripts write \ for whole numbers
+      const d = toNumber(b);
+      return d === 0 ? 0 : toNumber(a) / d;
+    }
+    case '\\': {
       const d = toNumber(b);
       return d === 0 ? 0 : Math.trunc(toNumber(a) / d);
     }

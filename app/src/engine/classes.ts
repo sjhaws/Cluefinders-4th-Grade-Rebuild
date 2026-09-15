@@ -5,7 +5,8 @@ import { RScenePort, RWorldPort } from './WorldState';
 import { RAnimation, RDialog, RHotSpot, RPButton, RSmackerMovie, RText } from './DisplayObjects';
 import { RLapTrap } from './LapTrap';
 import { RSelList } from './SelList';
-import { RCompositeAction, RKbdInp, RQueue } from './Queue';
+import { RCompositeAction, RKbdInp, RQueue, RRandomAction } from './Queue';
+import { RMap } from './Map';
 import { RCharacter } from './Character';
 import { RBackPack } from './BackPack';
 import {
@@ -14,8 +15,10 @@ import {
   RFabricContainer,
   RGraphicAnswer,
   RGraphicTextAnswer,
+  RHorizontalContainer,
   RHorizontalValueContainer,
   RPuzzle,
+  RStackingContainer,
   RValueContainer,
 } from './Puzzle';
 import { OMMultiTrinket } from './Trinket';
@@ -62,6 +65,10 @@ const IMPLEMENTED: Record<string, Factory> = {
   rdoublegraphictextanswer: (e, a) => new RDoubleGraphicTextAnswer(e, a),
   ommultitrinket: (e) => new OMMultiTrinket(e),
   rhorizontalvaluecontainer: (e, a) => new RHorizontalValueContainer(e, a),
+  rhorizontalcontainer: (e, a) => new RHorizontalContainer(e, a),
+  rstackingcontainer: (e, a) => new RStackingContainer(e, a),
+  rmap: (e, a) => new RMap(e, a),
+  rrandomaction: (e, a) => new RRandomAction(e, a),
 };
 
 export const CLASSES = new Map<string, Factory>();

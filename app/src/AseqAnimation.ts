@@ -91,7 +91,9 @@ export class AseqAnimation extends Container {
 
   /** Shows one frame (0-based) and stops, using that frame's list entry so its offset applies. */
   showFrame(frame: number): void {
-    if (frame < 0 || frame >= this.frames.length) return;
+    if (this.frames.length === 0) return;
+    frame = Math.min(Math.max(0, frame), this.frames.length - 1); // OWS1 asks for frame 15 of its 14-frame cap: the last
+
     const index = this.list.findIndex(([, , tag]) => tag === frame);
     const [x, y] = index >= 0 ? this.list[index] : [0, 0];
     this.sprite.texture = this.frames[frame];
