@@ -13,7 +13,7 @@ built from your original CD files.
 | Audio extraction (WAVE resources + BGMUSIC tracks) | **Solved** — raw RIFF/WAVE, no decoding needed |
 | Video conversion (Smacker → MP4) | **Solved** — all 23 movies via ffmpeg (H.264 + AAC, plays in every browser incl. iOS Safari) |
 | ASEQ image/animation pixel format | **Solved** — 3,129 of 3,138 resources, 20,945 frames |
-| Colour palettes | **Mostly done** — 76% of image resources in real colour (22 captured scene palettes + the shared range); 24% still placeholder in locations not reached yet |
+| Colour palettes | **Mostly done** — 2,902 of 3,129 image resources (93%) in real colour: 36 captured scene palettes + the shared range. Still placeholder: CLOC07, CLOC09, CLOC13, PBA, PLOC3, PWS1 (not captured, or captures that looked wrong in preview) |
 | ASEQ sequence records (frame placement/timing) | **Solved** — frame order, per-frame offsets, sound cues; ~115 ms per tick |
 | `FONT.RSC` (9 resources) | **Open** |
 | Game scripts (`cdrom/SCRIPTS/*.MPS`) | **Format solved, disassembled** — all 43 scripts; interpreter not started (see `extractor/MPS_FORMAT.md`) |
