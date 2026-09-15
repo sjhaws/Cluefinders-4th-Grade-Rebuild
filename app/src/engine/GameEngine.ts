@@ -182,6 +182,7 @@ export class GameEngine implements ScriptHost {
         // returns a tag KillSound can stop (scripts keep it in e.g. sfxTag)
         const audio = this.playSound(toNumber(args[0]));
         if (!audio) return -1;
+        if (truthy(args[1])) audio.loop = true; // `PlaySound id, kTrue` loops until KillSound
         const tag = this.nextSoundTag++;
         this.soundTags.set(tag, audio);
         audio.addEventListener('ended', () => this.soundTags.delete(tag), { once: true });
@@ -268,7 +269,9 @@ export class GameEngine implements ScriptHost {
 
   /** A script variable by name, e.g. the character a CharacterSpeechAction names. */
   lookupVar(name: string): Value {
-    return this.vm?.getVar(name) ?? 0;
+    const vm = this.vm;
+    if (!vm) return 0;
+    return vm.getVar(vm.resolveName(name)); // "answers.i" -> answers.<i>
   }
 
   /** An image's stored screen position, known before the image loads (scripts read x/y right away). */

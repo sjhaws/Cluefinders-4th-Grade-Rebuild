@@ -27,8 +27,8 @@ function alphaData(source: TextureSource): Uint8ClampedArray | null {
   return data;
 }
 
-/** Is the stage point on an opaque pixel of this sprite? */
-function spriteHit(sprite: Sprite, x: number, y: number): boolean {
+/** Is the stage point on an opaque pixel of this sprite? (Ignores the sprite's own alpha, so invisible shapes work.) */
+export function spriteHit(sprite: Sprite, x: number, y: number): boolean {
   const texture = sprite.texture;
   if (!texture || texture === Texture.EMPTY) return false;
   const local = sprite.toLocal({ x, y });

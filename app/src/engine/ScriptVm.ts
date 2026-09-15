@@ -137,6 +137,22 @@ export class ScriptVm {
     this.execute(handler.label + 1, self);
   }
 
+  /**
+   * A variable name given as a string may still name keys by variable:
+   * `addAnswer "answers.i"` means answers.<current i>. Non-numeric parts after
+   * the first are replaced by the value of a variable of that name, if set.
+   */
+  resolveName(name: string): string {
+    if (!name.includes('.')) return name;
+    const [base, ...keys] = name.split('.');
+    const resolved = keys.map((key) => {
+      if (/^-?\d+$/.test(key)) return key;
+      const k = key.toLowerCase();
+      return this.vars.has(k) ? toText(this.vars.get(k)!) : key;
+    });
+    return [base, ...resolved].join('.');
+  }
+
   getVar(name: string): Value {
     const key = name.toLowerCase();
     if (key === 'result') return this.result;

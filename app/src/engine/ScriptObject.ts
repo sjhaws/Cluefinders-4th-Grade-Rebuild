@@ -66,6 +66,8 @@ export class DisplayObject extends ScriptObject {
   }
 
   getProp(name: string, key: Value | undefined): Value {
+    // scripts can still hold a deleted object (e.g. a frame handler after cleanup); its view is gone
+    if (this.destroyed) return super.getProp(name, key);
     switch (name.toLowerCase()) {
       case 'x': return this.view.x;
       case 'y': return this.view.y;
@@ -80,6 +82,7 @@ export class DisplayObject extends ScriptObject {
   }
 
   setProp(name: string, key: Value | undefined, value: Value): void {
+    if (this.destroyed) return;
     switch (name.toLowerCase()) {
       case 'x': this.view.x = toNumber(value); return;
       case 'y': this.view.y = toNumber(value); return;

@@ -36,19 +36,68 @@ export function fontFor(id: number): FontSpec {
   }
 }
 
+/** Stand-ins for the Mac font names scripts ask for ("Chicago", "Geneva"), until FONT.RSC is decoded. */
+export function familyForFontName(name: string): string {
+  switch (name.toLowerCase()) {
+    case 'chicago': return '"Arial Black", Verdana, sans-serif';
+    case 'times': return SERIF;
+    default: return 'Verdana, sans-serif';
+  }
+}
+
 export class RAnimation extends DisplayObject {
   private anim: AseqAnimation | null = null;
   private onceDone: (() => void) | null = null;
+  private readonly aoid: number;
+  private looping = false;
+  private pendingFrame: number | null = null;
+  private frameNotification = false;
 
   /** `RAnimation id` (at its stored position) or `RAnimation x, y, id`. */
   constructor(engine: GameEngine, args: Value[]) {
     super(engine, 'RAnimation');
     this.movable = true; // scripts switch this off for scenery
+    this.aoid = toNumber(args.length < 3 ? args[0] : args[2]);
     // position known up front so scripts can read x/y before the image loads
-    const origin = args.length < 3 ? engine.originOf(toNumber(args[0])) : null;
+    const origin = args.length < 3 ? engine.originOf(this.aoid) : null;
     if (origin) this.view.position.set(origin[0], origin[1]);
-    if (args.length < 3) void this.init(USE_AO_COORDS, USE_AO_COORDS, toNumber(args[0]));
-    else void this.init(toNumber(args[0]), toNumber(args[1]), toNumber(args[2]));
+    if (args.length < 3) void this.init(USE_AO_COORDS, USE_AO_COORDS, this.aoid);
+    else void this.init(toNumber(args[0]), toNumber(args[1]), this.aoid);
+  }
+
+  getProp(name: string, key: Value | undefined): Value {
+    switch (name.toLowerCase()) {
+      case 'frame': return (this.anim?.current?.frame ?? this.pendingFrame ?? 0) + 1; // scripts count frames from 1
+      case 'framecount': return this.anim?.frameCount ?? this.engine.resources.findAseq(this.aoid)?.frame_count ?? 0;
+      case 'width': return this.engine.frameSize(this.aoid)?.[0] ?? this.view.width;
+      case 'height': return this.engine.frameSize(this.aoid)?.[1] ?? this.view.height;
+      case 'repeatcount': return this.looping ? -1 : 1;
+      case 'framenotification': return this.frameNotification ? 1 : 0;
+      default: return super.getProp(name, key);
+    }
+  }
+
+  setProp(name: string, key: Value | undefined, value: Value): void {
+    switch (name.toLowerCase()) {
+      case 'frame': {
+        const frame = toNumber(value) - 1;
+        this.pendingFrame = frame;
+        this.anim?.showFrame(frame);
+        return;
+      }
+      case 'repeatcount': // -1 = loop forever, and start playing (e.g. a conveyor belt)
+        this.looping = toNumber(value) < 0;
+        if (this.anim) {
+          this.anim.loop = this.looping;
+          if (this.looping) this.anim.playing = true;
+        }
+        return;
+      case 'framenotification': // fire `frameNotify` on every frame
+        this.frameNotification = truthy(value);
+        return;
+      default:
+        super.setProp(name, key, value);
+    }
   }
 
   /** Plays the animation once and calls `done` at the end. */
@@ -65,7 +114,11 @@ export class RAnimation extends DisplayObject {
     if (!loaded || this.destroyed) return;
     this.anim = new AseqAnimation(loaded.frames, {
       onResource: (id) => this.engine.playSound(id),
+      onFrame: () => {
+        if (this.frameNotification) this.fire('frameNotify');
+      },
       onEnd: () => {
+        if (this.looping) return;
         const done = this.onceDone;
         this.onceDone = null;
         this.fire('finished');
@@ -73,9 +126,10 @@ export class RAnimation extends DisplayObject {
       },
     });
     if (this.onceDone) queueMicrotask(() => this.anim && (this.anim.playing = true));
-    this.anim.loop = false;
-    this.anim.playing = false;
+    this.anim.loop = this.looping;
+    this.anim.playing = this.looping;
     this.anim.setList(sequenceList(loaded));
+    if (this.pendingFrame !== null) this.anim.showFrame(this.pendingFrame);
     this.view.addChild(this.anim);
     const [px, py] = x === USE_AO_COORDS ? aoPosition(loaded) : [x, y];
     this.view.position.set(px, py);
@@ -171,28 +225,46 @@ export class RText extends DisplayObject {
   private readonly label: Text;
   private readonly colorIndex: number;
   private fontId = 0;
+  private fontName: string | null = null;
+  private fontSize = 12;
+  private bold = false;
   private readonly unsubscribe: () => void;
 
+  /** `RText text, colorIndex, x, y[, flag]` or a wrapping text box: `RText text, colorIndex, x, y, w, h, wrap`. */
   constructor(engine: GameEngine, args: Value[]) {
     super(engine, 'RText');
     this.colorIndex = toNumber(args[1]);
     this.label = new Text({ text: toText(args[0]), style: { fill: 0xffffff } });
     this.view.addChild(this.label);
     this.view.position.set(toNumber(args[2]), toNumber(args[3]));
+    if (args.length >= 7 && toNumber(args[4]) > 0 && truthy(args[6])) {
+      this.label.style.wordWrap = true;
+      this.label.style.wordWrapWidth = toNumber(args[4]);
+    }
     this.restyle();
     this.unsubscribe = engine.onPalette(() => this.restyle());
   }
 
   private restyle() {
-    const font = fontFor(this.fontId);
-    this.label.style.fontFamily = font.family;
-    this.label.style.fontSize = font.size;
+    if (this.fontName !== null) {
+      this.label.style.fontFamily = familyForFontName(this.fontName);
+      this.label.style.fontSize = this.fontSize;
+      this.label.style.fontWeight = this.bold ? 'bold' : 'normal';
+    } else {
+      const font = fontFor(this.fontId);
+      this.label.style.fontFamily = font.family;
+      this.label.style.fontSize = font.size;
+    }
     this.label.style.fill = this.engine.paletteColor(this.colorIndex);
   }
 
   getProp(name: string, key: Value | undefined): Value {
-    if (name.toLowerCase() === 'text') return this.label.text;
-    return super.getProp(name, key);
+    switch (name.toLowerCase()) {
+      case 'text': return this.label.text;
+      case 'textwidth': return Math.ceil(this.label.width);
+      case 'textheight': return Math.ceil(this.label.height);
+      default: return super.getProp(name, key);
+    }
   }
 
   setProp(name: string, key: Value | undefined, value: Value): void {
@@ -206,11 +278,21 @@ export class RText extends DisplayObject {
   send(method: string, args: Value[]): Value {
     switch (method.toLowerCase()) {
       case 'setfont':
-        this.fontId = toNumber(args[0]);
+        // a font id (40, 50) or a Mac font name with style and size ("Geneva", 0, 12)
+        if (typeof args[0] === 'string' && Number.isNaN(Number(args[0]))) {
+          this.fontName = args[0];
+          this.bold = (toNumber(args[1]) & 1) !== 0;
+          this.fontSize = toNumber(args[2]) || 12;
+        } else {
+          this.fontId = toNumber(args[0]);
+        }
         this.restyle();
         return 0;
       case 'settext':
         this.label.text = toText(args[0]);
+        return 0;
+      case 'offset':
+        this.view.position.set(this.view.x + toNumber(args[0]), this.view.y + toNumber(args[1]));
         return 0;
       default:
         return super.send(method, args);

@@ -107,6 +107,9 @@ export function makeAction(engine: GameEngine, first: Value, args: Value[]): Que
         else engine.warn(`VerbAction: ${toText(args[0])} is not an object`);
         setTimeout(done, 0);
       });
+    case 'movexaction':
+    case 'moveyaction':
+      return moveAction(engine, name.toLowerCase() === 'movexaction' ? 'x' : 'y', args);
     case 'playanimaction':
       return new TaskAction((done) => {
         const target = engine.lookupVar(toText(args[0]));
@@ -133,6 +136,49 @@ export function makeAction(engine: GameEngine, first: Value, args: Value[]): Que
   }
   engine.warn(`queue action ${name} is not implemented`);
   return instant();
+}
+
+/** Assumed step rate for MoveX/YAction velocities (pixels per step); not measured against the original. */
+const MOVE_STEP_MS = 1000 / 30;
+
+/**
+ * `MoveXAction "animation", "object", start, velocity, acceleration, end`:
+ * slides an object (or OMMultiTrinket) along one axis until it reaches `end`.
+ * The named animation is the one shown moving (a conveyor, water); scripts
+ * already set it looping.
+ */
+function moveAction(engine: GameEngine, axis: 'x' | 'y', args: Value[]): QueueAction {
+  return new TaskAction((done) => {
+    const target = engine.lookupVar(toText(args[1]));
+    if (!isEngineObject(target)) {
+      engine.warn(`move action: ${toText(args[1])} is not an object`);
+      setTimeout(done, 0);
+      return;
+    }
+    let pos = toNumber(args[2]);
+    let vel = toNumber(args[3]);
+    const accel = toNumber(args[4]);
+    const end = toNumber(args[5]);
+    const dir = Math.sign(end - pos) || 1;
+    target.setProp(axis, undefined, pos);
+    const timer = setInterval(() => {
+      if ((target as { destroyed?: boolean }).destroyed) {
+        clearInterval(timer);
+        done();
+        return;
+      }
+      pos += vel;
+      vel += accel;
+      const stalled = vel * dir <= 0 && accel * dir <= 0; // would never arrive
+      if ((end - pos) * dir <= 0 || stalled) pos = end;
+      target.setProp(axis, undefined, Math.round(pos));
+      if (pos === end) {
+        clearInterval(timer);
+        done();
+      }
+    }, MOVE_STEP_MS);
+    return () => clearInterval(timer);
+  });
 }
 
 function characterAction(engine: GameEngine, who: Value, run: (c: RCharacter) => Promise<void>): QueueAction {

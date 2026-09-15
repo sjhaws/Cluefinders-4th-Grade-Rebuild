@@ -8,7 +8,16 @@ import { RSelList } from './SelList';
 import { RCompositeAction, RKbdInp, RQueue } from './Queue';
 import { RCharacter } from './Character';
 import { RBackPack } from './BackPack';
-import { RGraphicAnswer, RGraphicTextAnswer, RHorizontalValueContainer, RPuzzle, RValueContainer } from './Puzzle';
+import {
+  RAttributeContainer,
+  RDoubleGraphicTextAnswer,
+  RGraphicAnswer,
+  RGraphicTextAnswer,
+  RHorizontalValueContainer,
+  RPuzzle,
+  RValueContainer,
+} from './Puzzle';
+import { OMMultiTrinket } from './Trinket';
 
 type Factory = (engine: GameEngine, args: Value[]) => ScriptObject;
 
@@ -46,7 +55,10 @@ const IMPLEMENTED: Record<string, Factory> = {
   rpuzzle: (e) => new RPuzzle(e),
   rgraphicanswer: (e, a) => new RGraphicAnswer(e, a),
   rgraphictextanswer: (e, a) => new RGraphicTextAnswer(e, a),
-  rvaluecontainer: (e, a) => new RValueContainer(e, 'RValueContainer', a),
+  rvaluecontainer: (e, a) => new RValueContainer(e, 'RValueContainer', a.slice(0, 5).map(Number), a[5]),
+  rattributecontainer: (e, a) => new RAttributeContainer(e, a),
+  rdoublegraphictextanswer: (e, a) => new RDoubleGraphicTextAnswer(e, a),
+  ommultitrinket: (e) => new OMMultiTrinket(e),
   rhorizontalvaluecontainer: (e, a) => new RHorizontalValueContainer(e, a),
 };
 

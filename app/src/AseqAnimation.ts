@@ -12,6 +12,8 @@ export const DEFAULT_TICK_MS = 115;
 export interface AnimationEvents {
   /** A -101 entry: usually a sound to start at this point. */
   onResource?: (resourceId: number) => void;
+  /** A frame entry was shown (frame index, 0-based). */
+  onFrame?: (frame: number) => void;
   onEnd?: () => void;
 }
 
@@ -71,6 +73,7 @@ export class AseqAnimation extends Container {
         this.sprite.texture = this.frames[tag];
         this.sprite.position.set(x, y);
         this.current = { index, frame: tag, x, y };
+        this.events.onFrame?.(tag);
         return true;
       }
       if (tag === SEQ_RESOURCE) {
@@ -80,6 +83,22 @@ export class AseqAnimation extends Container {
       }
     }
     return false; // a list with no frame entries
+  }
+
+  get frameCount(): number {
+    return this.frames.length;
+  }
+
+  /** Shows one frame (0-based) and stops, using that frame's list entry so its offset applies. */
+  showFrame(frame: number): void {
+    if (frame < 0 || frame >= this.frames.length) return;
+    const index = this.list.findIndex(([, , tag]) => tag === frame);
+    const [x, y] = index >= 0 ? this.list[index] : [0, 0];
+    this.sprite.texture = this.frames[frame];
+    this.sprite.position.set(x, y);
+    this.current = { index: Math.max(index, 0), frame, x, y };
+    this.nextEntry = index >= 0 ? index + 1 : 0;
+    this.playing = false;
   }
 
   update(deltaMs: number): void {
