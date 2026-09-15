@@ -243,11 +243,16 @@ export class RText extends DisplayObject {
   private bold = false;
   private readonly unsubscribe: () => void;
 
-  /** `RText text, colorIndex, x, y[, flag]` or a wrapping text box: `RText text, colorIndex, x, y, w, h, wrap`. */
+  /**
+   * `RText text, colorIndex, x, y[, centred]` or a wrapping text box: `RText text, colorIndex, x, y, w, h, wrap`.
+   * With `centred` true the text is centred on (x, y): scripts pass a box's middle
+   * (OWS4's sentence words, the Oasis location tabs), while with false they centre it themselves (CWS2).
+   */
   constructor(engine: GameEngine, args: Value[]) {
     super(engine, 'RText');
     this.colorIndex = toNumber(args[1]);
     this.label = new Text({ text: toText(args[0]), style: { fill: 0xffffff } });
+    if (args.length === 5 && truthy(args[4])) this.label.anchor.set(0.5);
     this.view.addChild(this.label);
     this.view.position.set(toNumber(args[2]), toNumber(args[3]));
     if (args.length >= 7 && toNumber(args[4]) > 0 && truthy(args[6])) {

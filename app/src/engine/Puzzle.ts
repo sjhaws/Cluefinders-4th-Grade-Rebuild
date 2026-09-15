@@ -255,17 +255,17 @@ export class RGraphicTextAnswer extends RAnswer {
     this.unsubscribe = engine.onPalette(() => this.restyle());
   }
 
+  /**
+   * The text is centred on the graphic and textOffsetX/Y nudge it from there:
+   * OWS4 shifts it by half its boxes' 3D depth onto the front face (-6.5, 6.5),
+   * CWS3 by 2 in boxes sized to the text.
+   */
   protected layoutContent(): void {
     if (!this.label) return; // called from the base constructor before fields exist
-    const ox = this.props.get('textoffsetx');
-    const oy = this.props.get('textoffsety');
-    if (ox === undefined && oy === undefined) {
-      this.label.anchor.set(0.5);
-      this.label.position.set(Math.round(this.w / 2), Math.round(this.h / 2));
-    } else {
-      this.label.anchor.set(0);
-      this.label.position.set(toNumber(ox ?? 0), toNumber(oy ?? 0));
-    }
+    const ox = toNumber(this.props.get('textoffsetx') ?? 0);
+    const oy = toNumber(this.props.get('textoffsety') ?? 0);
+    this.label.anchor.set(0.5);
+    this.label.position.set(Math.round(this.w / 2 + ox), Math.round(this.h / 2 + oy));
   }
 
   private restyle() {
