@@ -580,6 +580,8 @@ export class RDialog extends DisplayObject {
   private readonly graphic = new Sprite(Texture.EMPTY);
   private readonly buttons: DialogButton[] = [];
   private pressed: DialogButton | null = null;
+  /** Stored screen positions of the dialog's images, when they have one. */
+  private readonly origins = new Map<Sprite, [number, number]>();
 
   constructor(engine: GameEngine, args: Value[]) {
     super(engine, 'RDialog');
@@ -590,6 +592,8 @@ export class RDialog extends DisplayObject {
   }
 
   private async loadInto(sprite: Sprite, id: number): Promise<Texture[]> {
+    const origin = this.engine.originOf(id);
+    if (origin && (origin[0] !== 0 || origin[1] !== 0)) this.origins.set(sprite, origin);
     const loaded = await this.engine.loadAseq(id);
     if (!loaded || this.destroyed) return [];
     sprite.texture = loaded.frames[0];
@@ -599,6 +603,14 @@ export class RDialog extends DisplayObject {
 
   private layout() {
     const { box, graphic } = this;
+    if (this.origins.has(box)) {
+      // images with stored positions (PLOC2's Play Again dialog) sit where they were drawn
+      for (const sprite of [box, graphic, ...this.buttons.map((b) => b.sprite)]) {
+        const origin = this.origins.get(sprite);
+        if (origin) sprite.position.set(origin[0], origin[1]);
+      }
+      return;
+    }
     box.position.set(Math.round((STAGE_W - box.width) / 2), Math.round((STAGE_H - box.height) / 2));
     graphic.position.set(box.x + 24, box.y + Math.round((box.height - graphic.height) / 2));
     const total = this.buttons.reduce((sum, b) => sum + b.sprite.width, 0) + 16 * Math.max(0, this.buttons.length - 1);

@@ -453,8 +453,11 @@ export class RValueContainer extends DisplayObject {
   }
 
   /** How strongly the answer is over this container; a drop goes to the highest score. */
+  /** How strongly a dropped answer targets this container: its overlap, so where drop areas overlap (PWS2's slanted boxes) the most-covered one wins. */
   hitScore(answer: RAnswer): number {
-    return this.hits(answer) ? 1 : 0;
+    if (!this.hits(answer)) return 0;
+    const r = this.rect;
+    return Math.max(1, overlapArea(answer, r.x, r.y, r.w, r.h));
   }
 
   /** Called on every move of a dragged answer, over this container or not, so it can preview the drop. */

@@ -25,6 +25,16 @@ const PER_LOCATION = new Set([
   'wscurrentlevelentrycount', 'wstotalguesscount', 'wstotalcorrectguesscount', 'isautolevelingenabled',
 ]);
 
+/**
+ * Player-wide properties from the EXE's property list. Scripts sometimes pass a
+ * location key anyway (`get_prop gPort, inGame, "PWS2"`), which the EXE ignores.
+ */
+const UNKEYED = new Set([
+  'playername', 'playerlevel', 'playerscore', 'ingame', 'cmasolved', 'omasolved', 'pws1solved', 'pws2solved',
+  'seencairomap', 'seenoasismap', 'seenchooseactivity', 'seenprogresslevels', 'seenlaptrapingame',
+  'seenlaptrapinpractice', 'isbackgroundmusicoff',
+]);
+
 // ---- auto-levelling (4THADV32.EXE RWorldPort: autoLevel VA 0x4506a9, correctGuess 0x450913,
 // incorrectGuess 0x451742, defaults 0x454159, player reset 0x4517d3) ----
 const MIN_LEVEL = 1;
@@ -164,7 +174,7 @@ export class WorldState {
   }
 
   get(name: string, key: Value | undefined): Value {
-    key = this.locationKey(name, key);
+    key = this.locationKey(name, UNKEYED.has(name.toLowerCase()) ? undefined : key);
     const k = propKey(name, key);
     switch (name.toLowerCase()) {
       case 'playerscount': return this.players.length;
@@ -194,7 +204,7 @@ export class WorldState {
       this.autoLevelRules.set(loc, { ...this.autoLevelRule(loc), [ruleField]: toNumber(value) });
       return;
     }
-    key = this.locationKey(name, key);
+    key = this.locationKey(name, UNKEYED.has(name.toLowerCase()) ? undefined : key);
     const k = propKey(name, key);
     if (this.globalNames.has(k) || k in this.globals) {
       this.globals[k] = toStored(value);

@@ -242,10 +242,14 @@ export class ScriptVm {
             break;
           case 'loop_test':
             if (args.length >= 3) {
+              // `loop var, from, to[, step]`: a negative step counts down
               const name = this.nameOf(args[0]);
+              const step = args.length >= 4 ? toNumber(this.value(args[3], ctx)) : 1;
               if (this.freshLoops.has(pc - 1)) this.freshLoops.delete(pc - 1);
-              else this.setVar(name, toNumber(this.getVar(name)) + 1);
-              this.cond = toNumber(this.getVar(name)) <= toNumber(this.value(args[2], ctx));
+              else this.setVar(name, toNumber(this.getVar(name)) + step);
+              const value = toNumber(this.getVar(name));
+              const end = toNumber(this.value(args[2], ctx));
+              this.cond = step < 0 ? value >= end : value <= end;
             } else {
               this.cond = truthy(this.value(args[0], ctx));
             }
