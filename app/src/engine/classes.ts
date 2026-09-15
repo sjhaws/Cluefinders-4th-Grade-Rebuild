@@ -7,6 +7,8 @@ import { RLapTrap } from './LapTrap';
 import { RSelList } from './SelList';
 import { RCompositeAction, RKbdInp, RQueue, RRandomAction } from './Queue';
 import { RMap } from './Map';
+import { RAnimationTrigger, RTrigger } from './Trigger';
+import { RPentominoGame } from './Pentomino';
 import { RCharacter } from './Character';
 import { RBackPack } from './BackPack';
 import {
@@ -69,6 +71,9 @@ const IMPLEMENTED: Record<string, Factory> = {
   rstackingcontainer: (e, a) => new RStackingContainer(e, a),
   rmap: (e, a) => new RMap(e, a),
   rrandomaction: (e, a) => new RRandomAction(e, a),
+  rtrigger: (e, a) => new RTrigger(e, a),
+  ranimationtrigger: (e, a) => new RAnimationTrigger(e, a),
+  rpentominogame: (e, a) => new RPentominoGame(e, a),
 };
 
 export const CLASSES = new Map<string, Factory>();

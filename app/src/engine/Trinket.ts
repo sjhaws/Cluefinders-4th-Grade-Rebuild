@@ -88,6 +88,10 @@ export class OMMultiTrinket extends ScriptObject {
       case 'removetrinkets':
         this.members = [];
         return 0;
+      case 'offset': // move by dx, dy (OMA's catapult)
+        this.setProp('x', undefined, this.x + toNumber(args[0]));
+        this.setProp('y', undefined, this.y + toNumber(args[1]));
+        return 0;
       default:
         return super.send(method, args);
     }

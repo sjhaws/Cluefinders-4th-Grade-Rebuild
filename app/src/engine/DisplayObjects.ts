@@ -52,6 +52,7 @@ export class RAnimation extends DisplayObject {
   private looping = false;
   private pendingFrame: number | null = null;
   private frameNotification = false;
+  private playWhenLoaded = false;
 
   /** `RAnimation id` (at its stored position) or `RAnimation x, y, id`. */
   constructor(engine: GameEngine, args: Value[]) {
@@ -122,12 +123,13 @@ export class RAnimation extends DisplayObject {
         const done = this.onceDone;
         this.onceDone = null;
         this.fire('finished');
+        this.fire('paused'); // it rests on its last frame (OMA's rock breakup waits for this)
         done?.();
       },
     });
     if (this.onceDone) queueMicrotask(() => this.anim && (this.anim.playing = true));
     this.anim.loop = this.looping;
-    this.anim.playing = this.looping;
+    this.anim.playing = this.looping || this.playWhenLoaded;
     this.anim.setList(sequenceList(loaded));
     if (this.pendingFrame !== null) this.anim.showFrame(this.pendingFrame);
     this.view.addChild(this.anim);
@@ -141,10 +143,19 @@ export class RAnimation extends DisplayObject {
         if (this.anim) {
           if (!this.anim.playing) this.anim.restart();
           this.anim.playing = true;
+        } else {
+          this.playWhenLoaded = true; // OMA sends play right after creating the rock breakup
         }
         return 0;
       case 'stop':
         if (this.anim) this.anim.playing = false;
+        return 0;
+      case 'forever': // loop from now on (OMA's river)
+        this.looping = true;
+        if (this.anim) {
+          this.anim.loop = true;
+          this.anim.playing = true;
+        }
         return 0;
       case 'setaocursor':
         return 0;
@@ -168,7 +179,9 @@ export class RPButton extends DisplayObject {
   constructor(engine: GameEngine, args: Value[]) {
     super(engine, 'RPButton');
     this.view.addChild(this.sprite);
-    void this.init(toNumber(args[0]), toNumber(args[1]), toNumber(args[2]));
+    // `RPButton imageID` (OMA) places the button at its image's position, like x = kUseAOCoords
+    if (args.length === 1) void this.init(USE_AO_COORDS, 0, toNumber(args[0]));
+    else void this.init(toNumber(args[0]), toNumber(args[1]), toNumber(args[2]));
   }
 
   private async init(x: number, y: number, aoid: number) {

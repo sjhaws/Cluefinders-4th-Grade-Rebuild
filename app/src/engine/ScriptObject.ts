@@ -102,6 +102,12 @@ export class DisplayObject extends ScriptObject {
       case 'hide':
         if (!this.destroyed) this.view.visible = false;
         return 0;
+      case 'offset': // move by dx, dy
+        if (!this.destroyed) this.view.position.set(this.view.x + toNumber(args[0]), this.view.y + toNumber(args[1]));
+        return 0;
+      case 'place': // move to x, y
+        if (!this.destroyed) this.view.position.set(toNumber(args[0]), toNumber(args[1]));
+        return 0;
       default:
         return super.send(method, args);
     }
