@@ -425,7 +425,7 @@ export class RValueContainer extends DisplayObject {
   }
 
   evaluate(): Verdict {
-    if (this.answers.length > 0 && this.answerValue() === toNumber(this.value)) return 'solved';
+    if (this.answers.length > 0 && sameValue(this.answerValue(), toNumber(this.value))) return 'solved';
     return this.isFull() ? 'wrong' : 'pending';
   }
 
@@ -616,7 +616,7 @@ export class RStackingContainer extends RValueContainer {
 
   evaluate(): Verdict {
     const counted = this.solvedAnswerCount === -1 || this.answers.length === this.solvedAnswerCount;
-    if (this.answers.length > 0 && counted && this.answerValue() === toNumber(this.value)) return 'solved';
+    if (this.answers.length > 0 && counted && sameValue(this.answerValue(), toNumber(this.value))) return 'solved';
     return this.isFull() ? 'wrong' : 'pending';
   }
 
@@ -901,6 +901,14 @@ export class RAttributeContainer extends RValueContainer {
       default: super.setProp(name, key, value);
     }
   }
+}
+
+/**
+ * Puzzle totals compared with a little slack: OWS1's decimal targets arrive as
+ * `targetValue*100` (8.7 * 100 = 869.9999999999999) while its blocks sum to 870.
+ */
+function sameValue(a: number, b: number): boolean {
+  return Math.abs(a - b) < 1e-6;
 }
 
 function overlapArea(a: RAnswer, x: number, y: number, w: number, h: number): number {

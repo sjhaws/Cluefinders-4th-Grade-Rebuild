@@ -173,6 +173,11 @@ export class ScriptVm {
    */
   setVar(name: string, value: Value): void {
     const key = name.toLowerCase();
+    if (key === 'result') {
+      // `get_prop gPort, "wsNextItemInQueue", result` stores into RESULT, which later reads see
+      this.result = value;
+      return;
+    }
     const old = this.vars.get(key);
     this.vars.set(key, value);
     if (isEngineObject(old) && old !== value) {
@@ -258,6 +263,16 @@ export class ScriptVm {
             this.doSet(args, ctx);
             break;
           case 'delete': {
+            if (args.length > 1 && this.nameOf(args[0]) === '[') {
+              // `delete [, containers`: every element (containers.1, containers.2, ...), not just one
+              const prefix = `${this.nameOf(args[1]).toLowerCase()}.`;
+              for (const [key, element] of [...this.vars]) {
+                if (!key.startsWith(prefix)) continue;
+                this.vars.delete(key);
+                if (isEngineObject(element) && !(element as { destroyed?: boolean }).destroyed) element.destroy();
+              }
+              break;
+            }
             const obj = this.value(args[0], ctx);
             if (isEngineObject(obj)) obj.destroy();
             this.assign(args[0], 0, ctx);
@@ -266,7 +281,7 @@ export class ScriptVm {
           case 'call_global':
             this.result = this.host.callGlobal(
               this.nameOf(args[0]),
-              args.slice(1).map((a) => this.value(a, ctx)),
+              args.slice(1).map((a) => this.argValue(a, ctx)),
               this
             );
             break;
@@ -274,7 +289,7 @@ export class ScriptVm {
             const obj = this.value(args[0], ctx);
             const method = this.nameOf(args[1]);
             if (isEngineObject(obj)) {
-              this.result = obj.send(method, args.slice(2).map((a) => this.value(a, ctx))) ?? 0;
+              this.result = obj.send(method, args.slice(2).map((a) => this.argValue(a, ctx))) ?? 0;
             } else {
               this.host.warn(`${this.script.name}:${pc} send ${method} to non-object ${this.nameOf(args[0])}`);
               this.result = 0;
@@ -298,10 +313,15 @@ export class ScriptVm {
             else this.assign(last, obj.getProp(prop, key) ?? 0, ctx);
             break;
           }
-          case 'load_script':
+          case 'load_script': {
             this.running = false;
-            this.host.loadScript(toText(this.value(args[0], ctx)));
+            // OWS2 writes `load_script OLOC08.mps` unquoted, which compiles as member access
+            // (OLOC08 . mps); evaluating it would load "OLOC08.0", so take the text as written
+            const c = this.constants.get(args[0]);
+            const script = c?.kind === 2 && /\.mps$/i.test(c.text) ? c.text : toText(this.value(args[0], ctx));
+            this.host.loadScript(script);
             throw new Halt();
+          }
           case 'exit':
             this.running = false;
             this.host.exitGame();
@@ -335,6 +355,21 @@ export class ScriptVm {
     const c = this.constants.get(index);
     if (c && c.kind === 0 && c.type === 0) return c.text;
     return toText(this.value(index, { self: null }));
+  }
+
+  /**
+   * An argument to `send` or `call_global`: like value(), except an unset bare
+   * name passes its own text. Queued actions name properties and methods that
+   * way (`PropertyAction "statueSettle", visible, kTrue`, OWS4's `play`); in
+   * numeric positions the text still converts to 0.
+   */
+  private argValue(index: number, ctx: { self: EngineObject | null }): Value {
+    const c = this.constants.get(index);
+    if (c?.kind === 0 && c.type === 0) {
+      const key = c.text.toLowerCase();
+      if (key !== 'result' && key !== 'system' && !this.vars.has(key) && !this.named.has(key)) return c.text;
+    }
+    return this.value(index, ctx);
   }
 
   private assign(index: number, value: Value, ctx: { self: EngineObject | null }): void {

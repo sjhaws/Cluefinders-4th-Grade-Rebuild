@@ -108,6 +108,8 @@ export class GameEngine implements ScriptHost {
   readonly log: string[] = [];
   /** Default sounds for puzzle answers (SetAnswerPickUpSound and friends). */
   readonly answerSounds = { pickup: 0, gohome: 0, snap: 0 };
+  /** Debug fast-forward (`?turbo=8`): animations, delays and sounds run this many times faster. */
+  timeScale = 1;
 
   constructor(readonly resources: ResourceManager) {
     this.scene = new SceneState(this);
@@ -163,6 +165,7 @@ export class GameEngine implements ScriptHost {
       case 'setuseembeddedanimationcoordinates':
       case 'setcorraltrinketnormalization':
       case 'freezescreen':
+      case 'displayscreen': // shows what was drawn while frozen (OHUB's walk to the next door); the canvas redraws every frame
       case 'restorepalette':
       case 'pausesound':
       case 'resumesound':
@@ -358,12 +361,13 @@ export class GameEngine implements ScriptHost {
   }
 
   playAudio(audio: HTMLAudioElement): void {
+    audio.playbackRate = Math.min(16, this.timeScale); // browsers cap the rate at 16
     audio.play().catch((err: DOMException) => {
       // Autoplay blocked: 'ended' would never fire and queues would stall, so
       // end the sound silently after its duration instead.
       if (err?.name !== 'NotAllowedError') return;
       this.warn('audio blocked by autoplay policy');
-      const end = () => setTimeout(() => audio.dispatchEvent(new Event('ended')), (audio.duration || 0) * 1000);
+      const end = () => setTimeout(() => audio.dispatchEvent(new Event('ended')), ((audio.duration || 0) * 1000) / this.timeScale);
       if (Number.isFinite(audio.duration)) end();
       else audio.addEventListener('loadedmetadata', end, { once: true });
     });
@@ -441,7 +445,8 @@ export class GameEngine implements ScriptHost {
     this.sounds.clear();
   }
 
-  private tick(deltaMs: number) {
+  private tick(realDeltaMs: number) {
+    const deltaMs = realDeltaMs * this.timeScale;
     if (this.fade.alpha !== this.fadeTarget) {
       const step = deltaMs / FADE_MS;
       this.fade.alpha = this.fadeTarget > this.fade.alpha

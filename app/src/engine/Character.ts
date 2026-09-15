@@ -169,7 +169,7 @@ export class RCharacter extends DisplayObject {
     const g = this.fidgets.get(group);
     if (!g) return;
     clearTimeout(g.timer);
-    const delay = g.minMs + Math.random() * Math.max(0, g.maxMs - g.minMs);
+    const delay = (g.minMs + Math.random() * Math.max(0, g.maxMs - g.minMs)) / this.engine.timeScale;
     g.timer = setTimeout(() => {
       if (this.destroyed || !this.fidgets.has(group)) return;
       if (!this.busy && !this.paused && this.view.visible && g.ids.length) {

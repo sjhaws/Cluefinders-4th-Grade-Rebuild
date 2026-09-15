@@ -59,9 +59,9 @@ class SoundAction implements QueueAction {
   }
 }
 
-function delay(ms: number): QueueAction {
+function delay(ms: number, timeScale = 1): QueueAction {
   return new TaskAction((done) => {
-    const timer = setTimeout(done, Math.max(0, ms));
+    const timer = setTimeout(done, Math.max(0, ms) / timeScale);
     return () => clearTimeout(timer);
   });
 }
@@ -77,10 +77,10 @@ export function makeAction(engine: GameEngine, first: Value, args: Value[]): Que
     case 'soundaction':
       return new SoundAction(engine, toNumber(args[0]));
     case 'delayaction': // milliseconds (e.g. 30000 between ambient sounds)
-      return delay(toNumber(args[0]));
+      return delay(toNumber(args[0]), engine.timeScale);
     case 'randomdelayaction': {
       const lo = toNumber(args[0]);
-      return delay(lo + Math.random() * Math.max(0, toNumber(args[1]) - lo));
+      return delay(lo + Math.random() * Math.max(0, toNumber(args[1]) - lo), engine.timeScale);
     }
     case 'emptyaction':
       return instant();
@@ -198,7 +198,7 @@ function moveAction(engine: GameEngine, axis: 'x' | 'y', args: Value[]): QueueAc
         clearInterval(timer);
         done();
       }
-    }, MOVE_STEP_MS);
+    }, MOVE_STEP_MS / engine.timeScale);
     return () => clearInterval(timer);
   });
 }

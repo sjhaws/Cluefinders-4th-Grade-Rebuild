@@ -38,6 +38,7 @@ async function startGame(mount: HTMLElement, resources: ResourceManager, firstSc
   const engine = new GameEngine(resources);
   await engine.mount(document.getElementById('game-stage')!);
   (window as unknown as { cf4Engine: GameEngine }).cf4Engine = engine; // debugging handle
+  engine.timeScale = Math.max(1, Number(new URLSearchParams(location.search).get('turbo')) || 1);
 
   const status = document.getElementById('game-status')!;
   const log = document.getElementById('game-log')!;

@@ -82,12 +82,12 @@ Mnemonics are working names inferred from usage across all scripts.
 | 0x0d | end | — | else/endif marker (no-op) |
 | 0x0f | return | — | end of subroutine or handler |
 | 0x12 | set | list | `var, value` or `var, Class, constructor args` |
-| 0x13 | delete | list | release an object |
+| 0x13 | delete | list | release an object; `delete [, cups` (operands `[` and a name) releases every element `cups.1`, `cups.2`, … |
 | 0x15 | call_global | list | engine function (`CacheDLL`, `RandomNumber`, …); result in `$result` |
 | 0x23 | set_prop | list | `object, property, [key,] value`; binding a label to an event property installs a handler |
 | 0x24 | get_prop | list | `object, property, [key,] destination` |
 | 0x25 | start | raw | first record of most scripts; operand not understood |
-| 0x28 | send | list | method call: `object, method, args` |
+| 0x28 | send | list | method call: `object, method, args`; an unset bare name among the args passes its own text (`add, PropertyAction, "door", visible, kTrue` names the property `visible`) |
 | 0x2d | load_script | list | switch to another script (`location+".mps"`) |
 | 0x2e | exit | — | 2 uses (sign-in and PLOC2); probably quits |
 

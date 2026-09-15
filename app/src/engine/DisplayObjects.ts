@@ -36,12 +36,20 @@ export function fontFor(id: number): FontSpec {
   }
 }
 
-/** Stand-ins for the Mac font names scripts ask for ("Chicago", "Geneva"), until FONT.RSC is decoded. */
+/** Arial and its metric-compatible stand-ins. */
+const ARIAL = 'Arial, "Liberation Sans", Helvetica, sans-serif';
+
+/**
+ * Families for the font names scripts ask for ("Arial", "Geneva", "Chicago").
+ * The Windows build creates them with CreateFontA, so "Arial" is Arial and the
+ * Mac names fall back to Windows faces. Widths matter: OWS2 sizes each word
+ * box from the text width, and a wider stand-in (Verdana) overflows the row.
+ */
 export function familyForFontName(name: string): string {
   switch (name.toLowerCase()) {
-    case 'chicago': return '"Arial Black", Verdana, sans-serif';
+    case 'chicago': return `"Arial Black", ${ARIAL}`;
     case 'times': return SERIF;
-    default: return 'Verdana, sans-serif';
+    default: return ARIAL;
   }
 }
 
@@ -53,6 +61,7 @@ export class RAnimation extends DisplayObject {
   private pendingFrame: number | null = null;
   private frameNotification = false;
   private playWhenLoaded = false;
+  private pausedMidway = false;
 
   /** `RAnimation id` (at its stored position) or `RAnimation x, y, id`. */
   constructor(engine: GameEngine, args: Value[]) {
@@ -141,11 +150,17 @@ export class RAnimation extends DisplayObject {
     switch (method.toLowerCase()) {
       case 'play':
         if (this.anim) {
-          if (!this.anim.playing) this.anim.restart();
+          if (!this.anim.playing && !this.pausedMidway) this.anim.restart();
           this.anim.playing = true;
         } else {
           this.playWhenLoaded = true; // OMA sends play right after creating the rock breakup
         }
+        this.pausedMidway = false;
+        return 0;
+      case 'pause': // hold the current frame; play carries on from it (OWS4's running mice, the pulled logs)
+        if (this.anim) this.anim.playing = false;
+        this.playWhenLoaded = false;
+        this.pausedMidway = true;
         return 0;
       case 'stop':
         if (this.anim) this.anim.playing = false;
@@ -279,7 +294,9 @@ export class RText extends DisplayObject {
   getProp(name: string, key: Value | undefined): Value {
     switch (name.toLowerCase()) {
       case 'text': return this.label.text;
-      case 'textwidth': return Math.ceil(this.label.width);
+      // rounded, not ceiled: GetTextExtentPoint sums whole advance widths, and a pixel
+      // too many picks a bigger word box in OWS2 so its sentence overflows the row
+      case 'textwidth': return Math.round(this.label.width);
       case 'textheight': return Math.ceil(this.label.height);
       default: return super.getProp(name, key);
     }
