@@ -112,7 +112,7 @@ class _Reader:
             return None
         if n > 65536 or self.pos + n > len(self.data):
             raise MpsFormatError(f"bad string length {n} at {self.pos - 4}")
-        s = self.data[self.pos:self.pos + n].decode("latin-1")
+        s = self.data[self.pos:self.pos + n].decode("mac_roman")  # scripts were authored on a Mac (e.g. "\xd1" is an em dash)
         self.pos += n
         return s
 
@@ -127,7 +127,7 @@ def _parse_constant(r: _Reader, index: int) -> Constant:
         value = struct.unpack(">i", struct.pack(">I", union[0]))[0]
     elif typ == 4:
         n = r.u16()
-        value = r.data[r.pos:r.pos + n].decode("latin-1")
+        value = r.data[r.pos:r.pos + n].decode("mac_roman")  # scripts were authored on a Mac (e.g. "\xd1" is an em dash)
         r.pos += n
         union = [r.u32(), r.u32(), r.u32()]
     else:

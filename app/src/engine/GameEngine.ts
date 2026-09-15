@@ -290,9 +290,9 @@ export class GameEngine implements ScriptHost {
     return new RSmackerMovie(this, [name]).playAsAction(done);
   }
 
-  /** AnimAction: a one-shot animation at its stored position. Returns a cancel function. */
-  playTempAnimation(id: number, z: number, repeat: number, done: () => void): () => void {
-    const anim = new TempAnimation(this, id, z, repeat, done);
+  /** AnimAction: a one-shot animation at its stored position (or `at`). Returns a cancel function. */
+  playTempAnimation(id: number, z: number, repeat: number, done: () => void, at: [number, number] | null = null): () => void {
+    const anim = new TempAnimation(this, id, z, repeat, done, at);
     return () => anim.destroy();
   }
 

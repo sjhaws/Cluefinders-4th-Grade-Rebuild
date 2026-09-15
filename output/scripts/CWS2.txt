@@ -1002,7 +1002,7 @@
   982  set            op, (" "+operation)
   983  if             (op=" -")
   984  jump_if_false  -> 988
-  985  set            displayOperator, "Ñ"
+  985  set            displayOperator, "—"
   986  set            displayOperatorY, (kOperatorY-1)
   987  jump           -> 991
   988  end

@@ -96,10 +96,14 @@ export function makeAction(engine: GameEngine, first: Value, args: Value[]): Que
       );
     case 'characterspeechaction':
       return characterAction(engine, args[0], (c) => c.playSpeech(toNumber(args[1])));
-    case 'animaction':
-      return new TaskAction((done) =>
-        engine.playTempAnimation(toNumber(args[0]), toNumber(args[1]), args[2] === undefined ? 1 : toNumber(args[2]), done)
-      );
+    case 'animaction': {
+      // AnimAction id, z[, repeat]  or  AnimAction id, x, y, z, repeat (e.g. CWS2's shimmer over the solved bolt)
+      const n = args.map((a) => toNumber(a));
+      const positioned = args.length >= 5;
+      const [z, repeat] = positioned ? [n[3], n[4]] : [n[1], args[2] === undefined ? 1 : n[2]];
+      const at: [number, number] | null = positioned ? [n[1], n[2]] : null;
+      return new TaskAction((done) => engine.playTempAnimation(n[0], z, repeat, done, at));
+    }
     case 'verbaction': // VerbAction "objectName", wait, "method", args... -- e.g. "puzzle", kTrue, "anchorAnswers"
       return new TaskAction((done) => {
         const target = engine.lookupVar(toText(args[0]));

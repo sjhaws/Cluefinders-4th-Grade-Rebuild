@@ -3,7 +3,8 @@ import type { EngineObject, Value } from './ScriptVm';
 import { isEngineObject, toNumber, toText, truthy } from './ScriptVm';
 import { DisplayObject, ScriptObject } from './ScriptObject';
 import type { GameEngine } from './GameEngine';
-import { familyForFontName } from './DisplayObjects';
+import { familyForFontName, sequenceList } from './DisplayObjects';
+import { AseqAnimation } from '../AseqAnimation';
 import { spriteHit } from './hitTest';
 
 const SLIDE_MS = 150;
@@ -429,6 +430,14 @@ export class RValueContainer extends DisplayObject {
     return x < r.x + r.w && x + answer.w > r.x && y < r.y + r.h && y + answer.h > r.y;
   }
 
+  /** How strongly the answer is over this container; a drop goes to the highest score. */
+  hitScore(answer: RAnswer): number {
+    return this.hits(answer) ? 1 : 0;
+  }
+
+  /** Called on every move of a dragged answer, over this container or not, so it can preview the drop. */
+  hover(_answer: RAnswer, _over: boolean): void {}
+
   add(answer: RAnswer): void {
     if (!this.answers.includes(answer)) this.answers.push(answer);
     answer.container = this;
@@ -642,6 +651,247 @@ export class RAttributeContainer extends RValueContainer {
   }
 }
 
+function overlapArea(a: RAnswer, x: number, y: number, w: number, h: number): number {
+  const ox = Math.min(a.view.x + a.w, x + w) - Math.max(a.view.x, x);
+  const oy = Math.min(a.view.y + a.h, y + h) - Math.max(a.view.y, y);
+  return ox > 0 && oy > 0 ? ox * oy : 0;
+}
+
+/** Copies frames with palette entries swapped (by their colours in the current palette). */
+function recolorFrames(engine: GameEngine, frames: Texture[], swaps: [number, number][]): Texture[] {
+  const pairs = swaps.filter(([a, b]) => a !== b).map(([a, b]) => [engine.paletteColor(a), engine.paletteColor(b)] as const);
+  return frames.map((texture) => {
+    const { x, y, width, height } = texture.frame;
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return texture;
+    ctx.drawImage(texture.source.resource as CanvasImageSource, x, y, width, height, 0, 0, width, height);
+    const image = ctx.getImageData(0, 0, width, height);
+    const d = image.data;
+    for (let p = 0; p < d.length; p += 4) {
+      if (d[p + 3] === 0) continue;
+      const rgb = (d[p] << 16) | (d[p + 1] << 8) | d[p + 2];
+      for (const [from, to] of pairs) {
+        if (rgb !== from) continue;
+        d[p] = (to >> 16) & 255;
+        d[p + 1] = (to >> 8) & 255;
+        d[p + 2] = to & 255;
+        break;
+      }
+    }
+    ctx.putImageData(image, 0, 0);
+    const out = Texture.from(canvas);
+    out.source.scaleMode = 'nearest';
+    return out;
+  });
+}
+
+/**
+ * A bolt of cloth cut with the scissors (CWS2), following 4THADV32.EXE's
+ * RFabricContainer: `segmentImageID, x, y, z, pixelsPerUnit, piecesPerUnit, units`.
+ * The bolt is `piecesPerUnit × units` stacked piece images, pixelsPerUnit /
+ * piecesPerUnit apart. The scissors mark the piece they overlap most and every
+ * piece below it (drawn with the cut frame); that count picks the fraction
+ * label (infoAOID entry count+1, e.g. "Halves", "1/2", "1", "1 1/2"). The bolt
+ * is solved when the count equals correctSegments (-1: never).
+ */
+export class RFabricContainer extends RValueContainer {
+  correctSegments = -1;
+  private count = 0;
+  private readonly total: number;
+  private readonly step: number;
+  private readonly pieces: Sprite[] = [];
+  private baseFrames: Texture[] = [];
+  private shownFrames: Texture[] = [];
+  /** Original palette index -> the index it is drawn with (replacePaletteEntry). */
+  private readonly palette = new Map<number, number>();
+  private info: AseqAnimation | null = null;
+  private infoOffset = 0;
+  private infoWidth = 0;
+  private recolorQueued = false;
+  private readonly unsubscribe: () => void;
+
+  constructor(engine: GameEngine, args: Value[]) {
+    const [imageId, x, y, z, pixelsPerUnit, perUnit, units] = args.map((a) => toNumber(a));
+    const total = Math.max(1, perUnit * Math.max(1, units));
+    const step = pixelsPerUnit / Math.max(1, perUnit);
+    const width = engine.frameSize(imageId)?.[0] ?? 71;
+    super(engine, 'RFabricContainer', [x, y, width, Math.round(step * total) + 1, z], 0);
+    this.total = total;
+    this.step = step;
+    for (let i = 0; i < total; i++) {
+      const piece = new Sprite(Texture.EMPTY);
+      piece.position.set(0, Math.round(i * step));
+      this.pieces.push(piece);
+      this.view.addChild(piece);
+    }
+    void engine.loadAseq(imageId).then((loaded) => {
+      if (!loaded || this.destroyed) return;
+      this.baseFrames = loaded.frames;
+      this.recolor();
+    });
+    this.unsubscribe = engine.onPalette(() => this.queueRecolor());
+  }
+
+  private queueRecolor() {
+    if (this.recolorQueued) return;
+    this.recolorQueued = true;
+    queueMicrotask(() => {
+      this.recolorQueued = false;
+      if (!this.destroyed) this.recolor();
+    });
+  }
+
+  private recolor() {
+    if (this.baseFrames.length === 0) return;
+    const old = this.shownFrames;
+    const swaps = [...this.palette];
+    this.shownFrames = swaps.some(([a, b]) => a !== b) ? recolorFrames(this.engine, this.baseFrames, swaps) : this.baseFrames;
+    this.refresh();
+    if (old !== this.baseFrames) for (const t of old) t.destroy(true);
+  }
+
+  private refresh() {
+    const f = this.shownFrames;
+    this.pieces.forEach((piece, i) => {
+      const cut = i >= this.total - this.count;
+      piece.texture = f[cut && f.length > 1 ? 1 : 0] ?? Texture.EMPTY;
+    });
+    this.info?.showEntry(this.count);
+  }
+
+  private setCount(count: number) {
+    if (count === this.count) return;
+    this.count = count;
+    this.refresh();
+  }
+
+  /** Pieces marked by the answer: from the piece it overlaps most down to the bottom (0 if none). */
+  private countFor(answer: RAnswer): number {
+    const r = this.rect;
+    let best = 0;
+    let count = 0;
+    for (let i = 0; i < this.total; i++) {
+      const area = overlapArea(answer, r.x, r.y + Math.round(i * this.step), this.areaW, Math.round(this.step) + 1);
+      if (area > best) {
+        best = area;
+        count = this.total - i;
+      }
+    }
+    return count;
+  }
+
+  private loadInfo(id: number) {
+    void this.engine.loadAseq(id).then((loaded) => {
+      if (!loaded || this.destroyed) return;
+      this.info?.destroy();
+      const anim = new AseqAnimation(loaded.frames);
+      anim.loop = false;
+      anim.setList(sequenceList(loaded));
+      this.info = anim;
+      this.infoWidth = loaded.frames[0]?.width ?? 0;
+      this.view.addChild(anim);
+      this.placeInfo();
+      anim.showEntry(this.count);
+    });
+  }
+
+  /** The label is centred over the bolt, infoVerticalOffset from its top. */
+  private placeInfo() {
+    this.info?.position.set(Math.round((this.areaW - this.infoWidth) / 2), this.infoOffset);
+  }
+
+  hits(answer: RAnswer): boolean {
+    return this.hitScore(answer) > 0;
+  }
+
+  hitScore(answer: RAnswer): number {
+    const r = this.rect;
+    return overlapArea(answer, r.x, r.y, r.w, r.h);
+  }
+
+  hover(answer: RAnswer, over: boolean): void {
+    if (this.answers.length > 0 && !this.answers.includes(answer)) return; // another cut is showing
+    this.setCount(over ? this.countFor(answer) : 0);
+  }
+
+  accepts(answer: RAnswer): boolean {
+    return this.enabled && (this.answers.length === 0 || this.answers.includes(answer));
+  }
+
+  isFull(): boolean {
+    return this.answers.length > 0;
+  }
+
+  evaluate(): Verdict {
+    if (this.answers.length === 0) return 'pending';
+    return this.count === this.correctSegments ? 'solved' : 'wrong';
+  }
+
+  add(answer: RAnswer): void {
+    super.add(answer);
+    this.setCount(this.countFor(answer));
+  }
+
+  remove(answer: RAnswer): void {
+    super.remove(answer);
+    if (this.answers.length === 0) this.setCount(0);
+  }
+
+  layout(_immediate = false): void {
+    // the scissors stay where they were dropped
+  }
+
+  getProp(name: string, key: Value | undefined): Value {
+    switch (name.toLowerCase()) {
+      case 'correctsegments': return this.correctSegments;
+      case 'segmentcount': return this.count;
+      default: return super.getProp(name, key);
+    }
+  }
+
+  setProp(name: string, key: Value | undefined, value: Value): void {
+    switch (name.toLowerCase()) {
+      case 'correctsegments': this.correctSegments = toNumber(value); return;
+      case 'infoaoid': this.loadInfo(toNumber(value)); return;
+      case 'infoverticaloffset':
+        this.infoOffset = toNumber(value);
+        this.placeInfo();
+        return;
+      default: super.setProp(name, key, value);
+    }
+  }
+
+  send(method: string, args: Value[]): Value {
+    if (method.toLowerCase() === 'replacepaletteentry') {
+      // replacePaletteEntry from, to: whatever currently draws with `from` now draws with `to`
+      const from = toNumber(args[0]);
+      const to = toNumber(args[1]);
+      let matched = false;
+      for (const [orig, current] of this.palette) {
+        if (current === from) {
+          this.palette.set(orig, to);
+          matched = true;
+        }
+      }
+      if (!matched && !this.palette.has(from)) this.palette.set(from, to);
+      this.queueRecolor();
+      return 0;
+    }
+    return super.send(method, args);
+  }
+
+  destroy(): void {
+    if (this.destroyed) return;
+    this.unsubscribe();
+    const shown = this.shownFrames;
+    super.destroy();
+    if (shown !== this.baseFrames) for (const t of shown) t.destroy(true);
+  }
+}
+
 /**
  * Owns a puzzle's answers and containers and resolves drops. Fires
  * `puzzleSolved` when every container is solved, and `puzzleWrong` when an
@@ -765,6 +1015,7 @@ export class RPuzzle extends ScriptObject {
     for (const c of this.containers) {
       if (c.destroyed) continue;
       const over = c.enabled && c.hits(answer);
+      c.hover(answer, over);
       if (over === c.flyOver.has(answer)) continue;
       if (over) c.flyOver.add(answer);
       else c.flyOver.delete(answer);
@@ -779,7 +1030,16 @@ export class RPuzzle extends ScriptObject {
       if (c.flyOver.delete(answer)) c.fire('answerFlyOff');
     }
     const from = answer.container;
-    const target = this.containers.find((c) => c.enabled && c.hits(answer));
+    let target: RValueContainer | undefined;
+    let best = 0;
+    for (const c of this.containers) {
+      const score = c.enabled ? c.hitScore(answer) : 0;
+      if (score > best) {
+        best = score;
+        target = c;
+      }
+    }
+    for (const c of this.containers) if (c !== target) c.hover(answer, false);
     if (target && target === from) {
       target.layout(); // moved within its container: slide back into place
       return;

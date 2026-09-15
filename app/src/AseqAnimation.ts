@@ -101,6 +101,22 @@ export class AseqAnimation extends Container {
     this.playing = false;
   }
 
+  /** Shows the k-th frame entry of the list (0-based, counting only frame entries) and stops. */
+  showEntry(k: number): void {
+    let n = 0;
+    for (let index = 0; index < this.list.length; index++) {
+      const [x, y, tag] = this.list[index];
+      if (tag < 0 || tag >= this.frames.length) continue;
+      if (n++ !== k) continue;
+      this.sprite.texture = this.frames[tag];
+      this.sprite.position.set(x, y);
+      this.current = { index, frame: tag, x, y };
+      this.nextEntry = index + 1;
+      this.playing = false;
+      return;
+    }
+  }
+
   update(deltaMs: number): void {
     if (!this.playing) return;
     this.elapsed += deltaMs;

@@ -11,6 +11,7 @@ import { RBackPack } from './BackPack';
 import {
   RAttributeContainer,
   RDoubleGraphicTextAnswer,
+  RFabricContainer,
   RGraphicAnswer,
   RGraphicTextAnswer,
   RHorizontalValueContainer,
@@ -57,6 +58,7 @@ const IMPLEMENTED: Record<string, Factory> = {
   rgraphictextanswer: (e, a) => new RGraphicTextAnswer(e, a),
   rvaluecontainer: (e, a) => new RValueContainer(e, 'RValueContainer', a.slice(0, 5).map(Number), a[5]),
   rattributecontainer: (e, a) => new RAttributeContainer(e, a),
+  rfabriccontainer: (e, a) => new RFabricContainer(e, a),
   rdoublegraphictextanswer: (e, a) => new RDoubleGraphicTextAnswer(e, a),
   ommultitrinket: (e) => new OMMultiTrinket(e),
   rhorizontalvaluecontainer: (e, a) => new RHorizontalValueContainer(e, a),

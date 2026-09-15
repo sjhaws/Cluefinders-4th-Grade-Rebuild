@@ -293,7 +293,7 @@
   279  set            kCupFontSize, 12
   280  set            kCupFontStyle, kOMFontNormal
   281  set            kCupTextColor, 10
-  282  set            div, "Ö"
+  282  set            div, "÷"
   283  set            problem.1.1, "90 + 40 = ?"
   284  set            solution.1.1, 130
   285  set            minNumMoves.1.1, 3

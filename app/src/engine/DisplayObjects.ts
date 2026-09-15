@@ -334,7 +334,14 @@ export class RHotSpot extends DisplayObject {
 export class TempAnimation extends DisplayObject {
   private anim: AseqAnimation | null = null;
 
-  constructor(engine: GameEngine, id: number, z: number, repeat: number, private readonly done: () => void) {
+  constructor(
+    engine: GameEngine,
+    id: number,
+    z: number,
+    repeat: number,
+    private readonly done: () => void,
+    private readonly at: [number, number] | null = null
+  ) {
     super(engine, 'TempAnimation');
     this.touchy = false;
     this.view.zIndex = z;
@@ -356,7 +363,7 @@ export class TempAnimation extends DisplayObject {
       },
     });
     this.anim.loop = true;
-    this.anim.position.set(...aoPosition(loaded));
+    this.anim.position.set(...(this.at ?? aoPosition(loaded)));
     this.view.addChild(this.anim);
     this.anim.setList(sequenceList(loaded));
   }
