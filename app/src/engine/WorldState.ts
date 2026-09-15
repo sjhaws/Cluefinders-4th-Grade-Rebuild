@@ -22,8 +22,31 @@ const BACKPACK_SLOTS = 12;
 /** Properties kept per location (EXE property list); an unkeyed get/set means the current location. */
 const PER_LOCATION = new Set([
   'visitedcount', 'currentdataset', 'currentlevel', 'hubroundscompleted', 'levelcolor',
-  'wscurrentlevelentrycount', 'wstotalguesscount', 'wstotalcorrectguesscount',
+  'wscurrentlevelentrycount', 'wstotalguesscount', 'wstotalcorrectguesscount', 'isautolevelingenabled',
 ]);
+
+// ---- auto-levelling (4THADV32.EXE RWorldPort: autoLevel VA 0x4506a9, correctGuess 0x450913,
+// incorrectGuess 0x451742, defaults 0x454159, player reset 0x4517d3) ----
+const MIN_LEVEL = 1;
+const MAX_LEVEL = 4;
+/** The last 20 answers per workshop are kept (1 = correct). */
+const GUESS_HISTORY = 20;
+/** Workshops (EXE location ids 1-10) level by their answer history. */
+const HISTORY_LEVELED = ['cws1', 'cws2', 'cws3', 'cws4', 'ows1', 'ows2', 'ows3', 'ows4', 'pws1', 'pws2'];
+/** The base-camp puzzles and mastery rooms go up a level every time autoLevel is sent. */
+const STEP_LEVELED = ['cba1', 'cba2', 'cma', 'oma'];
+/**
+ * Level-change thresholds (wsAutoLevelingA/B/X/Y). The EXE starts every workshop
+ * at these; STARTUP.MPS then sets CWS3/CWS4 to 6/8/4/10 and PWS1 to 3/4/3/8.
+ */
+interface AutoLevelRule { a: number; b: number; x: number; y: number }
+const DEFAULT_AUTO_LEVEL_RULE: AutoLevelRule = { a: 5, b: 6, x: 4, y: 10 };
+const AUTO_LEVEL_RULE_PROPS: Record<string, keyof AutoLevelRule> = {
+  wsautolevelinga: 'a', wsautolevelingb: 'b', wsautolevelingx: 'x', wsautolevelingy: 'y',
+};
+/** levelColor marks: the level was passed (levelled up from) or dropped (levelled down from). */
+const LEVEL_PASSED = 1;
+const LEVEL_DROPPED = 2;
 const ITEMS_PER_ROUND = 12; // kNumItemsPerCRound / kNumItemsPerORound
 /** Gem slots around each OHUB door (OHUB's kNumGemSlots), of which kNumMissingGemSlots are empty. */
 const OHUB_GEM_SLOTS = [39, 39, 39, 39, 44];
@@ -78,6 +101,8 @@ export class WorldState {
   private readonly players: PlayerRecord[] = load(PLAYERS_KEY, []);
   private readonly session: Record<string, Stored> = {};
   private active: PlayerRecord | null = null;
+  /** Auto-level thresholds by workshop: engine globals in the EXE, set each run by STARTUP, not saved. */
+  private readonly autoLevelRules = new Map<string, AutoLevelRule>();
 
   declare(name: string, isGlobal: boolean, initial: Value): void {
     const key = name.toLowerCase();
@@ -101,7 +126,8 @@ export class WorldState {
       case 'playerscount': return this.players.length;
       case 'playername': return this.active?.name ?? '';
       case 'currentlocation': return this.bag()[k] ?? NEW_PLAYER_LOCATION;
-      case 'currentlevel': return this.bag()[k] ?? 1; // puzzle data tables start at level 1
+      case 'currentlevel': return this.bag()[k] ?? MIN_LEVEL; // puzzle data tables start at level 1
+      case 'isautolevelingenabled': return this.bag()[k] ?? 1; // on for a new player
       case 'itempresent': return this.itemsAt(this.location())[toNumber(key) - 1] ?? 0;
       case 'itemspresentcount':
         return this.itemsAt(key === undefined ? this.location() : toText(key)).filter(Boolean).length;
@@ -111,11 +137,19 @@ export class WorldState {
       case 'patternitem': return this.gemPattern().gems[toNumber(key) - 1] ?? 0;
       case 'missingitemslot': return this.gemPattern().missing[toNumber(key) - 1] ?? 0;
     }
+    const ruleField = AUTO_LEVEL_RULE_PROPS[name.toLowerCase()];
+    if (ruleField) return this.autoLevelRule(toText(key ?? this.location()))[ruleField];
     if (this.globalNames.has(k) || k in this.globals) return this.globals[k] ?? 0;
     return (this.active ? this.active.props[k] : this.session[k]) ?? 0;
   }
 
   set(name: string, key: Value | undefined, value: Value): void {
+    const ruleField = AUTO_LEVEL_RULE_PROPS[name.toLowerCase()];
+    if (ruleField) {
+      const loc = toText(key ?? this.location()).toLowerCase();
+      this.autoLevelRules.set(loc, { ...this.autoLevelRule(loc), [ruleField]: toNumber(value) });
+      return;
+    }
     key = this.locationKey(name, key);
     const k = propKey(name, key);
     if (this.globalNames.has(k) || k in this.globals) {
@@ -242,6 +276,68 @@ export class WorldState {
     return { gems, missing };
   }
 
+  // ---- auto-levelling ----
+
+  private autoLevelRule(location: string): AutoLevelRule {
+    return this.autoLevelRules.get(location.toLowerCase()) ?? DEFAULT_AUTO_LEVEL_RULE;
+  }
+
+  /** Records an answer in a workshop: statistics per round and per level, plus the history autoLevel reads. */
+  recordGuess(location: string, correct: boolean): void {
+    const loc = location.toLowerCase();
+    const bump = (name: string, key: string) => this.set(name, key, toNumber(this.get(name, key)) + 1);
+    const level = toNumber(this.get('currentLevel', loc));
+    bump('wsTotalGuessCount', loc);
+    bump('wsLevelGuessCount', `${loc}.${level}`);
+    if (correct) {
+      bump('wsTotalCorrectGuessCount', loc);
+      bump('wsLevelCorrectGuessCount', `${loc}.${level}`);
+    }
+    if (!HISTORY_LEVELED.includes(loc)) return;
+    // When the history is full the EXE shifts it but then writes the new answer
+    // to the wrong field (the round's correct count); this keeps the answer.
+    this.writeList(`guesses:${loc}`, [...this.readList(`guesses:${loc}`), correct ? 1 : 0].slice(-GUESS_HISTORY));
+  }
+
+  /**
+   * RWorldPort autoLevel. The base-camp puzzles and mastery rooms go up a level
+   * each time. A workshop scans its answers from the newest back, stopping
+   * after B correct ones or Y answers: it goes up when it found B correct
+   * answers, at least A of them straight after another correct one (or the
+   * first answer on record), and down when Y answers held fewer than X correct.
+   * Either way the history restarts. The level only moves while
+   * isAutoLevelingEnabled, but levelColor still records the result.
+   */
+  autoLevel(location: string): void {
+    const loc = location.toLowerCase();
+    const level = toNumber(this.get('currentLevel', loc));
+    const enabled = toNumber(this.get('isAutoLevelingEnabled', loc)) !== 0;
+    const moveTo = (mark: number, next: number) => {
+      this.set('levelColor', `${loc}.${level}`, mark);
+      if (enabled && next >= MIN_LEVEL && next <= MAX_LEVEL) this.set('currentLevel', loc, next);
+    };
+    if (STEP_LEVELED.includes(loc)) {
+      moveTo(LEVEL_PASSED, level + 1);
+      return;
+    }
+    if (!HISTORY_LEVELED.includes(loc)) return;
+
+    const { a, b, x, y } = this.autoLevelRule(loc);
+    const history = this.readList(`guesses:${loc}`);
+    let correct = 0;
+    let runs = 0;
+    let seen = 0;
+    for (let i = history.length - 1; i >= 0 && correct < b && seen < y; i--, seen++) {
+      if (!history[i]) continue;
+      correct++;
+      if (i === 0 || history[i - 1]) runs++;
+    }
+    if (correct === b && runs >= a) moveTo(LEVEL_PASSED, level + 1);
+    else if (seen === y && correct < x) moveTo(LEVEL_DROPPED, level - 1);
+    else return;
+    this.writeList(`guesses:${loc}`, []);
+  }
+
   activate(nameOrIndex: string): void {
     if (nameOrIndex.startsWith('#')) {
       this.active = this.players[toNumber(nameOrIndex.slice(1))] ?? null;
@@ -308,7 +404,8 @@ export class RWorldPort extends ScriptObject {
       case 'newgame':
         world.newGame();
         return 0;
-      case 'autolevel': // raises currentLevel after correct answers; not modelled yet
+      case 'autolevel':
+        world.autoLevel(args[0] === undefined ? world.location() : toText(args[0]));
         return 0;
       case 'addobject':
         world.addItem(toNumber(args[0]));
@@ -323,15 +420,9 @@ export class RWorldPort extends ScriptObject {
         world.distributeItems();
         return 0;
       case 'correctguess':
-      case 'incorrectguess': {
-        // per-workshop answer statistics (wsTotalGuessCount / wsTotalCorrectGuessCount)
-        const loc = args[0] === undefined ? world.location() : toText(args[0]);
-        world.set('wsTotalGuessCount', loc, toNumber(world.get('wsTotalGuessCount', loc)) + 1);
-        if (method.toLowerCase() === 'correctguess') {
-          world.set('wsTotalCorrectGuessCount', loc, toNumber(world.get('wsTotalCorrectGuessCount', loc)) + 1);
-        }
+      case 'incorrectguess':
+        world.recordGuess(args[0] === undefined ? world.location() : toText(args[0]), method.toLowerCase() === 'correctguess');
         return 0;
-      }
       case 'backpackaddobject':
         return world.backpackAdd(toNumber(args[0]));
       case 'backpackremoveobject':
