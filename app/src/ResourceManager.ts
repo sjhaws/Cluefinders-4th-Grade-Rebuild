@@ -45,8 +45,12 @@ export class ResourceManager {
       this.soundsByBundle.set(bundle, list);
     }
     for (const list of this.soundsByBundle.values()) list.sort((a, b) => a.id - b.id);
-    // image resource ids are unique across the game
-    for (const r of this.manifest.aseq_resources) this.aseqById.set(r.resource_id, r);
+    // image resource ids are unique across the game, except a few FONT.RSC ids that clash with
+    // COMMON.RSC (e.g. 20, the open backpack); scripts mean the game image
+    for (const r of this.manifest.aseq_resources) {
+      const existing = this.aseqById.get(r.resource_id);
+      if (!existing || existing.bundle === 'font') this.aseqById.set(r.resource_id, r);
+    }
   }
 
   findAseq(id: number): AseqResourceEntry | undefined {
@@ -90,7 +94,8 @@ export class ResourceManager {
   }
 
   getVideoUrl(name: string): string | undefined {
-    const filename = this.manifest.video_files[name.toLowerCase()];
+    // scripts name movies like "MVTitle.smk"; the manifest is keyed by lower-case stem
+    const filename = this.manifest.video_files[name.toLowerCase().replace(/\.smk$/, '')];
     return filename ? `${ASSET_BASE}video/${filename}` : undefined;
   }
 

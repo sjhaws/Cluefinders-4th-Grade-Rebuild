@@ -43,6 +43,10 @@ export class RAnimation extends DisplayObject {
   /** `RAnimation id` (at its stored position) or `RAnimation x, y, id`. */
   constructor(engine: GameEngine, args: Value[]) {
     super(engine, 'RAnimation');
+    this.movable = true; // scripts switch this off for scenery
+    // position known up front so scripts can read x/y before the image loads
+    const origin = args.length < 3 ? engine.originOf(toNumber(args[0])) : null;
+    if (origin) this.view.position.set(origin[0], origin[1]);
     if (args.length < 3) void this.init(USE_AO_COORDS, USE_AO_COORDS, toNumber(args[0]));
     else void this.init(toNumber(args[0]), toNumber(args[1]), toNumber(args[2]));
   }
@@ -288,13 +292,72 @@ export class TempAnimation extends DisplayObject {
 
 const MOVIE_PLACEHOLDER_MS = 1500;
 
-/** Smacker movies aren't converted yet: shows a card, then reports `finished`. */
+/**
+ * A Smacker movie, converted to MP4 by extract_video.py:
+ * `RSmackerMovie name[, x, y, bufferSize]`. It plays in a <video> element laid
+ * exactly over the canvas (native decoding, no per-frame texture uploads).
+ * `start` plays it and fires `finished` at the end; clicks fire `mouseDown`,
+ * which scripts use to skip. A movie without a converted file shows a card.
+ */
 export class RSmackerMovie extends DisplayObject {
+  private readonly name: string;
+  private video: HTMLVideoElement | null = null;
+  private resizeObserver: ResizeObserver | null = null;
   private timer: ReturnType<typeof setTimeout> | undefined;
   private onDone: (() => void) | null = null;
+  private started = false;
+  private over = false;
+  private musicSuspended = false;
 
-  /** For MovieAction: shows the card, finishes on timeout or click, then removes itself. */
-  playPlaceholder(done: () => void): () => void {
+  constructor(engine: GameEngine, args: Value[]) {
+    super(engine, 'RSmackerMovie');
+    this.name = toText(args[0]);
+    this.view.zIndex = 50000;
+    this.view.visible = false;
+    // black backdrop: covers the scene while the video loads
+    this.view.addChild(new Graphics().rect(0, 0, STAGE_W, STAGE_H).fill(0x000000));
+    const url = engine.resources.getVideoUrl(this.name);
+    const root = engine.overlayRoot;
+    if (!url || !root) {
+      const caption = new Text({
+        text: `Movie ${this.name}\n(not converted yet — click to skip)`,
+        style: { fill: 0x9aa4b2, fontFamily: 'Verdana, sans-serif', fontSize: 14, align: 'center' },
+      });
+      caption.anchor.set(0.5);
+      caption.position.set(STAGE_W / 2, STAGE_H / 2);
+      this.view.addChild(caption);
+      return;
+    }
+    const video = document.createElement('video');
+    video.preload = 'auto';
+    video.playsInline = true;
+    video.src = url;
+    Object.assign(video.style, {
+      position: 'absolute',
+      display: 'none',
+      objectFit: 'fill',
+      imageRendering: 'pixelated',
+      background: '#000',
+    });
+    video.addEventListener('ended', () => this.finish());
+    video.addEventListener('error', () => {
+      if (this.video !== video) return; // destroy() clears the source, which also raises 'error'
+      engine.warn(`movie ${this.name} failed to load`);
+      this.finish();
+    });
+    video.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      if (this.onDone) this.finish();
+      else this.fire('mouseDown');
+    });
+    root.appendChild(video);
+    this.video = video;
+    this.resizeObserver = new ResizeObserver(() => this.fit());
+    this.resizeObserver.observe(engine.app.canvas);
+  }
+
+  /** For MovieAction: plays, finishes at the end or on a click, then removes itself. Returns a cancel function. */
+  playAsAction(done: () => void): () => void {
     this.onDone = done;
     this.send('start', []);
     return () => {
@@ -303,45 +366,78 @@ export class RSmackerMovie extends DisplayObject {
     };
   }
 
-  private finishPlaceholder() {
+  /** Lays the video exactly over the canvas's drawing area (inside its border). */
+  private fit() {
+    const video = this.video;
+    if (!video) return;
+    const canvas = this.engine.app.canvas;
+    Object.assign(video.style, {
+      left: `${canvas.offsetLeft + canvas.clientLeft}px`,
+      top: `${canvas.offsetTop + canvas.clientTop}px`,
+      width: `${canvas.clientWidth}px`,
+      height: `${canvas.clientHeight}px`,
+    });
+  }
+
+  private suspendMusic(suspend: boolean) {
+    if (this.musicSuspended === suspend) return;
+    this.musicSuspended = suspend;
+    this.engine.scene.suspendMusic(suspend);
+  }
+
+  private finish() {
+    if (this.over || this.destroyed) return;
+    this.over = true;
+    this.video?.pause();
+    this.suspendMusic(false);
     const done = this.onDone;
-    this.onDone = null;
-    this.destroy();
-    done?.();
+    if (done) {
+      this.onDone = null;
+      this.destroy();
+      done();
+    } else {
+      this.fire('finished');
+    }
+  }
+
+  private play(video: HTMLVideoElement) {
+    video.play().catch((err: DOMException) => {
+      if (this.destroyed || this.video !== video) return;
+      if (err?.name === 'NotAllowedError') {
+        // sound blocked until the page has had a click: play muted rather than not at all
+        video.muted = true;
+        video.play().catch(() => this.finish());
+      } else if (err?.name !== 'AbortError') {
+        this.finish();
+      }
+    });
   }
 
   onPointerDown(x: number, y: number): void {
-    if (this.onDone) this.finishPlaceholder();
+    if (this.onDone) this.finish();
     else super.onPointerDown(x, y);
-  }
-
-  constructor(engine: GameEngine, args: Value[]) {
-    super(engine, 'RSmackerMovie');
-    const card = new Graphics().rect(0, 0, STAGE_W, STAGE_H).fill(0x000000);
-    const caption = new Text({
-      text: `Movie ${toText(args[0])}\n(not converted yet — click to skip)`,
-      style: { fill: 0x9aa4b2, fontFamily: 'Verdana, sans-serif', fontSize: 14, align: 'center' },
-    });
-    caption.anchor.set(0.5);
-    caption.position.set(STAGE_W / 2, STAGE_H / 2);
-    this.view.addChild(card, caption);
-    this.view.zIndex = 50000;
-    this.view.visible = false;
   }
 
   send(method: string, args: Value[]): Value {
     switch (method.toLowerCase()) {
       case 'start':
         this.view.visible = true;
-        clearTimeout(this.timer);
-        this.timer = setTimeout(() => {
-          if (this.destroyed) return;
-          if (this.onDone) this.finishPlaceholder();
-          else this.fire('finished');
-        }, MOVIE_PLACEHOLDER_MS);
+        this.over = false;
+        this.suspendMusic(true);
+        if (this.video) {
+          if (this.started) this.video.currentTime = 0;
+          this.started = true;
+          this.fit();
+          this.video.style.display = 'block';
+          this.play(this.video);
+        } else {
+          clearTimeout(this.timer);
+          this.timer = setTimeout(() => this.finish(), MOVIE_PLACEHOLDER_MS);
+        }
         return 0;
       case 'stop':
         clearTimeout(this.timer);
+        this.video?.pause();
         return 0;
       default:
         return super.send(method, args);
@@ -349,7 +445,18 @@ export class RSmackerMovie extends DisplayObject {
   }
 
   destroy(): void {
+    if (this.destroyed) return;
     clearTimeout(this.timer);
+    this.suspendMusic(false);
+    this.resizeObserver?.disconnect();
+    const video = this.video;
+    this.video = null;
+    if (video) {
+      video.pause();
+      video.remove();
+      video.removeAttribute('src');
+      video.load(); // releases the media resource
+    }
     super.destroy();
   }
 }

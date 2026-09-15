@@ -1,23 +1,31 @@
 """
 extract_video.py
 
-Converts the game's Smacker (.SMK) video files to WebM (VP9 + Opus) for
-web playback, using ffmpeg's built-in Smacker demuxer/decoder.
+Converts the game's Smacker (.SMK) movies to MP4 (H.264 + AAC) for web
+playback, using ffmpeg's built-in Smacker demuxer/decoder. MP4 plays in
+every current browser, including Safari on iOS; the movies are 640x480 at
+8 fps with 22 kHz mono audio, so the files stay small.
 
 Usage:
-    python3 extract_video.py <movies_dir> <output_dir>
+    python3 extract_video.py <game_dir> <output_dir>
+
+Movies live in both cdrom/RSC and cdrom/MOVIES, so <game_dir> is searched
+recursively. Output names are the lower-case stem, e.g. mvtitle.mp4.
 """
+import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 
-def convert_one(smk_path: Path, out_dir: Path, crf: int = 32) -> bool:
-    out_path = out_dir / (smk_path.stem.lower() + ".webm")
+def convert_one(smk_path: Path, out_dir: Path, crf: int = 20) -> bool:
+    out_path = out_dir / (smk_path.stem.lower() + ".mp4")
     cmd = [
-        "ffmpeg", "-y", "-i", str(smk_path),
-        "-c:v", "libvpx-vp9", "-crf", str(crf), "-b:v", "0",
-        "-c:a", "libopus",
+        "ffmpeg", "-y", "-loglevel", "error", "-i", str(smk_path),
+        "-c:v", "libx264", "-crf", str(crf), "-preset", "slow", "-tune", "animation",
+        "-pix_fmt", "yuv420p",
+        "-c:a", "aac", "-b:a", "96k", "-ar", "44100",
+        "-movflags", "+faststart",
         str(out_path),
     ]
     result = subprocess.run(cmd, capture_output=True, text=True)
@@ -28,12 +36,13 @@ def convert_one(smk_path: Path, out_dir: Path, crf: int = 32) -> bool:
 
 
 def main():
-    movies_dir = Path(sys.argv[1])
+    if shutil.which("ffmpeg") is None:
+        sys.exit("ffmpeg not found (install it, e.g. `sudo apt install ffmpeg`)")
+    game_dir = Path(sys.argv[1])
     out_dir = Path(sys.argv[2])
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    smk_files = sorted(movies_dir.glob("*.SMK")) + sorted(movies_dir.glob("*.smk"))
-    smk_files = sorted(set(smk_files))
+    smk_files = sorted({p for p in game_dir.rglob("*") if p.suffix.lower() == ".smk"})
 
     ok = 0
     for smk in smk_files:

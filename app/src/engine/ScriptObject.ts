@@ -15,6 +15,8 @@ export function propKey(name: string, key: Value | undefined): string {
 export class ScriptObject implements EngineObject {
   protected readonly props = new Map<string, Value>();
   destroyed = false;
+  /** The script variable this object was created into, e.g. "object.3" (the `name` property). */
+  varName = '';
 
   constructor(
     readonly engine: GameEngine,
@@ -24,6 +26,7 @@ export class ScriptObject implements EngineObject {
   }
 
   getProp(name: string, key: Value | undefined): Value {
+    if (key === undefined && this.varName && name.toLowerCase() === 'name') return this.varName;
     return this.props.get(propKey(name, key)) ?? 0;
   }
 
@@ -52,6 +55,9 @@ export class ScriptObject implements EngineObject {
 export class DisplayObject extends ScriptObject {
   readonly view = new Container();
   touchy = true;
+  /** Movable objects follow the pointer while pressed (scripts check where they were dropped). */
+  movable = false;
+  private grab: [number, number] | null = null;
 
   constructor(engine: GameEngine, className: string) {
     super(engine, className);
@@ -65,6 +71,7 @@ export class DisplayObject extends ScriptObject {
       case 'z': return this.view.zIndex;
       case 'visible': return this.view.visible ? 1 : 0;
       case 'touchy': return this.touchy ? 1 : 0;
+      case 'movable': return this.movable ? 1 : 0;
       case 'width': return this.view.width;
       case 'height': return this.view.height;
       default: return super.getProp(name, key);
@@ -78,6 +85,7 @@ export class DisplayObject extends ScriptObject {
       case 'z': this.view.zIndex = toNumber(value); return;
       case 'visible': this.view.visible = truthy(value); return;
       case 'touchy': this.touchy = truthy(value); return;
+      case 'movable': this.movable = truthy(value); return;
       default: super.setProp(name, key, value);
     }
   }
@@ -88,11 +96,17 @@ export class DisplayObject extends ScriptObject {
     return x >= b.minX && x < b.maxX && y >= b.minY && y < b.maxY;
   }
 
-  onPointerDown(_x: number, _y: number): void {
+  onPointerDown(x: number, y: number): void {
+    if (this.movable) this.grab = [x - this.view.x, y - this.view.y];
     this.fire('mouseDown');
   }
 
+  onPointerMove(x: number, y: number): void {
+    if (this.grab) this.view.position.set(Math.round(x - this.grab[0]), Math.round(y - this.grab[1]));
+  }
+
   onPointerUp(_x: number, _y: number, _inside: boolean): void {
+    this.grab = null;
     this.fire('mouseUp');
   }
 

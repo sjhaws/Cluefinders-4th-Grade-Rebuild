@@ -11,13 +11,13 @@ built from your original CD files.
 | `.RSC` container format (NE resource tables) | **Solved** |
 | `RESOURCE.MAP` / `AUDIO.MAP` catalog parsing | **Solved** |
 | Audio extraction (WAVE resources + BGMUSIC tracks) | **Solved** — raw RIFF/WAVE, no decoding needed |
-| Video conversion (Smacker → WebM) | **Solved** — via ffmpeg |
+| Video conversion (Smacker → MP4) | **Solved** — all 23 movies via ffmpeg (H.264 + AAC, plays in every browser incl. iOS Safari) |
 | ASEQ image/animation pixel format | **Solved** — 3,129 of 3,138 resources, 20,945 frames |
 | Colour palettes | **Mostly done** — 76% of image resources in real colour (22 captured scene palettes + the shared range); 24% still placeholder in locations not reached yet |
 | ASEQ sequence records (frame placement/timing) | **Solved** — frame order, per-frame offsets, sound cues; ~115 ms per tick |
 | `FONT.RSC` (9 resources) | **Open** |
 | Game scripts (`cdrom/SCRIPTS/*.MPS`) | **Format solved, disassembled** — all 43 scripts; interpreter not started (see `extractor/MPS_FORMAT.md`) |
-| Web app (Vite + TS + PixiJS) | **Game engine running** — STARTUP → sign-in → first location (CBA1); characters, hotspots, LapTrap, movies not implemented yet. Asset browser at `?browser` |
+| Web app (Vite + TS + PixiJS) | **Game engine running** — STARTUP → sign-in → CBA1 (Cairo jeep puzzle) is playable: characters with fidgets and lip-synced speech, action queues, hotspots; the correct jeep leads on to CHUB. Item loop works: drag-and-drop puzzles (RPuzzle, value containers — CWS1 coffee cups), workshop rewards, backpack, placing glyphs at the CHUB dealer. Movies play (intros, cutaways, MovieAction). LapTrap map and other puzzle types (CWS2–4, Oasis, Pyramid) not implemented yet. Asset browser at `?browser` |
 
 See `extractor/FINDINGS.md` for the format details and the palette research.
 
@@ -30,7 +30,7 @@ extractor/            Python asset-extraction pipeline (offline, run once)
   aseq.py                ASEQ image/animation decoder
   extract_images.py      ASEQ -> RGBA PNG sprite sheets + aseq_index.json
   extract_audio.py       WAVE resources -> .wav files
-  extract_video.py       Smacker -> WebM conversion
+  extract_video.py       Smacker -> MP4 conversion
   build_manifest.py      Combines everything into manifest.json
   mps.py                 Compiled game script (.MPS) parser
   disassemble_scripts.py .MPS -> readable listings + JSON
@@ -53,8 +53,7 @@ Requires Python 3 with Pillow and numpy; video conversion also needs ffmpeg.
 cd extractor
 python3 extract_images.py "$GAME/cdrom/RSC" ../output/images   # ~10 s, 62 MB
 python3 extract_audio.py  "$GAME/cdrom/RSC" ../output/audio
-python3 extract_video.py  "$GAME/cdrom/RSC" ../output/video      # 22 .SMK files live in RSC/
-python3 extract_video.py  "$GAME/cdrom/MOVIES" ../output/video   # plus MV107A.SMK
+python3 extract_video.py  "$GAME/cdrom" ../output/video           # all 23 .SMK files (RSC/ and MOVIES/)
 python3 build_manifest.py "$GAME/cdrom/RSC" ../output
 python3 disassemble_scripts.py "$GAME/cdrom/SCRIPTS" ../output/scripts
 ```
@@ -90,8 +89,8 @@ The app runs the game's own scripts (`src/engine/`):
 
 Open the dev server and press **Start**. `?script=SIGNIN` (or any script name)
 starts there instead of STARTUP. Player saves live in the browser's
-localStorage. Movies show a placeholder card until the Smacker files are
-converted.
+localStorage. Movies play from `output/video` (a card stands in for any that
+aren't converted); clicking a movie skips it.
 
 `?browser` opens the asset browser (`src/browser/AssetBrowser.ts`): pick a
 bundle, click an image to play its sequence lists, and play the bundle's

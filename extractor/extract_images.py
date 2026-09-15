@@ -166,6 +166,8 @@ def extract_aseq_from_file(rsc_path: Path, out_dir: Path, palettes: dict, shared
             ],
             sequence_file=f"{bundle}/{seq_name}",
         )
+        if res.sequences is not None:
+            record["origin"] = list(res.sequences.origin)  # lets the app place objects before loading them
         records.append(record)
     return records
 

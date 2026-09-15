@@ -30,6 +30,7 @@ interface ClipEvents {
  */
 export class RCharacter extends DisplayObject {
   private settlePose: LoadedAseq | null = null;
+  private settleId = 0;
   private clip: AseqAnimation | null = null;
   private busy = false;
   private paused = false;
@@ -46,6 +47,7 @@ export class RCharacter extends DisplayObject {
   }
 
   private async loadSettlePose(id: number) {
+    this.settleId = id;
     const loaded = await this.engine.loadAseq(id);
     if (this.destroyed) return;
     this.settlePose = loaded;
@@ -178,8 +180,13 @@ export class RCharacter extends DisplayObject {
   }
 
   getProp(name: string, key: Value | undefined): Value {
-    if (name.toLowerCase() === 'animatesettled') return this.animateSettled ? 1 : 0;
-    return super.getProp(name, key);
+    switch (name.toLowerCase()) {
+      case 'animatesettled': return this.animateSettled ? 1 : 0;
+      // a character's position is its idle pose's stored position (e.g. CWS1 puts the tray on the waiter)
+      case 'x': return this.engine.originOf(this.settleId)?.[0] ?? 0;
+      case 'y': return this.engine.originOf(this.settleId)?.[1] ?? 0;
+      default: return super.getProp(name, key);
+    }
   }
 
   setProp(name: string, key: Value | undefined, value: Value): void {

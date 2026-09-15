@@ -20,6 +20,7 @@ export interface AseqResourceEntry {
   sheets?: string[]; // RGBA PNG paths relative to assets/images/
   frames?: AseqFrameRect[];
   sequence_file?: string; // SequenceDoc JSON, relative to assets/images/
+  origin?: [number, number]; // copy of SequenceDoc.origin, so positions are known before loading
 }
 
 /** [x, y, tag, value]. tag >= 0 shows that frame with its top-left at (x, y);

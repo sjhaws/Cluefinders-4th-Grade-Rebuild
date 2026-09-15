@@ -82,7 +82,7 @@ export function makeAction(engine: GameEngine, first: Value, args: Value[]): Que
     case 'emptyaction':
       return instant();
     case 'movieaction':
-      return new TaskAction((done) => engine.playMoviePlaceholder(toText(args[0]), done));
+      return new TaskAction((done) => engine.playMovie(toText(args[0]), done));
     case 'propertyaction':
       return new TaskAction((done) => {
         const target = engine.lookupVar(toText(args[0]));
@@ -100,6 +100,13 @@ export function makeAction(engine: GameEngine, first: Value, args: Value[]): Que
       return new TaskAction((done) =>
         engine.playTempAnimation(toNumber(args[0]), toNumber(args[1]), args[2] === undefined ? 1 : toNumber(args[2]), done)
       );
+    case 'verbaction': // VerbAction "objectName", wait, "method", args... -- e.g. "puzzle", kTrue, "anchorAnswers"
+      return new TaskAction((done) => {
+        const target = engine.lookupVar(toText(args[0]));
+        if (isEngineObject(target)) target.send(toText(args[2]), args.slice(3));
+        else engine.warn(`VerbAction: ${toText(args[0])} is not an object`);
+        setTimeout(done, 0);
+      });
     case 'playanimaction':
       return new TaskAction((done) => {
         const target = engine.lookupVar(toText(args[0]));

@@ -27,8 +27,15 @@ export class SceneState {
     ['backgroundmusicvolume', 50],
   ]);
   private music: HTMLAudioElement | null = null;
+  private suspensions = 0;
 
   constructor(private readonly engine: GameEngine) {}
+
+  /** Movies silence the background music while they play. */
+  suspendMusic(suspend: boolean): void {
+    this.suspensions = Math.max(0, this.suspensions + (suspend ? 1 : -1));
+    this.updateMusic();
+  }
 
   get(key: string): Value {
     return this.values.get(key) ?? 0;
@@ -50,7 +57,7 @@ export class SceneState {
 
   private updateMusic() {
     const url = this.engine.resources.getSoundUrl(toNumber(this.get('backgroundmusicid')));
-    const enabled = truthy(this.get('isbackgroundmusicenabled'));
+    const enabled = truthy(this.get('isbackgroundmusicenabled')) && this.suspensions === 0;
     if (!url || !enabled) {
       this.music?.pause();
       if (!url) this.music = null;
@@ -94,15 +101,24 @@ export class GameEngine implements ScriptHost {
   private palette: Uint8Array | null = null;
   private paletteNames: string[] = [];
   private pressed: DisplayObject | null = null;
+  /** The object most recently released; IntersectTest checks it against a receiver. */
+  private dropped: DisplayObject | null = null;
   private fadeTarget = 0;
   private sceneToken = 0;
   readonly log: string[] = [];
+  /** Default sounds for puzzle answers (SetAnswerPickUpSound and friends). */
+  readonly answerSounds = { pickup: 0, gohome: 0, snap: 0 };
 
   constructor(readonly resources: ResourceManager) {
     this.scene = new SceneState(this);
   }
 
+  /** The element holding the canvas; DOM overlays (movies) are positioned inside it. */
+  overlayRoot: HTMLElement | null = null;
+
   async mount(root: HTMLElement): Promise<void> {
+    this.overlayRoot = root;
+    root.style.position = 'relative';
     await this.app.init({ width: STAGE_W, height: STAGE_H, background: 0x000000, antialias: false });
     root.appendChild(this.app.canvas);
     this.sceneRoot.sortableChildren = true;
@@ -183,7 +199,24 @@ export class GameEngine implements ScriptHost {
         const hi = toNumber(args[1]);
         return lo + Math.floor(Math.random() * (hi - lo + 1));
       }
-      case 'intersecttest':
+      case 'intersecttest': {
+        // IntersectTest "RECEIVER", "varName": does the object just dropped overlap the receiver?
+        const receiver = this.lookupVar(toText(args[1]));
+        const moved = this.dropped;
+        if (!(receiver instanceof DisplayObject) || !moved || moved.destroyed || receiver.destroyed) return 0;
+        if (!receiver.view.visible) return 0;
+        const a = moved.view.getBounds();
+        const b = receiver.view.getBounds();
+        return a.minX < b.maxX && a.maxX > b.minX && a.minY < b.maxY && a.maxY > b.minY ? 1 : 0;
+      }
+      case 'setanswerpickupsound':
+        this.answerSounds.pickup = toNumber(args[0]);
+        return 0;
+      case 'setanswergohomesound':
+        this.answerSounds.gohome = toNumber(args[0]);
+        return 0;
+      case 'setanswersnapsound':
+        this.answerSounds.snap = toNumber(args[0]);
         return 0;
       case 'messagebox':
         this.showNotice(toText(args[0]));
@@ -221,6 +254,7 @@ export class GameEngine implements ScriptHost {
   untrack(object: ScriptObject): void {
     this.objects.delete(object);
     if (this.pressed === object) this.pressed = null;
+    if (this.dropped === object) this.dropped = null;
   }
 
   invokeHandler(handler: Value, self: EngineObject | null): void {
@@ -237,9 +271,20 @@ export class GameEngine implements ScriptHost {
     return this.vm?.getVar(name) ?? 0;
   }
 
-  /** MovieAction stand-in until Smacker movies are converted. Returns a cancel function. */
-  playMoviePlaceholder(name: string, done: () => void): () => void {
-    return new RSmackerMovie(this, [name]).playPlaceholder(done);
+  /** An image's stored screen position, known before the image loads (scripts read x/y right away). */
+  originOf(id: number): [number, number] | null {
+    return this.resources.findAseq(id)?.origin ?? null;
+  }
+
+  /** Width and height of an image's first frame, known before the image loads. */
+  frameSize(id: number): [number, number] | null {
+    const frame = this.resources.findAseq(id)?.frames?.[0];
+    return frame ? [frame.w, frame.h] : null;
+  }
+
+  /** MovieAction: plays a movie full screen (a click skips it). Returns a cancel function. */
+  playMovie(name: string, done: () => void): () => void {
+    return new RSmackerMovie(this, [name]).playAsAction(done);
   }
 
   /** AnimAction: a one-shot animation at its stored position. Returns a cancel function. */
@@ -299,8 +344,14 @@ export class GameEngine implements ScriptHost {
   }
 
   playAudio(audio: HTMLAudioElement): void {
-    audio.play().catch(() => {
-      /* blocked until the page gets a click; the start button provides one */
+    audio.play().catch((err: DOMException) => {
+      // Autoplay blocked: 'ended' would never fire and queues would stall, so
+      // end the sound silently after its duration instead.
+      if (err?.name !== 'NotAllowedError') return;
+      this.warn('audio blocked by autoplay policy');
+      const end = () => setTimeout(() => audio.dispatchEvent(new Event('ended')), (audio.duration || 0) * 1000);
+      if (Number.isFinite(audio.duration)) end();
+      else audio.addEventListener('loadedmetadata', end, { once: true });
     });
   }
 
@@ -420,7 +471,14 @@ export class GameEngine implements ScriptHost {
       this.pressed = null;
       if (!target || target.destroyed) return;
       const [x, y] = this.stagePoint(e);
+      this.dropped = target;
       target.onPointerUp(x, y, target.containsPoint(x, y));
+    });
+    window.addEventListener('pointermove', (e) => {
+      const target = this.pressed;
+      if (!target || target.destroyed) return;
+      const [x, y] = this.stagePoint(e);
+      target.onPointerMove(x, y);
     });
     canvas.addEventListener('dblclick', (e) => {
       const [x, y] = this.stagePoint(e);

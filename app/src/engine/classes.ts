@@ -6,6 +6,8 @@ import { RAnimation, RDialog, RHotSpot, RLapTrap, RPButton, RSmackerMovie, RText
 import { RSelList } from './SelList';
 import { RCompositeAction, RKbdInp, RQueue } from './Queue';
 import { RCharacter } from './Character';
+import { RBackPack } from './BackPack';
+import { RGraphicAnswer, RGraphicTextAnswer, RHorizontalValueContainer, RPuzzle, RValueContainer } from './Puzzle';
 
 type Factory = (engine: GameEngine, args: Value[]) => ScriptObject;
 
@@ -39,6 +41,12 @@ const IMPLEMENTED: Record<string, Factory> = {
   rkbdinp: (e) => new RKbdInp(e),
   rcharacter: (e, a) => new RCharacter(e, a),
   rhotspot: (e, a) => new RHotSpot(e, a),
+  rbackpack: (e, a) => new RBackPack(e, a),
+  rpuzzle: (e) => new RPuzzle(e),
+  rgraphicanswer: (e, a) => new RGraphicAnswer(e, a),
+  rgraphictextanswer: (e, a) => new RGraphicTextAnswer(e, a),
+  rvaluecontainer: (e, a) => new RValueContainer(e, 'RValueContainer', a),
+  rhorizontalvaluecontainer: (e, a) => new RHorizontalValueContainer(e, a),
 };
 
 export const CLASSES = new Map<string, Factory>();

@@ -18,6 +18,25 @@ const GLOBALS_KEY = 'cf4.globals';
  * CBA1 (the desert camp) in a capture session. FL.MPS is a QA level select.
  */
 const NEW_PLAYER_LOCATION = 'CBA1';
+const BACKPACK_SLOTS = 12;
+const ITEMS_PER_ROUND = 12; // kNumItemsPerCRound / kNumItemsPerORound
+
+const range = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => from + i);
+
+/** Cairo glyphs 1-12 and Oasis gems 13-28 (kCGlyphStart..kGemEnd) are earned in each region's workshops. */
+const WORKSHOP_REGIONS = [
+  { prefix: 'c', items: range(1, 12), workshops: ['cws1', 'cws2', 'cws3', 'cws4'] },
+  { prefix: 'o', items: range(13, 28), workshops: ['ows1', 'ows2', 'ows3', 'ows4'] },
+];
+
+function shuffle<T>(items: T[]): T[] {
+  const a = [...items];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
 function load<T>(key: string, fallback: T): T {
   try {
@@ -67,8 +86,13 @@ export class WorldState {
     switch (name.toLowerCase()) {
       case 'playerscount': return this.players.length;
       case 'playername': return this.active?.name ?? '';
-      case 'currentlocation': return this.active?.props[k] ?? NEW_PLAYER_LOCATION;
-      case 'currentlevel': return this.active?.props[k] ?? 1; // puzzle data tables start at level 1
+      case 'currentlocation': return this.bag()[k] ?? NEW_PLAYER_LOCATION;
+      case 'currentlevel': return this.bag()[k] ?? 1; // puzzle data tables start at level 1
+      case 'itempresent': return this.itemsAt(this.location())[toNumber(key) - 1] ?? 0;
+      case 'itemspresentcount':
+        return this.itemsAt(key === undefined ? this.location() : toText(key)).filter(Boolean).length;
+      case 'backpackitempresent': return this.backpack()[toNumber(key)] ?? 0;
+      case 'wsnextiteminqueue': return this.queue(key === undefined ? this.location() : toText(key))[0] ?? 0;
     }
     if (this.globalNames.has(k) || k in this.globals) return this.globals[k] ?? 0;
     return (this.active ? this.active.props[k] : this.session[k]) ?? 0;
@@ -85,6 +109,94 @@ export class WorldState {
     } else {
       this.session[k] = toStored(value);
     }
+  }
+
+  // ---- items: earned in workshops, carried in the backpack, placed at hubs ----
+  // Lists are stored as comma-separated player properties so they save with the player.
+
+  private bag(): Record<string, Stored> {
+    return this.active ? this.active.props : this.session;
+  }
+
+  private readList(key: string): number[] {
+    const raw = this.bag()[key];
+    return typeof raw === 'string' && raw !== '' ? raw.split(',').map(Number) : [];
+  }
+
+  private writeList(key: string, items: number[]): void {
+    this.bag()[key] = items.join(',');
+    if (this.active) store(PLAYERS_KEY, this.players);
+  }
+
+  location(): string {
+    return toText(this.get('currentLocation', undefined)).toLowerCase();
+  }
+
+  /** Item slots at a location (1-based in scripts); removed items leave a 0 so loops over slots stay stable. */
+  itemsAt(location: string): number[] {
+    return this.readList(`items:${location.toLowerCase()}`);
+  }
+
+  addItem(id: number): void {
+    const items = this.itemsAt(this.location());
+    const free = items.indexOf(0);
+    if (free >= 0) items[free] = id;
+    else items.push(id);
+    this.writeList(`items:${this.location()}`, items);
+  }
+
+  removeItem(id: number): void {
+    const items = this.itemsAt(this.location());
+    const i = items.indexOf(id);
+    if (i >= 0) items[i] = 0;
+    this.writeList(`items:${this.location()}`, items);
+  }
+
+  /** The backpack's slots (0-based), 0 = empty. */
+  backpack(): number[] {
+    const slots = this.readList('backpack');
+    return Array.from({ length: BACKPACK_SLOTS }, (_, i) => slots[i] ?? 0);
+  }
+
+  /** Puts an item in the first empty slot; returns the slot, or -1 when the backpack is full. */
+  backpackAdd(id: number): number {
+    const slots = this.backpack();
+    const i = slots.indexOf(0);
+    if (i >= 0) {
+      slots[i] = id;
+      this.writeList('backpack', slots);
+    }
+    return i;
+  }
+
+  backpackRemove(index: number): void {
+    const slots = this.backpack();
+    if (index >= 0 && index < slots.length) slots[index] = 0;
+    this.writeList('backpack', slots);
+  }
+
+  /** Items a workshop has still to award, in order. */
+  queue(location: string): number[] {
+    const loc = location.toLowerCase();
+    const region = WORKSHOP_REGIONS.find((r) => r.workshops.includes(loc));
+    if (region && !this.bag()[`distributed:${region.prefix}`]) this.distributeItems(region.prefix);
+    return this.readList(`queue:${loc}`);
+  }
+
+  removeNextFromQueue(location: string): void {
+    this.writeList(`queue:${location.toLowerCase()}`, this.queue(location).slice(1));
+  }
+
+  /**
+   * Deals a round's items out to the region's four workshops, three each.
+   * Inferred: the EXE does this at the start and after each hub round.
+   */
+  distributeItems(prefix = this.location().charAt(0)): void {
+    const region = WORKSHOP_REGIONS.find((r) => r.prefix === prefix) ?? WORKSHOP_REGIONS[0];
+    const ids = shuffle(region.items).slice(0, ITEMS_PER_ROUND);
+    const per = ITEMS_PER_ROUND / region.workshops.length;
+    this.bag()[`distributed:${region.prefix}`] = 1;
+    region.workshops.forEach((ws, i) => this.writeList(`queue:${ws}`, ids.slice(i * per, (i + 1) * per)));
   }
 
   activate(nameOrIndex: string): void {
@@ -154,6 +266,33 @@ export class RWorldPort extends ScriptObject {
         world.newGame();
         return 0;
       case 'autolevel': // raises currentLevel after correct answers; not modelled yet
+        return 0;
+      case 'addobject':
+        world.addItem(toNumber(args[0]));
+        return 0;
+      case 'removeobjectfromlocation':
+        world.removeItem(toNumber(args[0]));
+        return 0;
+      case 'removenextobjectfromqueue':
+        world.removeNextFromQueue(args[0] === undefined ? world.location() : toText(args[0]));
+        return 0;
+      case 'distributeitems':
+        world.distributeItems();
+        return 0;
+      case 'correctguess':
+      case 'incorrectguess': {
+        // per-workshop answer statistics (wsTotalGuessCount / wsTotalCorrectGuessCount)
+        const loc = args[0] === undefined ? world.location() : toText(args[0]);
+        world.set('wsTotalGuessCount', loc, toNumber(world.get('wsTotalGuessCount', loc)) + 1);
+        if (method.toLowerCase() === 'correctguess') {
+          world.set('wsTotalCorrectGuessCount', loc, toNumber(world.get('wsTotalCorrectGuessCount', loc)) + 1);
+        }
+        return 0;
+      }
+      case 'backpackaddobject':
+        return world.backpackAdd(toNumber(args[0]));
+      case 'backpackremoveobject':
+        world.backpackRemove(toNumber(args[0]));
         return 0;
       default:
         return super.send(method, args);

@@ -29,7 +29,8 @@ def main():
 
     audio_files = {p.stem: p.name for p in (out_dir / "audio").glob("*.wav")} \
         if (out_dir / "audio").exists() else {}
-    video_files = {p.stem: p.name for p in (out_dir / "video").glob("*.webm")} \
+    # keyed by lower-case stem: scripts name movies like "MVTitle.smk"
+    video_files = {p.stem.lower(): p.name for p in (out_dir / "video").glob("*.mp4")} \
         if (out_dir / "video").exists() else {}
 
     aseq_index_path = out_dir / "images" / "aseq_index.json"

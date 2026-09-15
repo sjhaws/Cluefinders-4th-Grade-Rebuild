@@ -38,6 +38,8 @@ export interface EngineObject {
   setProp(name: string, key: Value | undefined, value: Value): void;
   send(method: string, args: Value[]): Value;
   destroy(): void;
+  /** The variable the object was created into (its `name` property). */
+  varName?: string;
 }
 
 export type Value = number | string | LabelRef | EngineObject | null;
@@ -145,8 +147,19 @@ export class ScriptVm {
     return 0;
   }
 
+  /**
+   * Object variables are counted references (OMLinkToObj in the EXE): an
+   * object no variable holds any more is deleted, e.g. `set openBackpack, 0`
+   * closes the backpack.
+   */
   setVar(name: string, value: Value): void {
-    this.vars.set(name.toLowerCase(), value);
+    const key = name.toLowerCase();
+    const old = this.vars.get(key);
+    this.vars.set(key, value);
+    if (isEngineObject(old) && old !== value) {
+      for (const v of this.vars.values()) if (v === old) return;
+      old.destroy();
+    }
   }
 
   /** Stops all execution, e.g. before switching to another script. */
@@ -283,7 +296,11 @@ export class ScriptVm {
     const second = this.constants.get(args[1]);
     if (second && second.kind === 0 && second.type === 0 && this.host.isClass(second.text)) {
       const ctorArgs = args.slice(2).map((a) => this.value(a, ctx));
-      this.assign(args[0], this.host.createObject(second.text, ctorArgs, this), ctx);
+      const obj = this.host.createObject(second.text, ctorArgs, this);
+      const target = this.constants.get(args[0]);
+      if (target?.kind === 0) obj.varName = target.text;
+      else if (target?.kind === 2) obj.varName = this.memberName(target, ctx);
+      this.assign(args[0], obj, ctx);
       return;
     }
     this.assign(args[0], this.value(args[1], ctx), ctx);
