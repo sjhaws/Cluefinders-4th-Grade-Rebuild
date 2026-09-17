@@ -21,6 +21,43 @@ Linux only lets a process read the memory of processes it started
 (`kernel.yama.ptrace_scope=1`), so the script launches the game itself —
 attaching to an already-running game won't work.
 
+## From a screenshot instead
+
+A screenshot of the original game carries the same information, if it is
+captured losslessly: the background's indices are known, so each index takes
+the colour its pixels have in the picture. No memory reading, and the scene
+only has to be reached once.
+
+```bash
+cd extractor
+python3 palette_from_screenshot.py cloc13 "/path/to/ClueFinders4thGrade/cdrom/RSC" \
+    ../dynamic_analysis/captures/screenshots/cloc13.png
+```
+
+It finds the game window inside the screenshot itself (hill-climbing the crop
+that makes index -> colour most consistent, then refining on exact matches),
+so borders and scaling are fine. Pass several screenshots of one scene to
+pool their votes — characters and dialogs hide parts of the background.
+
+**The file must be lossless.** PNG, at 640x480 or an exact integer multiple,
+with no smoothing. Measured against scenes whose palettes were already
+captured (cloc01, ohub, cws3), a lossless grab recovers 89–99% of the indices
+its background uses; the same images upscaled 1.73x and saved as lossy WebP —
+what happens to a picture pasted into a chat window — recover 7–32%, and the
+indices that only ever appear in dithering are lost first, so the rebuilt
+scene comes out speckled. Save the file from the screenshot tool; don't send
+it through anything that re-encodes.
+
+Indices the background never shows (characters, interface) keep the shared
+range plus the median of the captured palettes. Results land in
+`captures/palettes/<bundle>.pal` with a before/after in
+`captures/previews/<bundle>_from_screenshot.png`.
+
+Two things make a capture session short: running the game in a fixed-size
+desktop, `wine explorer /desktop=cf,640x480 4THADV32.EXE`, so the window is
+exactly 640x480; and signing in as **Limburger**, which opens the game's own
+QA menu (`FL.MPS`) — 40 buttons that jump straight to any scene.
+
 ## Requirements
 
 - Wine (tested with 10.0, default prefix — do **not** set `WINEARCH=win32`)

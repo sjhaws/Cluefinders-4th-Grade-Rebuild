@@ -57732,7 +57732,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07/7600_0.png"
     ],
@@ -57766,7 +57766,7 @@
       0
     ],
     "big_endian": true,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07/7626_0.png"
     ],
@@ -57821,7 +57821,7 @@
       0
     ],
     "big_endian": true,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07/7627_0.png"
     ],
@@ -57876,7 +57876,7 @@
       0
     ],
     "big_endian": true,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07/7628_0.png"
     ],
@@ -57931,7 +57931,7 @@
       0
     ],
     "big_endian": true,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07/7629_0.png"
     ],
@@ -57986,7 +57986,7 @@
       0
     ],
     "big_endian": true,
-    "palette": "shared",
+    "palette": "cloc07",
     "sheets": [
       "cloc07/7630_0.png"
     ],
@@ -58020,7 +58020,7 @@
       0
     ],
     "big_endian": true,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07/7631_0.png"
     ],
@@ -58103,7 +58103,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07i1/7620_0.png"
     ],
@@ -58221,7 +58221,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07i1/7621_0.png"
     ],
@@ -58339,7 +58339,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07i1/7622_0.png"
     ],
@@ -58443,7 +58443,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07i1/7623_0.png"
     ],
@@ -58547,7 +58547,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "cloc07",
     "sheets": [
       "cloc07i1/7624_0.png"
     ],
@@ -58630,7 +58630,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07i1/7625_0.png"
     ],
@@ -58790,7 +58790,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07i2/7614_0.png"
     ],
@@ -58929,7 +58929,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07i2/7615_0.png"
     ],
@@ -59033,7 +59033,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07i2/7616_0.png"
     ],
@@ -59130,7 +59130,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07i2/7617_0.png"
     ],
@@ -59234,7 +59234,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "cloc07",
     "sheets": [
       "cloc07i2/7618_0.png"
     ],
@@ -59324,7 +59324,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07i2/7619_0.png"
     ],
@@ -59505,7 +59505,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07i3/7608_0.png"
     ],
@@ -59630,7 +59630,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07i3/7609_0.png"
     ],
@@ -59783,7 +59783,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07i3/7610_0.png"
     ],
@@ -59866,7 +59866,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07i3/7611_0.png"
     ],
@@ -59984,7 +59984,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "cloc07",
     "sheets": [
       "cloc07i3/7612_0.png"
     ],
@@ -60046,7 +60046,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07i3/7613_0.png"
     ],
@@ -60157,7 +60157,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07o1/7644_0.png"
     ],
@@ -60303,7 +60303,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07o1/7645_0.png"
     ],
@@ -60463,7 +60463,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "cloc07",
     "sheets": [
       "cloc07o1/7646_0.png"
     ],
@@ -60623,7 +60623,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07o1/7647_0.png"
     ],
@@ -60783,7 +60783,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "cloc07",
     "sheets": [
       "cloc07o1/7648_0.png"
     ],
@@ -60866,7 +60866,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07o1/7649_0.png"
     ],
@@ -61047,7 +61047,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07o2/7638_0.png"
     ],
@@ -61137,7 +61137,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07o2/7639_0.png"
     ],
@@ -61276,7 +61276,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07o2/7640_0.png"
     ],
@@ -61373,7 +61373,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07o2/7641_0.png"
     ],
@@ -61477,7 +61477,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "cloc07",
     "sheets": [
       "cloc07o2/7642_0.png"
     ],
@@ -61546,7 +61546,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07o2/7643_0.png"
     ],
@@ -61636,7 +61636,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07o3/7632_0.png"
     ],
@@ -61747,7 +61747,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07o3/7633_0.png"
     ],
@@ -61900,7 +61900,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07o3/7634_0.png"
     ],
@@ -61997,7 +61997,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07o3/7635_0.png"
     ],
@@ -62136,7 +62136,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "cloc07",
     "sheets": [
       "cloc07o3/7636_0.png"
     ],
@@ -62212,7 +62212,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07o3/7637_0.png"
     ],
@@ -62379,7 +62379,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07p/7601_0.png"
     ],
@@ -62413,7 +62413,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07p/7602_0.png"
     ],
@@ -62447,7 +62447,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07p/7603_0.png"
     ],
@@ -62481,7 +62481,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07p/7604_0.png"
     ],
@@ -62515,7 +62515,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07p/7605_0.png"
     ],
@@ -62549,7 +62549,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "cloc07",
     "sheets": [
       "cloc07p/7606_0.png"
     ],
@@ -62583,7 +62583,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07p/7651_0.png"
     ],
@@ -62652,7 +62652,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07p/7652_0.png"
     ],
@@ -62763,7 +62763,7 @@
       0
     ],
     "big_endian": true,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07p/7655_0.png"
     ],
@@ -62860,7 +62860,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07p/7656_0.png"
     ],
@@ -62915,7 +62915,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07p/7659_0.png"
     ],
@@ -62963,7 +62963,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07p/7660_0.png"
     ],
@@ -63011,7 +63011,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07p/7661_0.png"
     ],
@@ -63059,7 +63059,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07p/7662_0.png"
     ],
@@ -63107,7 +63107,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07p/7663_0.png"
     ],
@@ -63155,7 +63155,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc07",
     "sheets": [
       "cloc07p/7657_0.png"
     ],
@@ -63273,7 +63273,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "cloc07",
     "sheets": [
       "cloc07p/7658_0.png"
     ],
@@ -66157,7 +66157,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09/7900_0.png"
     ],
@@ -66191,7 +66191,7 @@
       0
     ],
     "big_endian": true,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09/7920_0.png"
     ],
@@ -66246,7 +66246,7 @@
       0
     ],
     "big_endian": true,
-    "palette": "shared",
+    "palette": "cloc09",
     "sheets": [
       "cloc09/7921_0.png"
     ],
@@ -66301,7 +66301,7 @@
       0
     ],
     "big_endian": true,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09/7922_0.png"
     ],
@@ -66356,7 +66356,7 @@
       0
     ],
     "big_endian": true,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09/7923_0.png"
     ],
@@ -66411,7 +66411,7 @@
       0
     ],
     "big_endian": true,
-    "palette": "shared",
+    "palette": "cloc09",
     "sheets": [
       "cloc09/7924_0.png"
     ],
@@ -66445,7 +66445,7 @@
       0
     ],
     "big_endian": true,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09/7925_0.png"
     ],
@@ -66528,7 +66528,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09i1/7914_0.png"
     ],
@@ -66653,7 +66653,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "cloc09",
     "sheets": [
       "cloc09i1/7915_0.png"
     ],
@@ -66806,7 +66806,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09i1/7916_0.png"
     ],
@@ -66889,7 +66889,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09i1/7917_0.png"
     ],
@@ -67007,7 +67007,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "cloc09",
     "sheets": [
       "cloc09i1/7918_0.png"
     ],
@@ -67069,7 +67069,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09i1/7919_0.png"
     ],
@@ -67180,7 +67180,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09i2/7908_0.png"
     ],
@@ -67326,7 +67326,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "cloc09",
     "sheets": [
       "cloc09i2/7909_0.png"
     ],
@@ -67479,7 +67479,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09i2/7910_0.png"
     ],
@@ -67611,7 +67611,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09i2/7911_0.png"
     ],
@@ -67750,7 +67750,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "cloc09",
     "sheets": [
       "cloc09i2/7912_0.png"
     ],
@@ -67840,7 +67840,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09i2/7913_0.png"
     ],
@@ -67993,7 +67993,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09o1/7945_0.png"
     ],
@@ -68111,7 +68111,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "cloc09",
     "sheets": [
       "cloc09o1/7946_0.png"
     ],
@@ -68264,7 +68264,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09o1/7947_0.png"
     ],
@@ -68361,7 +68361,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09o1/7948_0.png"
     ],
@@ -68500,7 +68500,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "cloc09",
     "sheets": [
       "cloc09o1/7949_0.png"
     ],
@@ -68576,7 +68576,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09o1/7950_0.png"
     ],
@@ -68743,7 +68743,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09o2/7939_0.png"
     ],
@@ -68861,7 +68861,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "cloc09",
     "sheets": [
       "cloc09o2/7940_0.png"
     ],
@@ -68979,7 +68979,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09o2/7941_0.png"
     ],
@@ -69097,7 +69097,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09o2/7942_0.png"
     ],
@@ -69215,7 +69215,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "cloc09",
     "sheets": [
       "cloc09o2/7943_0.png"
     ],
@@ -69305,7 +69305,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09o2/7944_0.png"
     ],
@@ -69472,7 +69472,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "cloc09",
     "sheets": [
       "cloc09p/7901_0.png"
     ],
@@ -69506,7 +69506,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09p/7902_0.png"
     ],
@@ -69540,7 +69540,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09p/7903_0.png"
     ],
@@ -69574,7 +69574,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09p/7904_0.png"
     ],
@@ -69608,7 +69608,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09p/7905_0.png"
     ],
@@ -69642,7 +69642,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "cloc09",
     "sheets": [
       "cloc09p/7906_0.png"
     ],
@@ -69676,7 +69676,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09p/7952_0.png"
     ],
@@ -69745,7 +69745,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "cloc09",
     "sheets": [
       "cloc09p/7953_0.png"
     ],
@@ -69856,7 +69856,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09p/7956_0.png"
     ],
@@ -69953,7 +69953,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09p/7957_0.png"
     ],
@@ -70008,7 +70008,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "cloc09",
     "sheets": [
       "cloc09p/7960_0.png"
     ],
@@ -70056,7 +70056,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09p/7961_0.png"
     ],
@@ -70104,7 +70104,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09p/7962_0.png"
     ],
@@ -70152,7 +70152,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09p/7963_0.png"
     ],
@@ -70200,7 +70200,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09p/7964_0.png"
     ],
@@ -70248,7 +70248,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09p/7926_0.png"
     ],
@@ -70289,7 +70289,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09p/7927_0.png"
     ],
@@ -70330,7 +70330,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09p/7928_0.png"
     ],
@@ -70371,7 +70371,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09p/7929_0.png"
     ],
@@ -70412,7 +70412,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09p/7930_0.png"
     ],
@@ -70453,7 +70453,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09p/7931_0.png"
     ],
@@ -70494,7 +70494,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09p/7932_0.png"
     ],
@@ -70535,7 +70535,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09p/7933_0.png"
     ],
@@ -70576,7 +70576,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc09",
     "sheets": [
       "cloc09p/7934_0.png"
     ],
@@ -70617,7 +70617,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "cloc09",
     "sheets": [
       "cloc09p/7958_0.png"
     ],
@@ -70833,7 +70833,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "cloc09",
     "sheets": [
       "cloc09p/7959_0.png"
     ],
@@ -75131,7 +75131,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13/8100_0.png"
     ],
@@ -75165,7 +75165,7 @@
       0
     ],
     "big_endian": true,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13/8120_0.png"
     ],
@@ -75220,7 +75220,7 @@
       0
     ],
     "big_endian": true,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13/8121_0.png"
     ],
@@ -75275,7 +75275,7 @@
       0
     ],
     "big_endian": true,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13/8122_0.png"
     ],
@@ -75330,7 +75330,7 @@
       0
     ],
     "big_endian": true,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13/8123_0.png"
     ],
@@ -75385,7 +75385,7 @@
       0
     ],
     "big_endian": true,
-    "palette": "shared",
+    "palette": "cloc13",
     "sheets": [
       "cloc13/8124_0.png"
     ],
@@ -75419,7 +75419,7 @@
       0
     ],
     "big_endian": true,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13/8125_0.png"
     ],
@@ -75502,7 +75502,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13i1/8108_0.png"
     ],
@@ -75641,7 +75641,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13i1/8109_0.png"
     ],
@@ -75745,7 +75745,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13i1/8110_0.png"
     ],
@@ -75842,7 +75842,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13i1/8111_0.png"
     ],
@@ -75946,7 +75946,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "cloc13",
     "sheets": [
       "cloc13i1/8112_0.png"
     ],
@@ -76036,7 +76036,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13i1/8113_0.png"
     ],
@@ -76217,7 +76217,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13i2/8114_0.png"
     ],
@@ -76342,7 +76342,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13i2/8115_0.png"
     ],
@@ -76495,7 +76495,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13i2/8116_0.png"
     ],
@@ -76578,7 +76578,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13i2/8117_0.png"
     ],
@@ -76696,7 +76696,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "cloc13",
     "sheets": [
       "cloc13i2/8118_0.png"
     ],
@@ -76758,7 +76758,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13i2/8119_0.png"
     ],
@@ -76869,7 +76869,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13o1/8139_0.png"
     ],
@@ -76959,7 +76959,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13o1/8140_0.png"
     ],
@@ -77098,7 +77098,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13o1/8141_0.png"
     ],
@@ -77195,7 +77195,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13o1/8142_0.png"
     ],
@@ -77299,7 +77299,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "cloc13",
     "sheets": [
       "cloc13o1/8143_0.png"
     ],
@@ -77368,7 +77368,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13o1/8144_0.png"
     ],
@@ -77458,7 +77458,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13o2/8145_0.png"
     ],
@@ -77569,7 +77569,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13o2/8146_0.png"
     ],
@@ -77722,7 +77722,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13o2/8147_0.png"
     ],
@@ -77819,7 +77819,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13o2/8148_0.png"
     ],
@@ -77958,7 +77958,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "cloc13",
     "sheets": [
       "cloc13o2/8149_0.png"
     ],
@@ -78034,7 +78034,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13o2/8150_0.png"
     ],
@@ -78201,7 +78201,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13p/8101_0.png"
     ],
@@ -78235,7 +78235,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13p/8102_0.png"
     ],
@@ -78269,7 +78269,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13p/8103_0.png"
     ],
@@ -78303,7 +78303,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13p/8104_0.png"
     ],
@@ -78337,7 +78337,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13p/8105_0.png"
     ],
@@ -78371,7 +78371,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "cloc13",
     "sheets": [
       "cloc13p/8106_0.png"
     ],
@@ -78405,7 +78405,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13p/8152_0.png"
     ],
@@ -78474,7 +78474,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13p/8153_0.png"
     ],
@@ -78585,7 +78585,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13p/8156_0.png"
     ],
@@ -78682,7 +78682,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13p/8157_0.png"
     ],
@@ -78737,7 +78737,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13p/8160_0.png"
     ],
@@ -78785,7 +78785,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13p/8161_0.png"
     ],
@@ -78833,7 +78833,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13p/8162_0.png"
     ],
@@ -78881,7 +78881,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13p/8163_0.png"
     ],
@@ -78929,7 +78929,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13p/8164_0.png"
     ],
@@ -78977,7 +78977,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13p/8126_0.png"
     ],
@@ -79018,7 +79018,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13p/8127_0.png"
     ],
@@ -79059,7 +79059,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13p/8128_0.png"
     ],
@@ -79100,7 +79100,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13p/8129_0.png"
     ],
@@ -79141,7 +79141,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13p/8130_0.png"
     ],
@@ -79182,7 +79182,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13p/8131_0.png"
     ],
@@ -79223,7 +79223,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13p/8132_0.png"
     ],
@@ -79264,7 +79264,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13p/8133_0.png"
     ],
@@ -79305,7 +79305,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13p/8134_0.png"
     ],
@@ -79346,7 +79346,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "cloc13",
     "sheets": [
       "cloc13p/8151_0.png"
     ],
@@ -79401,7 +79401,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "cloc13",
     "sheets": [
       "cloc13p/8158_0.png"
     ],
@@ -79526,7 +79526,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "cloc13",
     "sheets": [
       "cloc13p/8159_0.png"
     ],
@@ -217445,7 +217445,7 @@
       0
     ],
     "big_endian": true,
-    "palette": null,
+    "palette": "pba",
     "sheets": [
       "pba/27013_0.png"
     ],
@@ -217493,7 +217493,7 @@
       0
     ],
     "big_endian": true,
-    "palette": "shared",
+    "palette": "pba",
     "sheets": [
       "pba/27014_0.png"
     ],
@@ -217541,7 +217541,7 @@
       0
     ],
     "big_endian": true,
-    "palette": null,
+    "palette": "pba",
     "sheets": [
       "pba/27015_0.png"
     ],
@@ -217589,7 +217589,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pba",
     "sheets": [
       "pba/27000_0.png"
     ],
@@ -217623,7 +217623,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pba",
     "sheets": [
       "pbai1/27007_0.png"
     ],
@@ -217706,7 +217706,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "pba",
     "sheets": [
       "pbai1/27008_0.png"
     ],
@@ -217817,7 +217817,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "pba",
     "sheets": [
       "pbai1/27009_0.png"
     ],
@@ -217900,7 +217900,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pba",
     "sheets": [
       "pbai1/27010_0.png"
     ],
@@ -218039,7 +218039,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "pba",
     "sheets": [
       "pbai1/27011_0.png"
     ],
@@ -218101,7 +218101,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pba",
     "sheets": [
       "pbai1/27012_0.png"
     ],
@@ -218240,7 +218240,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pba",
     "sheets": [
       "pbao1/27016_0.png"
     ],
@@ -218337,7 +218337,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "pba",
     "sheets": [
       "pbao1/27017_0.png"
     ],
@@ -218406,7 +218406,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "pba",
     "sheets": [
       "pbao1/27018_0.png"
     ],
@@ -218510,7 +218510,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pba",
     "sheets": [
       "pbao1/27019_0.png"
     ],
@@ -218593,7 +218593,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "pba",
     "sheets": [
       "pbao1/27020_0.png"
     ],
@@ -218683,7 +218683,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "pba",
     "sheets": [
       "pbao1/27021_0.png"
     ],
@@ -218745,7 +218745,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "pba",
     "sheets": [
       "pbap/27001_0.png"
     ],
@@ -218779,7 +218779,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pba",
     "sheets": [
       "pbap/27002_0.png"
     ],
@@ -218813,7 +218813,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "pba",
     "sheets": [
       "pbap/27003_0.png"
     ],
@@ -218847,7 +218847,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pba",
     "sheets": [
       "pbap/27004_0.png"
     ],
@@ -218881,7 +218881,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pba",
     "sheets": [
       "pbap/27005_0.png"
     ],
@@ -218922,7 +218922,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "pba",
     "sheets": [
       "pbap/27006_0.png"
     ],
@@ -221088,7 +221088,7 @@
       0
     ],
     "big_endian": true,
-    "palette": "shared",
+    "palette": "ploc3",
     "sheets": [
       "ploc3/27213_0.png"
     ],
@@ -221129,7 +221129,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "ploc3",
     "sheets": [
       "ploc3/27214_0.png"
     ],
@@ -221170,7 +221170,7 @@
       0
     ],
     "big_endian": true,
-    "palette": "shared",
+    "palette": "ploc3",
     "sheets": [
       "ploc3/27215_0.png"
     ],
@@ -221211,7 +221211,7 @@
       0
     ],
     "big_endian": true,
-    "palette": null,
+    "palette": "ploc3",
     "sheets": [
       "ploc3/27216_0.png"
     ],
@@ -221259,7 +221259,7 @@
       0
     ],
     "big_endian": true,
-    "palette": null,
+    "palette": "ploc3",
     "sheets": [
       "ploc3/27218_0.png"
     ],
@@ -221307,7 +221307,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "ploc3",
     "sheets": [
       "ploc3/27200_0.png"
     ],
@@ -221341,7 +221341,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "ploc3",
     "sheets": [
       "ploc3i1/27207_0.png"
     ],
@@ -221431,7 +221431,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "ploc3",
     "sheets": [
       "ploc3i1/27208_0.png"
     ],
@@ -221577,7 +221577,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "ploc3",
     "sheets": [
       "ploc3i1/27209_0.png"
     ],
@@ -221674,7 +221674,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "ploc3",
     "sheets": [
       "ploc3i1/27210_0.png"
     ],
@@ -221792,7 +221792,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "ploc3",
     "sheets": [
       "ploc3i1/27211_0.png"
     ],
@@ -221882,7 +221882,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "ploc3",
     "sheets": [
       "ploc3i1/27212_0.png"
     ],
@@ -222007,7 +222007,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "ploc3",
     "sheets": [
       "ploc3o1/27219_0.png"
     ],
@@ -222104,7 +222104,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "ploc3",
     "sheets": [
       "ploc3o1/27220_0.png"
     ],
@@ -222236,7 +222236,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "ploc3",
     "sheets": [
       "ploc3o1/27221_0.png"
     ],
@@ -222354,7 +222354,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "ploc3",
     "sheets": [
       "ploc3o1/27222_0.png"
     ],
@@ -222458,7 +222458,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "ploc3",
     "sheets": [
       "ploc3o1/27223_0.png"
     ],
@@ -222548,7 +222548,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "ploc3",
     "sheets": [
       "ploc3o1/27224_0.png"
     ],
@@ -222680,7 +222680,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "ploc3",
     "sheets": [
       "ploc3p/27201_0.png"
     ],
@@ -222714,7 +222714,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "ploc3",
     "sheets": [
       "ploc3p/27202_0.png"
     ],
@@ -222748,7 +222748,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "ploc3",
     "sheets": [
       "ploc3p/27203_0.png"
     ],
@@ -222782,7 +222782,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "ploc3",
     "sheets": [
       "ploc3p/27204_0.png"
     ],
@@ -222816,7 +222816,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "ploc3",
     "sheets": [
       "ploc3p/27205_0.png"
     ],
@@ -222850,7 +222850,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "ploc3",
     "sheets": [
       "ploc3p/27206_0.png"
     ],
@@ -222891,7 +222891,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22018_0.png"
     ],
@@ -222925,7 +222925,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22019_0.png"
     ],
@@ -222959,7 +222959,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22020_0.png"
     ],
@@ -222993,7 +222993,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22021_0.png"
     ],
@@ -223027,7 +223027,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22022_0.png"
     ],
@@ -223061,7 +223061,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22023_0.png"
     ],
@@ -223095,7 +223095,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22024_0.png"
     ],
@@ -223129,7 +223129,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22025_0.png"
     ],
@@ -223163,7 +223163,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22026_0.png"
     ],
@@ -223197,7 +223197,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22027_0.png"
     ],
@@ -223231,7 +223231,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22028_0.png"
     ],
@@ -223265,7 +223265,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22029_0.png"
     ],
@@ -223299,7 +223299,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22030_0.png"
     ],
@@ -223333,7 +223333,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22031_0.png"
     ],
@@ -223367,7 +223367,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22032_0.png"
     ],
@@ -223401,7 +223401,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22033_0.png"
     ],
@@ -223435,7 +223435,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22034_0.png"
     ],
@@ -223469,7 +223469,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22035_0.png"
     ],
@@ -223503,7 +223503,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22036_0.png"
     ],
@@ -223537,7 +223537,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22037_0.png"
     ],
@@ -223571,7 +223571,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22038_0.png"
     ],
@@ -223605,7 +223605,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22039_0.png"
     ],
@@ -223639,7 +223639,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22040_0.png"
     ],
@@ -223673,7 +223673,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22041_0.png"
     ],
@@ -223707,7 +223707,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22042_0.png"
     ],
@@ -223741,7 +223741,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22043_0.png"
     ],
@@ -223775,7 +223775,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22044_0.png"
     ],
@@ -223809,7 +223809,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22045_0.png"
     ],
@@ -223843,7 +223843,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22046_0.png"
     ],
@@ -223877,7 +223877,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22047_0.png"
     ],
@@ -223911,7 +223911,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22048_0.png"
     ],
@@ -223945,7 +223945,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22049_0.png"
     ],
@@ -223979,7 +223979,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22050_0.png"
     ],
@@ -224013,7 +224013,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22051_0.png"
     ],
@@ -224047,7 +224047,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22052_0.png"
     ],
@@ -224081,7 +224081,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22053_0.png"
     ],
@@ -224115,7 +224115,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22054_0.png"
     ],
@@ -224149,7 +224149,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22055_0.png"
     ],
@@ -224183,7 +224183,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22056_0.png"
     ],
@@ -224217,7 +224217,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22057_0.png"
     ],
@@ -224251,7 +224251,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22058_0.png"
     ],
@@ -224285,7 +224285,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22059_0.png"
     ],
@@ -224319,7 +224319,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22060_0.png"
     ],
@@ -224353,7 +224353,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22061_0.png"
     ],
@@ -224387,7 +224387,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22062_0.png"
     ],
@@ -224421,7 +224421,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22063_0.png"
     ],
@@ -224455,7 +224455,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22064_0.png"
     ],
@@ -224489,7 +224489,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22065_0.png"
     ],
@@ -224523,7 +224523,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22066_0.png"
     ],
@@ -224606,7 +224606,7 @@
       0
     ],
     "big_endian": true,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22067_0.png"
     ],
@@ -224696,7 +224696,7 @@
       0
     ],
     "big_endian": true,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22087_0.png"
     ],
@@ -224779,7 +224779,7 @@
       0
     ],
     "big_endian": true,
-    "palette": "shared",
+    "palette": "pws1",
     "sheets": [
       "pws1/22088_0.png"
     ],
@@ -224834,7 +224834,7 @@
       0
     ],
     "big_endian": true,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22089_0.png"
     ],
@@ -224882,7 +224882,7 @@
       0
     ],
     "big_endian": true,
-    "palette": "shared",
+    "palette": "pws1",
     "sheets": [
       "pws1/22090_0.png"
     ],
@@ -224930,7 +224930,7 @@
       0
     ],
     "big_endian": true,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22091_0.png"
     ],
@@ -224985,7 +224985,7 @@
       0
     ],
     "big_endian": true,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22092_0.png"
     ],
@@ -225033,7 +225033,7 @@
       0
     ],
     "big_endian": true,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22095_0.png"
     ],
@@ -225109,7 +225109,7 @@
       0
     ],
     "big_endian": true,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22096_0.png"
     ],
@@ -225192,7 +225192,7 @@
       0
     ],
     "big_endian": true,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22097_0.png"
     ],
@@ -225289,7 +225289,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1/22000_0.png"
     ],
@@ -225323,7 +225323,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1i1/22009_0.png"
     ],
@@ -225406,7 +225406,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "pws1",
     "sheets": [
       "pws1i1/22010_0.png"
     ],
@@ -225517,7 +225517,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "pws1",
     "sheets": [
       "pws1i1/22011_0.png"
     ],
@@ -225600,7 +225600,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1i1/22012_0.png"
     ],
@@ -225739,7 +225739,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "pws1",
     "sheets": [
       "pws1i1/22013_0.png"
     ],
@@ -225801,7 +225801,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1i1/22014_0.png"
     ],
@@ -225940,7 +225940,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1o1/22068_0.png"
     ],
@@ -226072,7 +226072,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "pws1",
     "sheets": [
       "pws1o1/22069_0.png"
     ],
@@ -226204,7 +226204,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "pws1",
     "sheets": [
       "pws1o1/22070_0.png"
     ],
@@ -226322,7 +226322,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1o1/22071_0.png"
     ],
@@ -226482,7 +226482,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "pws1",
     "sheets": [
       "pws1o1/22072_0.png"
     ],
@@ -226593,7 +226593,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "pws1",
     "sheets": [
       "pws1o1/22073_0.png"
     ],
@@ -226718,7 +226718,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1p/22001_0.png"
     ],
@@ -226752,7 +226752,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "pws1",
     "sheets": [
       "pws1p/22002_0.png"
     ],
@@ -226786,7 +226786,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1p/22003_0.png"
     ],
@@ -226827,7 +226827,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "pws1",
     "sheets": [
       "pws1p/22004_0.png"
     ],
@@ -226861,7 +226861,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1p/22005_0.png"
     ],
@@ -226895,7 +226895,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "pws1",
     "sheets": [
       "pws1p/22006_0.png"
     ],
@@ -226929,7 +226929,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1p/22007_0.png"
     ],
@@ -226963,7 +226963,7 @@
       0
     ],
     "big_endian": false,
-    "palette": "shared",
+    "palette": "pws1",
     "sheets": [
       "pws1p/22016_0.png"
     ],
@@ -226997,7 +226997,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1p/22017_0.png"
     ],
@@ -227031,7 +227031,7 @@
       0
     ],
     "big_endian": false,
-    "palette": null,
+    "palette": "pws1",
     "sheets": [
       "pws1p/22074_0.png"
     ],
