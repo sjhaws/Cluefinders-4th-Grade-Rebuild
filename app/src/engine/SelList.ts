@@ -4,6 +4,7 @@ import { toNumber, toText } from './ScriptVm';
 import { DisplayObject } from './ScriptObject';
 import type { GameEngine } from './GameEngine';
 import { fontFor } from './DisplayObjects';
+import { BitmapLabel, bitmapFonts, type BitmapFontData } from './BitmapFont';
 
 const MAX_ENTRIES = 50;
 const MAX_NAME_LENGTH = 24;
@@ -34,10 +35,19 @@ export class RSelList extends DisplayObject {
     this.height = toNumber(args[3]);
     this.view.addChild(this.background, this.rows);
     this.unsubscribe = engine.onPalette(() => this.render());
+    // The font index arrives from a promise; redraw in the game's own face once it has.
+    void bitmapFonts.ensureLoaded(engine.resources).then(() => this.render());
     this.render();
   }
 
+  /** The game's own font for this list, if FONT.RSC has the id the script set. */
+  private get bitmapFont(): BitmapFontData | null {
+    return bitmapFonts.byId(toNumber(this.props.get('textfontid') ?? 0));
+  }
+
   private get lineHeight(): number {
+    const font = this.bitmapFont;
+    if (font) return font.lineHeight + 2;
     return fontFor(toNumber(this.props.get('textfontid') ?? 0)).size + 4;
   }
 
@@ -181,6 +191,7 @@ export class RSelList extends DisplayObject {
     if (this.destroyed) return;
     const lineHeight = this.lineHeight;
     const font = fontFor(toNumber(this.props.get('textfontid') ?? 0));
+    const bitmapFont = this.bitmapFont;
     this.background.clear().rect(0, 0, this.width, this.height).fill(this.color('listbackgroundcolor', 0xf2e6c4));
     for (const child of this.rows.removeChildren()) child.destroy();
 
@@ -203,12 +214,22 @@ export class RSelList extends DisplayObject {
       const fill = row.highlighted
         ? this.color(partialMatch ? 'matchedtextcolor' : 'selectedtextcolor', 0xffffff)
         : this.color('normaltextcolor', 0x222222);
-      const label = new Text({
-        text: row.text + (row.fresh ? '_' : ''),
-        style: { fontFamily: font.family, fontSize: font.size, fill },
-      });
-      label.position.set(6, y + 1);
-      this.rows.addChild(label);
+      const text = row.text + (row.fresh ? '_' : '');
+      if (bitmapFont) {
+        const label = new BitmapLabel();
+        label.setFont(bitmapFont);
+        label.setText(text);
+        label.setColour(fill);
+        label.position.set(6, y + 1);
+        this.rows.addChild(label);
+      } else {
+        const label = new Text({
+          text,
+          style: { fontFamily: font.family, fontSize: font.size, fill },
+        });
+        label.position.set(6, y + 1);
+        this.rows.addChild(label);
+      }
     });
   }
 

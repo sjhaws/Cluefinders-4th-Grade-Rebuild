@@ -69,6 +69,15 @@ export class ResourceManager {
     return `${ASSET_BASE}palettes/${name}.pal`;
   }
 
+  getFontIndexUrl(): string {
+    return `${ASSET_BASE}fonts/index.json`;
+  }
+
+  /** FONT.RSC ids clash with COMMON.RSC ones, so fonts live under their own path. */
+  getFontAtlasUrl(id: number): string {
+    return `${ASSET_BASE}fonts/${id}.png`;
+  }
+
   bundleNames(): string[] {
     const names = new Set(this.manifest.aseq_resources.map((r) => r.bundle));
     for (const bundle of this.soundsByBundle.keys()) names.add(bundle);

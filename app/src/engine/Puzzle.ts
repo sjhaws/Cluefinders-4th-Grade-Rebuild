@@ -5,6 +5,7 @@ import { DisplayObject, ScriptObject } from './ScriptObject';
 import type { GameEngine } from './GameEngine';
 import { familyForFontName, sequenceList } from './DisplayObjects';
 import { AseqAnimation } from '../AseqAnimation';
+import { PaletteSwaps, RecoloredFrames, recolorFrames } from './PaletteSwap';
 import { spriteHit } from './hitTest';
 
 const SLIDE_MS = 150;
@@ -39,6 +40,11 @@ export class RAnswer extends DisplayObject {
   readonly extra = { left: 0, top: 0, right: 0, bottom: 0 };
   protected readonly graphic = new Sprite();
   protected size: [number, number] = [0, 0];
+  /** PWS2 recolours its letter tiles between crosswords (replacePaletteEntry). */
+  private readonly swaps = new PaletteSwaps();
+  private readonly recolored = new RecoloredFrames();
+  private baseFrame: Texture | null = null;
+  private paletteOff: (() => void) | null = null;
   private grabOffset: [number, number] | null = null;
   private slide: { fromX: number; fromY: number; toX: number; toY: number; t: number } | null = null;
 
@@ -93,9 +99,16 @@ export class RAnswer extends DisplayObject {
     this.props.set('graphicid', id);
     this.size = this.engine.frameSize(id) ?? this.size;
     void this.engine.loadAseq(id).then((loaded) => {
-      if (loaded && !this.destroyed && this.props.get('graphicid') === id) this.graphic.texture = loaded.frames[0];
+      if (!loaded || this.destroyed || this.props.get('graphicid') !== id) return;
+      this.baseFrame = loaded.frames[0];
+      this.redrawGraphic();
     });
     this.layoutContent();
+  }
+
+  protected redrawGraphic(): void {
+    if (!this.baseFrame || this.destroyed) return;
+    this.graphic.texture = this.recolored.apply(this.engine, [this.baseFrame], this.swaps)[0];
   }
 
   /** Positions anything drawn over the graphic. */
@@ -173,11 +186,15 @@ export class RAnswer extends DisplayObject {
 
   send(method: string, args: Value[]): Value {
     switch (method.toLowerCase()) {
+      case 'replacepaletteentry':
+        this.swaps.replace(toNumber(args[0]), toNumber(args[1]));
+        this.paletteOff ??= this.engine.onPalette(() => this.redrawGraphic());
+        this.redrawGraphic();
+        return 0;
       case 'playanimation':
       case 'stopanimation':
       case 'playanimations':
       case 'stopanimations':
-      case 'replacepaletteentry':
       case 'setaocursor':
         return 0;
       default:
@@ -218,6 +235,8 @@ export class RAnswer extends DisplayObject {
 
   destroy(): void {
     if (this.destroyed) return;
+    this.paletteOff?.();
+    this.recolored.release();
     this.container?.remove(this);
     this.puzzle = null;
     super.destroy();
@@ -806,6 +825,11 @@ export class RAttributeContainer extends RValueContainer {
   private anchorX = 0;
   private anchorY = 0;
   private pixelCompare = false;
+  /** PWS2 recolours its crossword boxes between puzzles (replacePaletteEntry). */
+  private readonly swaps = new PaletteSwaps();
+  private readonly recolored = new RecoloredFrames();
+  private baseFrame: Texture | null = null;
+  private paletteOff: (() => void) | null = null;
 
   constructor(engine: GameEngine, args: Value[]) {
     const shapeId = args.length >= 6 ? null : toNumber(args[0]);
@@ -823,8 +847,32 @@ export class RAttributeContainer extends RValueContainer {
     this.view.addChild(shape);
     this.shape = shape;
     void engine.loadAseq(id).then((loaded) => {
-      if (loaded && !this.destroyed) shape.texture = loaded.frames[0];
+      if (!loaded || this.destroyed) return;
+      this.baseFrame = loaded.frames[0];
+      this.redrawShape();
     });
+  }
+
+  private redrawShape(): void {
+    if (!this.shape || !this.baseFrame || this.destroyed) return;
+    this.shape.texture = this.recolored.apply(this.engine, [this.baseFrame], this.swaps)[0];
+  }
+
+  send(method: string, args: Value[]): Value {
+    if (method.toLowerCase() === 'replacepaletteentry') {
+      this.swaps.replace(toNumber(args[0]), toNumber(args[1]));
+      this.paletteOff ??= this.engine.onPalette(() => this.redrawShape());
+      this.redrawShape();
+      return 0;
+    }
+    return super.send(method, args);
+  }
+
+  destroy(): void {
+    if (this.destroyed) return;
+    this.paletteOff?.();
+    this.recolored.release();
+    super.destroy();
   }
 
   /** `x, y, w, h, z` for the rectangle form, or the shape image's position and size. */
@@ -915,37 +963,6 @@ function overlapArea(a: RAnswer, x: number, y: number, w: number, h: number): nu
   const ox = Math.min(a.view.x + a.w, x + w) - Math.max(a.view.x, x);
   const oy = Math.min(a.view.y + a.h, y + h) - Math.max(a.view.y, y);
   return ox > 0 && oy > 0 ? ox * oy : 0;
-}
-
-/** Copies frames with palette entries swapped (by their colours in the current palette). */
-function recolorFrames(engine: GameEngine, frames: Texture[], swaps: [number, number][]): Texture[] {
-  const pairs = swaps.filter(([a, b]) => a !== b).map(([a, b]) => [engine.paletteColor(a), engine.paletteColor(b)] as const);
-  return frames.map((texture) => {
-    const { x, y, width, height } = texture.frame;
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    if (!ctx) return texture;
-    ctx.drawImage(texture.source.resource as CanvasImageSource, x, y, width, height, 0, 0, width, height);
-    const image = ctx.getImageData(0, 0, width, height);
-    const d = image.data;
-    for (let p = 0; p < d.length; p += 4) {
-      if (d[p + 3] === 0) continue;
-      const rgb = (d[p] << 16) | (d[p + 1] << 8) | d[p + 2];
-      for (const [from, to] of pairs) {
-        if (rgb !== from) continue;
-        d[p] = (to >> 16) & 255;
-        d[p + 1] = (to >> 8) & 255;
-        d[p + 2] = to & 255;
-        break;
-      }
-    }
-    ctx.putImageData(image, 0, 0);
-    const out = Texture.from(canvas);
-    out.source.scaleMode = 'nearest';
-    return out;
-  });
 }
 
 /**

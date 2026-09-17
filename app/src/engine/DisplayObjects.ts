@@ -6,6 +6,8 @@ import type { Value } from './ScriptVm';
 import { toNumber, toText, truthy } from './ScriptVm';
 import { DisplayObject } from './ScriptObject';
 import type { GameEngine } from './GameEngine';
+import { BitmapLabel, bitmapFonts, type BitmapFontData } from './BitmapFont';
+import { PaletteSwaps, RecoloredFrames } from './PaletteSwap';
 import { STAGE_H, STAGE_W } from './constants';
 
 /** Scripts pass this for x and y to use the position stored with the image. */
@@ -27,7 +29,11 @@ export interface FontSpec {
 
 const SERIF = 'Georgia, "Times New Roman", serif';
 
-/** Stand-ins for FONT.RSC until it's decoded, keyed by the font ids scripts use. */
+/**
+ * Web stand-ins keyed by the font ids scripts use, for when the real bitmap
+ * fonts aren't available -- assets extracted without `extract_fonts.py`, or
+ * `?webfonts`. Otherwise BitmapFont.ts draws FONT.RSC's own faces.
+ */
 export function fontFor(id: number): FontSpec {
   switch (id) {
     case 40: return { family: SERIF, size: 16 };
@@ -62,6 +68,11 @@ export class RAnimation extends DisplayObject {
   private frameNotification = false;
   private playWhenLoaded = false;
   private pausedMidway = false;
+  /** PWS2 recolours its chalk alphabet between crosswords (replacePaletteEntry). */
+  private baseFrames: Texture[] = [];
+  private readonly swaps = new PaletteSwaps();
+  private readonly recolored = new RecoloredFrames();
+  private paletteOff: (() => void) | null = null;
 
   /** `RAnimation id` (at its stored position) or `RAnimation x, y, id`. */
   constructor(engine: GameEngine, args: Value[]) {
@@ -119,10 +130,22 @@ export class RAnimation extends DisplayObject {
     }
   }
 
+  private framesToShow(): Texture[] {
+    return this.recolored.apply(this.engine, this.baseFrames, this.swaps);
+  }
+
+  destroy(): void {
+    if (this.destroyed) return;
+    this.paletteOff?.();
+    this.recolored.release();
+    super.destroy();
+  }
+
   private async init(x: number, y: number, aoid: number) {
     const loaded = await this.engine.loadAseq(aoid);
     if (!loaded || this.destroyed) return;
-    this.anim = new AseqAnimation(loaded.frames, {
+    this.baseFrames = loaded.frames;
+    this.anim = new AseqAnimation(this.framesToShow(), {
       onResource: (id) => this.engine.playSound(id),
       onFrame: () => {
         if (this.frameNotification) this.fire('frameNotify');
@@ -148,6 +171,11 @@ export class RAnimation extends DisplayObject {
 
   send(method: string, args: Value[]): Value {
     switch (method.toLowerCase()) {
+      case 'replacepaletteentry':
+        this.swaps.replace(toNumber(args[0]), toNumber(args[1]));
+        this.paletteOff ??= this.engine.onPalette(() => this.anim?.setFrames(this.framesToShow()));
+        this.anim?.setFrames(this.framesToShow());
+        return 0;
       case 'play':
         if (this.anim) {
           if (!this.anim.playing && !this.pausedMidway) this.anim.restart();
@@ -251,11 +279,15 @@ export class RPButton extends DisplayObject {
 
 export class RText extends DisplayObject {
   private readonly label: Text;
+  private readonly bitmap = new BitmapLabel();
+  private bitmapFont: BitmapFontData | null = null;
   private readonly colorIndex: number;
   private fontId = 0;
   private fontName: string | null = null;
   private fontSize = 12;
   private bold = false;
+  private centred = false;
+  private wrapWidth = 0;
   private readonly unsubscribe: () => void;
 
   /**
@@ -267,18 +299,46 @@ export class RText extends DisplayObject {
     super(engine, 'RText');
     this.colorIndex = toNumber(args[1]);
     this.label = new Text({ text: toText(args[0]), style: { fill: 0xffffff } });
-    if (args.length === 5 && truthy(args[4])) this.label.anchor.set(0.5);
-    this.view.addChild(this.label);
+    this.centred = args.length === 5 && truthy(args[4]);
+    if (this.centred) this.label.anchor.set(0.5);
+    this.view.addChild(this.label, this.bitmap);
     this.view.position.set(toNumber(args[2]), toNumber(args[3]));
     if (args.length >= 7 && toNumber(args[4]) > 0 && truthy(args[6])) {
+      this.wrapWidth = toNumber(args[4]);
       this.label.style.wordWrap = true;
-      this.label.style.wordWrapWidth = toNumber(args[4]);
+      this.label.style.wordWrapWidth = this.wrapWidth;
     }
+    this.bitmap.setCentred(this.centred);
+    this.bitmap.setWrapWidth(this.wrapWidth);
+    this.bitmap.setText(toText(args[0]));
+    // The index arrives after construction, so restyle again once it has.
+    void bitmapFonts.ensureLoaded(engine.resources).then(() => this.restyle());
     this.restyle();
     this.unsubscribe = engine.onPalette(() => this.restyle());
   }
 
+  /**
+   * Draw with the game's own bitmap font when it has one for what the script
+   * asked for, and with a web face otherwise -- a name the game never shipped
+   * (Times), or a run where the fonts haven't been extracted.
+   */
   private restyle() {
+    // The font index arrives from a promise, which can settle after the text is
+    // gone -- Pixi nulls a destroyed Text's style, so styling it then throws.
+    // The scene can destroy the label without the script object knowing, so
+    // check the label itself rather than trusting this object's own flag.
+    if (this.destroyed || this.label.destroyed || !this.label.style) return;
+    this.bitmapFont = this.fontName !== null
+      ? bitmapFonts.resolve(this.fontName, this.fontSize, this.bold)
+      : bitmapFonts.byId(this.fontId);
+    const colour = this.engine.paletteColor(this.colorIndex);
+    this.bitmap.visible = this.bitmapFont !== null;
+    this.label.visible = this.bitmapFont === null;
+    if (this.bitmapFont) {
+      this.bitmap.setFont(this.bitmapFont);
+      this.bitmap.setColour(colour);
+      return;
+    }
     if (this.fontName !== null) {
       this.label.style.fontFamily = familyForFontName(this.fontName);
       this.label.style.fontSize = this.fontSize;
@@ -288,23 +348,35 @@ export class RText extends DisplayObject {
       this.label.style.fontFamily = font.family;
       this.label.style.fontSize = font.size;
     }
-    this.label.style.fill = this.engine.paletteColor(this.colorIndex);
+    this.label.style.fill = colour;
+  }
+
+  /** Keep both labels in step; which one shows is decided in restyle(). */
+  private setText(text: string): void {
+    this.label.text = text;
+    this.bitmap.setText(text);
   }
 
   getProp(name: string, key: Value | undefined): Value {
     switch (name.toLowerCase()) {
       case 'text': return this.label.text;
-      // rounded, not ceiled: GetTextExtentPoint sums whole advance widths, and a pixel
-      // too many picks a bigger word box in OWS2 so its sentence overflows the row
-      case 'textwidth': return Math.round(this.label.width);
-      case 'textheight': return Math.ceil(this.label.height);
+      // A bitmap font measures exactly as the original did: the sum of the glyph
+      // advances. For a web stand-in, round rather than ceil -- GetTextExtentPoint
+      // sums whole advance widths, and a pixel too many picks a bigger word box in
+      // OWS2 so its sentence overflows the row.
+      case 'textwidth':
+        return this.bitmapFont
+          ? bitmapFonts.measure(this.bitmapFont, this.label.text)
+          : Math.round(this.label.width);
+      case 'textheight':
+        return this.bitmapFont ? this.bitmap.textHeight : Math.ceil(this.label.height);
       default: return super.getProp(name, key);
     }
   }
 
   setProp(name: string, key: Value | undefined, value: Value): void {
     if (name.toLowerCase() === 'text') {
-      this.label.text = toText(value);
+      this.setText(toText(value));
       return;
     }
     super.setProp(name, key, value);
@@ -324,7 +396,7 @@ export class RText extends DisplayObject {
         this.restyle();
         return 0;
       case 'settext':
-        this.label.text = toText(args[0]);
+        this.setText(toText(args[0]));
         return 0;
       case 'offset':
         this.view.position.set(this.view.x + toNumber(args[0]), this.view.y + toNumber(args[1]));

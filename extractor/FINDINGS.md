@@ -157,8 +157,50 @@ false-colour placeholder, recorded as `"palette": null` in the index.
 
 ## FONT.RSC
 
-9 resources, header `00 90 00 00 ff 00 ...` — a different layout (glyph
-tables). Not decoded; the game's text rendering can use a web font until it is.
+**Solved.** 9 resources, all typed `NFNT` in the file's own `0x800f`
+directory: classic Mac `FontRec` bitmap fonts with every 16-bit field
+byte-swapped for the Windows port. Two things settle the byte order — read
+little-endian, `ascent + descent == fRectHeight` holds for all nine, and
+`owTLoc` lands exactly on the offset/width table computed from the other
+fields. Read big-endian the numbers are nonsense.
+
+    0   26 bytes  header: fontType, firstChar, lastChar, widMax, kernMax,
+                  nDescent, fRectWidth, fRectHeight, owTLoc, ascent, descent,
+                  leading, rowWords
+    26  ...       strike: 1 bit per pixel, rowWords*2 bytes per row,
+                  fRectHeight rows, every glyph side by side
+        ...       location table, lastChar-firstChar+3 words: glyph i spans
+                  strike columns loc[i]..loc[i+1]
+        ...       offset/width table, same length, starting at owTLoc
+
+Two traps. The offset/width bytes are *also* swapped, so read little-endian the
+low byte is the offset (added to `kernMax`) and the high byte the advance —
+the other way round gives a 6-pixel `A` an advance of 2. And the final word of
+the location table is not a location: in all nine fonts it only makes sense
+read big-endian, where it lands just under the strike width, so only entries
+0..nchars are used and the optional missing-character glyph is skipped.
+
+Glyphs whose advance is narrower than their ink are correct, not a decoding
+error: `_` must overlap so runs join up, and `f` leans into the next letter.
+
+Which face each resource holds comes from the EXE's own registration calls at
+`0x4116b0` — nine `register(name, style, points, resourceID)` calls into
+`0x4103f3`. Every `points` matches that strike's ascent, and 30/31 differ only
+in the style flag, which is what identifies it as bold:
+
+| id | face | points | | id | face | points |
+|---|---|---|---|---|---|---|
+| 10 | Geneva | 10 bold | | 30 | Arial | 12 |
+| 11 | Geneva | 12 | | 31 | Arial | 12 bold |
+| 12 | Geneva | 14 | | 40 | Dado | 14 |
+| 20 | Chicago | 12 | | 50 | Jackie | 16 |
+| 21 | Chicago | 14 | | | | |
+
+`nfnt.py` decodes them and `extract_fonts.py` writes `output/fonts/<id>.png`
+(the strike as white-on-transparent RGBA) plus `index.json` with each glyph as
+`[x, width, offset, advance]`. Note FONT.RSC resource ids collide with
+COMMON.RSC ones (20 is both a font and the open backpack), so fonts are
+addressed through their own index, never through the shared ASEQ id map.
 
 ## Running the game under Wine (for palette capture)
 

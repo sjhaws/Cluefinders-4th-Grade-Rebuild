@@ -41,11 +41,21 @@ export class AseqAnimation extends Container {
   private elapsed = 0;
 
   constructor(
-    private readonly frames: Texture[],
+    private frames: Texture[],
     private readonly events: AnimationEvents = {}
   ) {
     super();
     this.addChild(this.sprite);
+  }
+
+  /**
+   * Swaps in another set of frames, keeping the frame on screen (PWS2 recolours
+   * its chalk alphabet between crosswords with replacePaletteEntry).
+   */
+  setFrames(frames: Texture[]): void {
+    this.frames = frames;
+    const shown = this.current?.frame;
+    if (shown !== undefined && shown >= 0 && shown < frames.length) this.sprite.texture = frames[shown];
   }
 
   setList(list: SequenceEntry[]): void {
