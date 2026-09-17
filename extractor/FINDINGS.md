@@ -202,6 +202,25 @@ in the style flag, which is what identifies it as bold:
 COMMON.RSC ones (20 is both a font and the open backpack), so fonts are
 addressed through their own index, never through the shared ASEQ id map.
 
+## `OMASolved` is never set: a bug in the game's own scripts
+
+`gPort.OMASolved` is read by the six Oasis location scripts (OLOC02..OLOC08) and
+by the EXE's LapTrap, but **no script ever sets it to 1**. Every script resets it
+to 0 in the shared `gGameCompleted` sub, and OMA's win path (`crocDownCtr = 4`,
+OMA.txt:1149) calls `autoLevel` and walks the kids out without setting it --
+where CMA's `eGameSolved` does set `CMASolved` (CMA.txt:1071), and PWS1/PWS2 both
+set their own `PWS1Solved` / `PWS2Solved`. So the flag is dead in the original
+too, and the port is faithful by doing nothing.
+
+It costs almost nothing, which is presumably why it was never noticed:
+
+- The locations read it as `if ((numOpenDoors=5)+(omaDone=kTrue))` -- an OR that
+  picks which set of idle chatter the kids use. OMA is only reachable through
+  `eExitForward`, which OHUB fires once `round = kMaxDoors`, so `numOpenDoors` is
+  already 5 whenever OMA has been played and the first term is always true.
+- The LapTrap uses it to decide whether changing an activity's level loses the
+  player's work, so OMA always warns.
+
 ## Running the game under Wine (for palette capture)
 
 From the earlier live sessions — still accurate:

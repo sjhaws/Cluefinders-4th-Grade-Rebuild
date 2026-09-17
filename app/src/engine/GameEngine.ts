@@ -12,6 +12,7 @@ import {
   type Value,
 } from './ScriptVm';
 import { DisplayObject, GenericObject, type ScriptObject } from './ScriptObject';
+import { bitmapFonts } from './BitmapFont';
 import { WorldState } from './WorldState';
 import { CLASSES } from './classes';
 import { RSmackerMovie, TempAnimation, aoPosition } from './DisplayObjects';
@@ -134,6 +135,11 @@ export class GameEngine implements ScriptHost {
     } catch {
       this.paletteNames = [];
     }
+    // Before any script runs: scripts measure text to pick a box to hold it
+    // (CWS3 sizes every word box that way), and a font arriving mid-scene would
+    // size some boxes with a web stand-in's metrics and the rest with the
+    // game's own.
+    await bitmapFonts.ensureLoaded(this.resources);
     this.wireInput();
     this.app.ticker.add((ticker) => this.tick(ticker.deltaMS));
   }

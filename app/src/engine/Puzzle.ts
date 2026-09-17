@@ -1,4 +1,4 @@
-import { Sprite, Text, Texture } from 'pixi.js';
+import { Container, Sprite, Text, Texture } from 'pixi.js';
 import type { EngineObject, Value } from './ScriptVm';
 import { isEngineObject, toNumber, toText, truthy } from './ScriptVm';
 import { DisplayObject, ScriptObject } from './ScriptObject';
@@ -7,14 +7,93 @@ import { familyForFontName, sequenceList } from './DisplayObjects';
 import { AseqAnimation } from '../AseqAnimation';
 import { PaletteSwaps, RecoloredFrames, recolorFrames } from './PaletteSwap';
 import { spriteHit } from './hitTest';
+import { BitmapLabel, bitmapFonts, type BitmapFontData } from './BitmapFont';
 
 const SLIDE_MS = 150;
 
 type AnswerSound = 'pickup' | 'gohome' | 'snap';
 type Verdict = 'solved' | 'wrong' | 'pending';
 
-function makeLabel(text: string): Text {
-  return new Text({ text, style: { fill: 0x000000, fontFamily: familyForFontName(''), fontSize: 12 } });
+/**
+ * The text drawn on an answer: the game's own bitmap face when FONT.RSC has one
+ * for the name the script asked for, a web stand-in otherwise (RText picks the
+ * same way). It has to be the game's own face here, because scripts size the
+ * boxes this text sits in by measuring it -- CWS3 picks each word box from a
+ * ladder of box widths -- so a web stand-in's narrower text would rattle around
+ * inside a box cut for the real one.
+ */
+class AnswerLabel extends Container {
+  private readonly web = new Text({ text: '', style: { fill: 0x000000, fontFamily: familyForFontName(''), fontSize: 12 } });
+  private readonly bitmap = new BitmapLabel();
+  private font: BitmapFontData | null = null;
+  private family = '';
+  private points = 12;
+  private bold = false;
+  private colour = 0x000000;
+  private value = '';
+
+  constructor(engine: GameEngine, text: string) {
+    super();
+    this.addChild(this.web, this.bitmap);
+    this.setText(text);
+    // The index normally lands before any script runs (GameEngine.mount waits
+    // for it), but a run without the fonts extracted still has to draw.
+    void bitmapFonts.ensureLoaded(engine.resources).then(() => this.restyle());
+    this.restyle();
+  }
+
+  get text(): string {
+    return this.value;
+  }
+
+  /** What the original's text measurement would return for this string. */
+  get textWidth(): number {
+    return this.font ? bitmapFonts.measure(this.font, this.value) : Math.round(this.web.width);
+  }
+
+  setText(text: string): void {
+    this.value = text;
+    this.web.text = text;
+    this.bitmap.setText(text);
+  }
+
+  /** `setFont name, style, size`: size is left alone when the script omits it. */
+  setFont(family: string, bold: boolean, points: number | undefined): void {
+    this.family = family;
+    this.bold = bold;
+    if (points !== undefined) this.points = points;
+    this.restyle();
+  }
+
+  setColour(colour: number): void {
+    this.colour = colour;
+    this.restyle();
+  }
+
+  /** Centres the text on (x, y), or puts its top-left there. */
+  place(x: number, y: number, centred: boolean): void {
+    this.web.anchor.set(centred ? 0.5 : 0);
+    this.bitmap.setCentred(centred);
+    this.position.set(x, y);
+  }
+
+  private restyle(): void {
+    // The index arrives from a promise that can settle after the scene tore the
+    // label down, and Pixi nulls a destroyed Text's style.
+    if (this.destroyed || this.web.destroyed || !this.web.style) return;
+    this.font = this.family ? bitmapFonts.resolve(this.family, this.points, this.bold) : null;
+    this.bitmap.visible = this.font !== null;
+    this.web.visible = this.font === null;
+    if (this.font) {
+      this.bitmap.setFont(this.font);
+      this.bitmap.setColour(this.colour);
+      return;
+    }
+    this.web.style.fontFamily = familyForFontName(this.family);
+    this.web.style.fontSize = this.points;
+    this.web.style.fontWeight = this.bold ? 'bold' : 'normal';
+    this.web.style.fill = this.colour;
+  }
 }
 
 /**
@@ -251,24 +330,23 @@ export class RGraphicAnswer extends RAnswer {
 }
 
 /** Font settings shared by the text answers: `setFont name, style, size[, colorIndex]`. */
-function applyFont(labels: Text[], args: Value[]): number | null {
-  for (const label of labels) {
-    label.style.fontFamily = familyForFontName(toText(args[0] ?? ''));
-    label.style.fontWeight = toNumber(args[1]) & 1 ? 'bold' : 'normal';
-    if (args[2] !== undefined) label.style.fontSize = toNumber(args[2]);
-  }
+function applyFont(labels: AnswerLabel[], args: Value[]): number | null {
+  const family = toText(args[0] ?? '');
+  const bold = (toNumber(args[1]) & 1) !== 0;
+  const points = args[2] === undefined ? undefined : toNumber(args[2]);
+  for (const label of labels) label.setFont(family, bold, points);
   return args[3] !== undefined ? toNumber(args[3]) : null;
 }
 
 /** `RGraphicTextAnswer x, y, z, graphicID, text, attribute[, value]`: a graphic with a label on it. */
 export class RGraphicTextAnswer extends RAnswer {
-  private readonly label = makeLabel('');
+  private readonly label: AnswerLabel;
   private colorIndex: number | null = null;
   private readonly unsubscribe: () => void;
 
   constructor(engine: GameEngine, args: Value[]) {
     super(engine, 'RGraphicTextAnswer', args.slice(0, 4).map(toNumber), args[5], args[6]);
-    this.label.text = toText(args[4] ?? '');
+    this.label = new AnswerLabel(engine, toText(args[4] ?? ''));
     this.view.addChild(this.label);
     this.layoutContent();
     this.unsubscribe = engine.onPalette(() => this.restyle());
@@ -283,12 +361,11 @@ export class RGraphicTextAnswer extends RAnswer {
     if (!this.label) return; // called from the base constructor before fields exist
     const ox = toNumber(this.props.get('textoffsetx') ?? 0);
     const oy = toNumber(this.props.get('textoffsety') ?? 0);
-    this.label.anchor.set(0.5);
-    this.label.position.set(Math.round(this.w / 2 + ox), Math.round(this.h / 2 + oy));
+    this.label.place(Math.round(this.w / 2 + ox), Math.round(this.h / 2 + oy), true);
   }
 
   private restyle() {
-    if (this.colorIndex !== null) this.label.style.fill = this.engine.paletteColor(this.colorIndex);
+    if (this.colorIndex !== null) this.label.setColour(this.engine.paletteColor(this.colorIndex));
   }
 
   getProp(name: string, key: Value | undefined): Value {
@@ -299,7 +376,8 @@ export class RGraphicTextAnswer extends RAnswer {
   setProp(name: string, key: Value | undefined, value: Value): void {
     switch (name.toLowerCase()) {
       case 'text':
-        this.label.text = toText(value);
+        this.label.setText(toText(value));
+        this.layoutContent();
         return;
       case 'textoffsetx':
       case 'textoffsety':
@@ -338,9 +416,12 @@ export class RGraphicTextAnswer extends RAnswer {
  */
 export class RDoubleGraphicTextAnswer extends RAnswer {
   private readonly graphic2 = new Sprite();
-  private readonly label1 = makeLabel('');
-  private readonly label2 = makeLabel('');
+  private readonly label1: AnswerLabel;
+  private readonly label2: AnswerLabel;
   private readonly offset2: [number, number];
+  /** The two boxes' own sizes: the text is centred on each, as a single box's is. */
+  private readonly box1: [number, number];
+  private readonly box2: [number, number];
   private colorIndex: number | null = null;
   private readonly unsubscribe: () => void;
 
@@ -348,13 +429,21 @@ export class RDoubleGraphicTextAnswer extends RAnswer {
     const [x1, y1, g1, , x2, y2, g2, , z] = args.map((a) => toNumber(a));
     super(engine, 'RDoubleGraphicTextAnswer', [x1, y1, z, g1], args[9], args[10]);
     this.offset2 = [x2 - x1, y2 - y1];
-    this.label1.text = toText(args[3] ?? '');
-    this.label2.text = toText(args[7] ?? '');
+    this.label1 = new AnswerLabel(engine, toText(args[3] ?? ''));
+    this.label2 = new AnswerLabel(engine, toText(args[7] ?? ''));
     this.graphic2.position.set(this.offset2[0], this.offset2[1]);
     this.view.addChild(this.graphic2, this.label1, this.label2);
-    const [w1, h1] = this.size;
-    const [w2, h2] = engine.frameSize(g2) ?? [0, 0];
-    this.size = [Math.max(w1, this.offset2[0] + w2), Math.max(h1, this.offset2[1] + h2)];
+    this.box1 = [this.size[0], this.size[1]];
+    this.box2 = engine.frameSize(g2) ?? [0, 0];
+    // The second line wraps back to the left margin, so it starts well LEFT of
+    // the first (CWS3 offsets it by -204 and more) and this reaches no further
+    // right than the first box. The answer's rect therefore covers the first box
+    // and the second line's depth, not the ground the second box stands on; the
+    // second box is still drawn and hit-tested, as a child of the view.
+    this.size = [
+      Math.max(this.box1[0], this.offset2[0] + this.box2[0]),
+      Math.max(this.box1[1], this.offset2[1] + this.box2[1]),
+    ];
     void engine.loadAseq(g2).then((loaded) => {
       if (loaded && !this.destroyed) this.graphic2.texture = loaded.frames[0];
     });
@@ -362,18 +451,27 @@ export class RDoubleGraphicTextAnswer extends RAnswer {
     this.unsubscribe = engine.onPalette(() => this.restyle());
   }
 
+  /** Each line is centred on its own box, exactly as a single box's text is. */
   protected layoutContent(): void {
     if (!this.label1) return;
     const n = (key: string) => toNumber(this.props.get(key) ?? 2);
-    this.label1.position.set(n('text1offsetx'), n('text1offsety'));
-    this.label2.position.set(this.offset2[0] + n('text2offsetx'), this.offset2[1] + n('text2offsety'));
+    this.label1.place(
+      Math.round(this.box1[0] / 2 + n('text1offsetx')),
+      Math.round(this.box1[1] / 2 + n('text1offsety')),
+      true
+    );
+    this.label2.place(
+      Math.round(this.offset2[0] + this.box2[0] / 2 + n('text2offsetx')),
+      Math.round(this.offset2[1] + this.box2[1] / 2 + n('text2offsety')),
+      true
+    );
   }
 
   private restyle() {
     if (this.colorIndex === null) return;
     const fill = this.engine.paletteColor(this.colorIndex);
-    this.label1.style.fill = fill;
-    this.label2.style.fill = fill;
+    this.label1.setColour(fill);
+    this.label2.setColour(fill);
   }
 
   setProp(name: string, key: Value | undefined, value: Value): void {
