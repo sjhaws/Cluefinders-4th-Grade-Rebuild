@@ -21,6 +21,11 @@ export class RSelList extends DisplayObject {
   private readonly entries: string[] = [];
   private highlight = -1;
   private typed = '';
+  /**
+   * After New Player Sign-In, before any letter: a highlighted blank line with a
+   * cursor shows the player where their name will go, so they know to type.
+   */
+  private awaitingName = false;
   private scroll = 0;
   private readonly width: number;
   private readonly height: number;
@@ -85,6 +90,7 @@ export class RSelList extends DisplayObject {
 
   private moveHighlight(delta: number) {
     if (!this.entries.length) return;
+    this.awaitingName = false;
     this.typed = '';
     this.highlight = Math.min(this.entries.length - 1, Math.max(0, (this.highlight < 0 ? 0 : this.highlight) + delta));
     this.ensureVisible(this.highlight);
@@ -139,6 +145,7 @@ export class RSelList extends DisplayObject {
       case 'startnewentry':
         this.typed = '';
         this.highlight = -1;
+        this.awaitingName = true;
         return 0;
       case 'movehighlightup': this.moveHighlight(-1); return 0;
       case 'movehighlightdown': this.moveHighlight(1); return 0;
@@ -153,6 +160,7 @@ export class RSelList extends DisplayObject {
         if (i < 0) return 0;
         this.props.set('deletedentry', this.entries[i]);
         this.entries.splice(i, 1);
+        this.awaitingName = false;
         this.typed = '';
         this.highlight = Math.min(i, this.entries.length - 1);
         return 0;
@@ -169,6 +177,7 @@ export class RSelList extends DisplayObject {
   onPointerDown(_x: number, y: number): void {
     const row = this.rowAt(y);
     if (row >= 0 && row < this.entries.length) {
+      this.awaitingName = false;
       this.typed = '';
       this.highlight = row;
       this.render();
@@ -200,7 +209,7 @@ export class RSelList extends DisplayObject {
       highlighted: i === this.highlight,
       fresh: false,
     }));
-    if (this.isNew) {
+    if (this.isNew || (this.awaitingName && this.typed === '')) {
       shown.push({ text: this.typed, highlighted: true, fresh: true });
       this.ensureVisible(shown.length - 1);
     }
