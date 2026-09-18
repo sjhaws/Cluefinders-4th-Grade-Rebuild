@@ -68,12 +68,12 @@ export class OMMultiTrinket extends ScriptObject {
     switch (name.toLowerCase()) {
       case 'x': {
         const dx = toNumber(value) - this.corner()[0];
-        for (const { obj } of this.objects()) obj.view.x += dx;
+        for (const { obj } of this.objects()) obj.moveBy(dx, 0);
         return;
       }
       case 'y': {
         const dy = toNumber(value) - this.corner()[1];
-        for (const { obj } of this.objects()) obj.view.y += dy;
+        for (const { obj } of this.objects()) obj.moveBy(0, dy);
         return;
       }
       case 'z':
@@ -109,10 +109,7 @@ export class OMMultiTrinket extends ScriptObject {
         return 0;
       }
       case 'offset': // move by dx, dy (OMA's catapult)
-        for (const { obj } of this.objects()) {
-          obj.view.x += toNumber(args[0]);
-          obj.view.y += toNumber(args[1]);
-        }
+        for (const { obj } of this.objects()) obj.moveBy(toNumber(args[0]), toNumber(args[1]));
         return 0;
       default:
         return super.send(method, args);

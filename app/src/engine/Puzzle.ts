@@ -6,7 +6,7 @@ import type { GameEngine } from './GameEngine';
 import { familyForFontName, sequenceList } from './DisplayObjects';
 import { AseqAnimation } from '../AseqAnimation';
 import { PaletteSwaps, RecoloredFrames, recolorFrames } from './PaletteSwap';
-import { spriteHit } from './hitTest';
+import { spriteHit, viewHit } from './hitTest';
 import { BitmapLabel, bitmapFonts, type BitmapFontData } from './BitmapFont';
 
 const SLIDE_MS = 150;
@@ -216,6 +216,18 @@ export class RAnswer extends DisplayObject {
     this.view.position.set(x, y);
   }
 
+  /** Carried along (by its container, or a group): a slide under way keeps its course relative to it. */
+  moveBy(dx: number, dy: number): void {
+    super.moveBy(dx, dy);
+    const s = this.slide;
+    if (s) {
+      s.fromX += dx;
+      s.toX += dx;
+      s.fromY += dy;
+      s.toY += dy;
+    }
+  }
+
   goHome(): void {
     if (this.view.x !== this.homeX || this.view.y !== this.homeY) this.playSound('gohome');
     this.moveTo(this.homeX, this.homeY);
@@ -420,6 +432,19 @@ export class RGraphicTextAnswer extends RAnswer {
  */
 export class RDoubleGraphicTextAnswer extends RAnswer {
   private readonly graphic2 = new Sprite();
+  /**
+   * Each line draws at its own depth in the scene: box and text 1, box and text
+   * 2. In the EXE they are four children, each at the answer's z plus its own
+   * offset (boxes 0, texts 1), and graphic1OffsetZ / graphic2OffsetZ move a
+   * line's pair (VA 0x423f7d and 0x424047). CWS3 builds a wrapped phrase 10
+   * below its row and lifts the first line back with graphic1OffsetZ 10: drawn
+   * as one, that first stone sat under the filler beside it and the stones of
+   * the row below, which showed their edges through it.
+   */
+  private readonly part1 = new Container();
+  private readonly part2 = new Container();
+  private dz1 = 0;
+  private dz2 = 0;
   private readonly label1: AnswerLabel;
   private readonly label2: AnswerLabel;
   /** Each box's place within the answer, and its own size: the text is centred on it, as a single box's is. */
@@ -446,7 +471,9 @@ export class RDoubleGraphicTextAnswer extends RAnswer {
     this.label2 = new AnswerLabel(engine, toText(args[7] ?? ''));
     this.graphic.position.set(this.offset1[0], this.offset1[1]);
     this.graphic2.position.set(this.offset2[0], this.offset2[1]);
-    this.view.addChild(this.graphic2, this.label1, this.label2);
+    this.part1.addChild(this.graphic, this.label1);
+    this.part2.addChild(this.graphic2, this.label2);
+    engine.sceneRoot.addChild(this.part1, this.part2);
     this.box1 = [this.size[0], this.size[1]];
     this.box2 = engine.frameSize(g2) ?? [0, 0];
     // ...and its size is the two boxes' union, because the EXE keeps a display
@@ -461,7 +488,31 @@ export class RDoubleGraphicTextAnswer extends RAnswer {
       if (loaded && !this.destroyed) this.graphic2.texture = loaded.frames[0];
     });
     this.layoutContent();
+    this.syncParts();
     this.unsubscribe = engine.onPalette(() => this.restyle());
+  }
+
+  /** The two lines follow the answer (its view carries no pixels of its own) at their own depths. */
+  private syncParts(): void {
+    if (this.destroyed) return;
+    const z = this.view.zIndex;
+    for (const [part, dz] of [[this.part1, this.dz1], [this.part2, this.dz2]] as const) {
+      part.position.copyFrom(this.view.position);
+      part.visible = this.view.visible;
+      part.alpha = this.view.alpha;
+      part.zIndex = z + dz;
+    }
+  }
+
+  tick(deltaMs: number): void {
+    super.tick(deltaMs);
+    this.syncParts();
+  }
+
+  containsPoint(x: number, y: number): boolean {
+    if (!this.view.visible || !this.touchy || this.destroyed) return false;
+    this.syncParts();
+    return viewHit(this.part1, x, y) || viewHit(this.part2, x, y);
   }
 
   /**
@@ -502,10 +553,23 @@ export class RDoubleGraphicTextAnswer extends RAnswer {
         this.layoutContent();
         return;
       case 'graphic1offsetz':
+        this.dz1 = toInt(value);
+        this.syncParts();
+        return;
       case 'graphic2offsetz':
-        return; // layering within the answer: both boxes draw together here
+        this.dz2 = toInt(value);
+        this.syncParts();
+        return;
       default:
         super.setProp(name, key, value);
+    }
+  }
+
+  getProp(name: string, key: Value | undefined): Value {
+    switch (name.toLowerCase()) {
+      case 'graphic1offsetz': return this.dz1;
+      case 'graphic2offsetz': return this.dz2;
+      default: return super.getProp(name, key);
     }
   }
 
@@ -522,6 +586,8 @@ export class RDoubleGraphicTextAnswer extends RAnswer {
     if (this.destroyed) return;
     this.unsubscribe();
     super.destroy();
+    this.part1.destroy({ children: true });
+    this.part2.destroy({ children: true });
   }
 }
 
@@ -553,6 +619,17 @@ export class RValueContainer extends DisplayObject {
   /** The drop area; it follows the container's x/y (e.g. CWS3's sled). */
   get rect() {
     return { x: this.view.x, y: this.view.y, w: this.areaW, h: this.areaH };
+  }
+
+  /**
+   * A container carries what it holds (RContainer::moveBy VA 0x42341a moves
+   * itself, then each answer by the same delta). OWS4's slots are part of the
+   * sliding sentence: they bring the wrong word in with it and take the answer
+   * out with it. CWS3 moves its container with the sled, so the phrase rides off.
+   */
+  moveBy(dx: number, dy: number): void {
+    super.moveBy(dx, dy);
+    for (const a of this.answers) a.moveBy(dx, dy);
   }
 
   answerValue(): number {

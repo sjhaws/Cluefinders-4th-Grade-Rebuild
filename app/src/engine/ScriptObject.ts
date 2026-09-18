@@ -81,11 +81,20 @@ export class DisplayObject extends ScriptObject {
     }
   }
 
+  /**
+   * Moves by (dx, dy). In the EXE setX, setY and moveTo all come down to this
+   * (vtable +0xcc), and a container overrides it to carry what it holds.
+   */
+  moveBy(dx: number, dy: number): void {
+    this.view.x += dx;
+    this.view.y += dy;
+  }
+
   setProp(name: string, key: Value | undefined, value: Value): void {
     if (this.destroyed) return;
     switch (name.toLowerCase()) {
-      case 'x': this.view.x = toInt(value); return;
-      case 'y': this.view.y = toInt(value); return;
+      case 'x': this.moveBy(toInt(value) - this.view.x, 0); return;
+      case 'y': this.moveBy(0, toInt(value) - this.view.y); return;
       case 'z': this.view.zIndex = toInt(value); return;
       case 'visible': this.view.visible = truthy(value); return;
       case 'touchy': this.touchy = truthy(value); return;
