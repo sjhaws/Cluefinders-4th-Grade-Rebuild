@@ -166,8 +166,8 @@ const MOVE_STEP_MS = 1000 / 30;
 /**
  * `MoveXAction "animation", "object", start, velocity, acceleration, end`:
  * slides an object (or OMMultiTrinket) along one axis until it reaches `end`.
- * The named animation is the one shown moving (a conveyor, water); scripts
- * already set it looping.
+ * The named animation runs only while the move does: CWS4's conveyor belt is
+ * still until a package rides onto or off it, and so are OWS4's logs.
  */
 function moveAction(engine: GameEngine, axis: 'x' | 'y', args: Value[]): QueueAction {
   return new TaskAction((done) => {
@@ -182,11 +182,17 @@ function moveAction(engine: GameEngine, axis: 'x' | 'y', args: Value[]): QueueAc
     const accel = toNumber(args[4]);
     const end = toNumber(args[5]);
     const dir = Math.sign(end - pos) || 1;
+    const shown = engine.lookupVar(toText(args[0]));
+    const restore = shown instanceof RAnimation ? shown.runWhileMoving() : () => {};
+    const finish = () => {
+      clearInterval(timer);
+      restore();
+      done();
+    };
     target.setProp(axis, undefined, pos);
     const timer = setInterval(() => {
       if ((target as { destroyed?: boolean }).destroyed) {
-        clearInterval(timer);
-        done();
+        finish();
         return;
       }
       pos += vel;
@@ -194,12 +200,12 @@ function moveAction(engine: GameEngine, axis: 'x' | 'y', args: Value[]): QueueAc
       const stalled = vel * dir <= 0 && accel * dir <= 0; // would never arrive
       if ((end - pos) * dir <= 0 || stalled) pos = end;
       target.setProp(axis, undefined, Math.round(pos));
-      if (pos === end) {
-        clearInterval(timer);
-        done();
-      }
+      if (pos === end) finish();
     }, MOVE_STEP_MS / engine.timeScale);
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+      restore();
+    };
   });
 }
 

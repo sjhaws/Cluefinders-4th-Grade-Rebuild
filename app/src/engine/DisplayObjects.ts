@@ -106,12 +106,9 @@ export class RAnimation extends DisplayObject {
         this.anim?.showFrame(frame);
         return;
       }
-      case 'repeatcount': // -1 = loop forever, and start playing (e.g. a conveyor belt)
+      case 'repeatcount': // -1 = loop forever. It doesn't start it: `play` does, or a move action
         this.looping = toNumber(value) < 0;
-        if (this.anim) {
-          this.anim.loop = this.looping;
-          if (this.looping) this.anim.playing = true;
-        }
+        if (this.anim) this.anim.loop = this.looping;
         return;
       case 'framenotification': // fire `frameNotify` on every frame
         this.frameNotification = truthy(value);
@@ -119,6 +116,24 @@ export class RAnimation extends DisplayObject {
       default:
         super.setProp(name, key, value);
     }
+  }
+
+  /**
+   * Runs the animation for as long as something moves along it -- CWS4's
+   * conveyor while a package rides on or off, OWS4's logs under a sentence --
+   * carrying on from the frame it rests on. The returned function puts it back
+   * the way it was: still again for the belt, but CBA2's water, which its
+   * script set playing for good, keeps going.
+   */
+  runWhileMoving(): () => void {
+    const wasPlaying = this.anim ? this.anim.playing : this.playWhenLoaded;
+    if (this.anim) this.anim.playing = true;
+    else this.playWhenLoaded = true;
+    return () => {
+      if (this.destroyed) return;
+      if (this.anim) this.anim.playing = wasPlaying;
+      else this.playWhenLoaded = wasPlaying;
+    };
   }
 
   /** Plays the animation once and calls `done` at the end. */
@@ -161,7 +176,7 @@ export class RAnimation extends DisplayObject {
     });
     if (this.onceDone) queueMicrotask(() => this.anim && (this.anim.playing = true));
     this.anim.loop = this.looping;
-    this.anim.playing = this.looping || this.playWhenLoaded;
+    this.anim.playing = this.playWhenLoaded;
     this.anim.setList(sequenceList(loaded));
     if (this.pendingFrame !== null) this.anim.showFrame(this.pendingFrame);
     this.view.addChild(this.anim);
@@ -198,6 +213,8 @@ export class RAnimation extends DisplayObject {
         if (this.anim) {
           this.anim.loop = true;
           this.anim.playing = true;
+        } else {
+          this.playWhenLoaded = true;
         }
         return 0;
       case 'setaocursor':

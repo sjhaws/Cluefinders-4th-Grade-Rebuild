@@ -975,9 +975,13 @@ export class RAttributeContainer extends RValueContainer {
     }
     const id = shapeId;
     const shape = new Sprite(Texture.EMPTY);
-    // `imageID, x, y, z, attribute` draws its image (OWS3's answer slots); the
-    // `imageID, z, attribute` shape is a hit mask over a map that shows the place.
-    shape.alpha = args.length === 5 ? 1 : 0;
+    // Both image forms draw their image. `imageID, x, y, z, attribute` is OWS3's
+    // answer slots; `imageID, z, attribute` is one of CWS4's choices -- a state
+    // or country in its own colour with its name on it, laid over a map that
+    // only has the borders. That one is part of the map's picture, so like the
+    // map (which CWS4 makes untouchy) it lets a click through to the background,
+    // where it interrupts the exportress.
+    if (args.length !== 5) this.touchy = false;
     this.view.addChild(shape);
     this.shape = shape;
     void engine.loadAseq(id).then((loaded) => {
