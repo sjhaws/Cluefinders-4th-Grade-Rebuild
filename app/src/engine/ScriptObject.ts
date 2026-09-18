@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import type { EngineObject, Value } from './ScriptVm';
-import { toNumber, toText, truthy } from './ScriptVm';
+import { toInt, toNumber, toText, truthy } from './ScriptVm';
 import type { GameEngine } from './GameEngine';
 import { viewHit } from './hitTest';
 
@@ -84,9 +84,9 @@ export class DisplayObject extends ScriptObject {
   setProp(name: string, key: Value | undefined, value: Value): void {
     if (this.destroyed) return;
     switch (name.toLowerCase()) {
-      case 'x': this.view.x = toNumber(value); return;
-      case 'y': this.view.y = toNumber(value); return;
-      case 'z': this.view.zIndex = toNumber(value); return;
+      case 'x': this.view.x = toInt(value); return;
+      case 'y': this.view.y = toInt(value); return;
+      case 'z': this.view.zIndex = toInt(value); return;
       case 'visible': this.view.visible = truthy(value); return;
       case 'touchy': this.touchy = truthy(value); return;
       case 'movable': this.movable = truthy(value); return;
@@ -106,7 +106,7 @@ export class DisplayObject extends ScriptObject {
         if (!this.destroyed) this.view.position.set(this.view.x + toNumber(args[0]), this.view.y + toNumber(args[1]));
         return 0;
       case 'place': // move to x, y
-        if (!this.destroyed) this.view.position.set(toNumber(args[0]), toNumber(args[1]));
+        if (!this.destroyed) this.view.position.set(toInt(args[0]), toInt(args[1]));
         return 0;
       default:
         return super.send(method, args);

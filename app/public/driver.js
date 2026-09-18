@@ -181,4 +181,30 @@ window.cfs = (() => {
 })();
 'cfs ready'
 
+/** Runs `once` up to `n` times in the background while `script` stays loaded; result lands in window.__L. */
+window.loop = (script, n, once) => {
+  window.__L = null;
+  (async () => {
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      if (cf.script() !== script) { out.push('left:' + cf.script()); break; }
+      await cf.sleep(1500); await cfx.skipMovies(4);
+      out.push(await once());
+      await cf.sleep(4500);
+    }
+    return out;
+  })().then(r => window.__L = r).catch(e => window.__L = { error: String(e) });
+  return 'started';
+};
+/** Fills the first open value container with the fewest pieces that sum to its value. */
+window.valueOnce = async () => {
+  const cr = cfs.containers().find(r => r.o.enabled && !r.o.isSolved());
+  if (!cr) return 'no-target';
+  const c = cr.o, t = cfs.rectOf(c);
+  const free = cfs.answers().filter(a => !a.o.used && !a.o.destroyed);
+  const pick = cfs.subset(free, Number(c.value));
+  if (!pick) return { target: Number(c.value), have: free.map(a => Number(a.o.value)), pick: null };
+  for (let i = 0; i < pick.length; i++) { const g = cfs.grip(pick[i]); await cf.drag(g.x, g.y, t.cx, t.cy); await cf.sleep(i < pick.length - 1 ? 350 : 100); }
+  return { target: Number(c.value), put: pick.map(p => Number(p.o.value)), inC: c.answers.length, solved: c.isSolved() };
+};
 'driver ready'

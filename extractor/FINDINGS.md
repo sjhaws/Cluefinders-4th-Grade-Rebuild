@@ -262,6 +262,27 @@ offset defaults to 0), the attribute string at `+0x124` and the value at
 1..4 -- box, box, text, text -- so each text draws just above its own box, and
 `graphic1OffsetZ` shifts the first pair.
 
+## Containers set their answers' z; script numbers reach objects via atoi
+
+**A container sets the z of an answer it takes, outright.** After placing the
+answer it calls `answer->setZ(container->getZ() + 1)`: RValueContainer
+`0x448f09`, RAttributeContainer `0x4173df`. RHorizontalContainer (`0x42d4cc`)
+and RHorizontalValueContainer (`0x42ef1f`) do the same for every answer in the
+row, stepped by `deltaZ` (and still `+ 1` when it is 0); RFabricContainer
+(`0x428ef4`) adds the bolt's segment count (`+0x128`, `perUnit * units`, the
+number of pieces it adds as children) instead of 1. This runs after the
+answer's own `dropped` handler (`0x41bf30` fires `dropped`, then hands the
+answer to its puzzle), so it overrides whatever the script set there: OWS4 sets
+every dropped word to `kAnswerStaticZ` (200), and the slot takes it back down
+to its place among the sentence's blocks. An answer's go-home (`0x41c174`)
+moves it home and restores the z it was constructed with (`+0x10c`).
+
+**Script numbers reach engine objects through `atoi`** (`0x49c068`): skip
+spaces, optional sign, digits up to the first non-digit. So a fraction is
+dropped (289.5 -> 289, -6.5 -> -6). The script VM's `/` is real division
+(OWS1 shows `v/100` as "3.5 in."), and scripts centre things with it, so the
+port truncates coordinates, sizes and z the same way where objects take them.
+
 ## `OMASolved` is never set: a bug in the game's own scripts
 
 `gPort.OMASolved` is read by the six Oasis location scripts (OLOC02..OLOC08) and

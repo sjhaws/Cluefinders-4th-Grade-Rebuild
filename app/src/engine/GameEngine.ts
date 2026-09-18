@@ -122,7 +122,10 @@ export class GameEngine implements ScriptHost {
   async mount(root: HTMLElement): Promise<void> {
     this.overlayRoot = root;
     root.style.position = 'relative';
-    await this.app.init({ width: STAGE_W, height: STAGE_H, background: 0x000000, antialias: false });
+    // The original draws on a whole-pixel grid. Scripts centre things with
+    // halves (OWS4 puts each word at its box's middle, x.5), and a sprite drawn
+    // at half a pixel is smeared across two -- its bitmap glyphs turn fuzzy.
+    await this.app.init({ width: STAGE_W, height: STAGE_H, background: 0x000000, antialias: false, roundPixels: true });
     root.appendChild(this.app.canvas);
     this.sceneRoot.sortableChildren = true;
     this.fade.rect(0, 0, STAGE_W, STAGE_H).fill(0x000000);

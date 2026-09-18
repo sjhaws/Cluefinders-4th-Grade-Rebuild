@@ -1,6 +1,6 @@
 import { Container, Sprite, Text, Texture } from 'pixi.js';
 import type { EngineObject, Value } from './ScriptVm';
-import { isEngineObject, toNumber, toText, truthy } from './ScriptVm';
+import { isEngineObject, toInt, toNumber, toText, truthy } from './ScriptVm';
 import { DisplayObject, ScriptObject } from './ScriptObject';
 import type { GameEngine } from './GameEngine';
 import { familyForFontName, sequenceList } from './DisplayObjects';
@@ -111,8 +111,8 @@ export class RAnswer extends DisplayObject {
   /** isUsed: placed in a container. Deleting the container doesn't clear it (OWS2 keeps a finished sentence's words). */
   used = false;
   anchored = false;
-  /** What its z was before a container raised it, so leaving one puts it back. */
-  raisedFrom: number | null = null;
+  /** The z it was made with: a container sets its own, and going home restores this (EXE VA 0x41c199). */
+  readonly homeZ: number;
   /** A hot point (e.g. a push pin's tip) is where the answer lands instead of its middle. */
   usesHotPoint = false;
   hotPointX = 0;
@@ -144,6 +144,7 @@ export class RAnswer extends DisplayObject {
     this.value = value ?? 0;
     this.view.position.set(x, y);
     this.view.zIndex = z;
+    this.homeZ = z;
     this.view.addChild(this.graphic);
     this.setGraphic(graphicId);
   }
@@ -218,6 +219,7 @@ export class RAnswer extends DisplayObject {
   goHome(): void {
     if (this.view.x !== this.homeX || this.view.y !== this.homeY) this.playSound('gohome');
     this.moveTo(this.homeX, this.homeY);
+    this.view.zIndex = this.homeZ;
   }
 
   getProp(name: string, key: Value | undefined): Value {
@@ -327,7 +329,7 @@ export class RAnswer extends DisplayObject {
 /** `RGraphicAnswer x, y, z, graphicID, attribute[, value]` */
 export class RGraphicAnswer extends RAnswer {
   constructor(engine: GameEngine, args: Value[]) {
-    super(engine, 'RGraphicAnswer', args.slice(0, 4).map(toNumber), args[4], args[5]);
+    super(engine, 'RGraphicAnswer', args.slice(0, 4).map(toInt), args[4], args[5]);
   }
 }
 
@@ -347,7 +349,7 @@ export class RGraphicTextAnswer extends RAnswer {
   private readonly unsubscribe: () => void;
 
   constructor(engine: GameEngine, args: Value[]) {
-    super(engine, 'RGraphicTextAnswer', args.slice(0, 4).map(toNumber), args[5], args[6]);
+    super(engine, 'RGraphicTextAnswer', args.slice(0, 4).map(toInt), args[5], args[6]);
     this.label = new AnswerLabel(engine, toText(args[4] ?? ''));
     this.view.addChild(this.label);
     this.layoutContent();
@@ -383,7 +385,7 @@ export class RGraphicTextAnswer extends RAnswer {
         return;
       case 'textoffsetx':
       case 'textoffsety':
-        this.props.set(name.toLowerCase(), toNumber(value));
+        this.props.set(name.toLowerCase(), toInt(value));
         this.layoutContent();
         return;
       case 'textcolorindex':
@@ -429,7 +431,7 @@ export class RDoubleGraphicTextAnswer extends RAnswer {
   private readonly unsubscribe: () => void;
 
   constructor(engine: GameEngine, args: Value[]) {
-    const [x1, y1, g1, , x2, y2, g2, , z] = args.map((a) => toNumber(a));
+    const [x1, y1, g1, , x2, y2, g2, , z] = args.map((a) => toInt(a));
     // The answer sits at the top-left of the two boxes together, not at the
     // first one: the EXE's constructor (VA 0x42374f) hands the RAnswer base
     // Point(min(x1, x2), min(y1, y2)). It matters because the second line has
@@ -496,7 +498,7 @@ export class RDoubleGraphicTextAnswer extends RAnswer {
       case 'text1offsety':
       case 'text2offsetx':
       case 'text2offsety':
-        this.props.set(name.toLowerCase(), toNumber(value));
+        this.props.set(name.toLowerCase(), toInt(value));
         this.layoutContent();
         return;
       case 'graphic1offsetz':
@@ -605,23 +607,21 @@ export class RValueContainer extends DisplayObject {
     if (!this.answers.includes(answer)) this.answers.push(answer);
     answer.container = this;
     answer.used = true;
-    this.raise(answer);
+    answer.view.zIndex = this.answerZ();
     this.layout();
   }
 
   /**
-   * What a container holds draws above it. That is what a drop area -- which is
-   * invisible -- has a z for at all: CWS3 leaves its word boxes at 2000 and puts
-   * the container at 2024, two above the sled, so a phrase dropped on the sled
-   * rides away on top of it instead of behind its deck; CWS1 has its cups at 10
-   * and the tray at 28. Only ever a raise: PWS2 gives its letter tiles a z per
-   * row, above every container already, and must keep its own order.
+   * The z an answer takes when it lands here: the container's own plus one,
+   * set outright (RValueContainer VA 0x448f09, RAttributeContainer 0x4173df).
+   * That is what a drop area -- which is invisible -- has a z for at all. It
+   * runs after the answer's own `dropped` handler, so it overrides whatever
+   * that set: CWS3 sets each phrase back to its paragraph z (2000 and down) and
+   * the container at 2024 lifts it onto the sled (2022); OWS4 sets every word
+   * to 200, and the slot takes it down to its place among the sentence's blocks.
    */
-  private raise(answer: RAnswer): void {
-    const above = this.view.zIndex + 1;
-    if (answer.view.zIndex >= above) return;
-    if (answer.raisedFrom === null) answer.raisedFrom = answer.view.zIndex;
-    answer.view.zIndex = above;
+  protected answerZ(): number {
+    return this.view.zIndex + 1;
   }
 
   remove(answer: RAnswer): void {
@@ -630,10 +630,6 @@ export class RValueContainer extends DisplayObject {
     if (answer.container === this) {
       answer.container = null;
       answer.used = false;
-    }
-    if (answer.raisedFrom !== null) {
-      answer.view.zIndex = answer.raisedFrom;
-      answer.raisedFrom = null;
     }
     this.flyOver.delete(answer);
     this.layout();
@@ -700,7 +696,7 @@ export class RValueContainer extends DisplayObject {
 /** A value container that lines its answers up left to right, as many as fit its width. */
 export class RHorizontalValueContainer extends RValueContainer {
   constructor(engine: GameEngine, args: Value[]) {
-    super(engine, 'RHorizontalValueContainer', args.slice(0, 5).map(toNumber), args[5]);
+    super(engine, 'RHorizontalValueContainer', args.slice(0, 5).map(toInt), args[5]);
   }
 
   private usedWidth(): number {
@@ -742,7 +738,7 @@ export class RStackingContainer extends RValueContainer {
   droppedSound = -1;
 
   constructor(engine: GameEngine, args: Value[]) {
-    super(engine, 'RStackingContainer', args.slice(0, 5).map(toNumber), args[5] ?? 1);
+    super(engine, 'RStackingContainer', args.slice(0, 5).map(toInt), args[5] ?? 1);
     this.solvedAnswerCount = args[6] === undefined ? -1 : toNumber(args[6]);
   }
 
@@ -825,7 +821,7 @@ export class RHorizontalContainer extends RValueContainer {
   private slideSound = -1;
 
   constructor(engine: GameEngine, args: Value[]) {
-    super(engine, 'RHorizontalContainer', args.slice(0, 5).map(toNumber), 0);
+    super(engine, 'RHorizontalContainer', args.slice(0, 5).map(toInt), 0);
   }
 
   private matchString(): string {
@@ -900,9 +896,9 @@ export class RHorizontalContainer extends RValueContainer {
     this.restack();
   }
 
+  /** Every answer in the row takes the row's z + 1, stepped by deltaZ (RHorizontalContainer VA 0x42d4cc). */
   private restack() {
-    if (this.deltaZ === 0) return;
-    const base = this.view.zIndex + 1;
+    const base = this.answerZ();
     const n = this.answers.length;
     this.answers.forEach((a, i) => {
       a.view.zIndex = this.deltaZ > 0 ? base + i * this.deltaZ : base + (n - 1 - i) * -this.deltaZ;
@@ -1015,11 +1011,11 @@ export class RAttributeContainer extends RValueContainer {
 
   /** `x, y, w, h, z` for the rectangle form, or the shape image's position and size. */
   private static area(engine: GameEngine, args: Value[], shapeId: number | null): number[] {
-    if (shapeId === null) return args.slice(0, 5).map(toNumber);
+    if (shapeId === null) return args.slice(0, 5).map(toInt);
     const [w, h] = engine.frameSize(shapeId) ?? [0, 0];
-    if (args.length === 5) return [toNumber(args[1]), toNumber(args[2]), w, h, toNumber(args[3])];
+    if (args.length === 5) return [toInt(args[1]), toInt(args[2]), w, h, toInt(args[3])];
     const [x, y] = engine.originOf(shapeId) ?? [0, 0];
-    return [x, y, w, h, toNumber(args[1])];
+    return [x, y, w, h, toInt(args[1])];
   }
 
   hits(answer: RAnswer): boolean {
@@ -1129,7 +1125,8 @@ export class RFabricContainer extends RValueContainer {
   private readonly unsubscribe: () => void;
 
   constructor(engine: GameEngine, args: Value[]) {
-    const [imageId, x, y, z, pixelsPerUnit, perUnit, units] = args.map((a) => toNumber(a));
+    const [imageId, pixelsPerUnit, perUnit, units] = [0, 4, 5, 6].map((i) => toNumber(args[i]));
+    const [x, y, z] = [1, 2, 3].map((i) => toInt(args[i]));
     const total = Math.max(1, perUnit * Math.max(1, units));
     const step = pixelsPerUnit / Math.max(1, perUnit);
     const width = engine.frameSize(imageId)?.[0] ?? 71;
@@ -1257,6 +1254,11 @@ export class RFabricContainer extends RValueContainer {
 
   layout(_immediate = false): void {
     // the scissors stay where they were dropped
+  }
+
+  /** Above every piece of the bolt: they stack from its z up (VA 0x428ef4 adds the segment count). */
+  protected answerZ(): number {
+    return this.view.zIndex + this.total;
   }
 
   getProp(name: string, key: Value | undefined): Value {

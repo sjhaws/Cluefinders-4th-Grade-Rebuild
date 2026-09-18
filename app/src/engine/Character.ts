@@ -2,7 +2,7 @@ import { AseqAnimation, SEQ_RESOURCE } from '../AseqAnimation';
 import type { LoadedAseq } from '../ResourceManager';
 import type { SequenceEntry } from '../types';
 import type { Value } from './ScriptVm';
-import { toNumber, truthy } from './ScriptVm';
+import { toInt, toNumber, truthy } from './ScriptVm';
 import { DisplayObject } from './ScriptObject';
 import type { GameEngine } from './GameEngine';
 import { aoPosition, sequenceList } from './DisplayObjects';
@@ -44,7 +44,7 @@ export class RCharacter extends DisplayObject {
 
   constructor(engine: GameEngine, args: Value[]) {
     super(engine, 'RCharacter');
-    this.view.zIndex = toNumber(args[1]);
+    this.view.zIndex = toInt(args[1]);
     void this.loadSettlePose(toNumber(args[0]));
   }
 
@@ -189,9 +189,10 @@ export class RCharacter extends DisplayObject {
   getProp(name: string, key: Value | undefined): Value {
     switch (name.toLowerCase()) {
       case 'animatesettled': return this.animateSettled ? 1 : 0;
-      // a character's position is its idle pose's stored position (e.g. CWS1 puts the tray on the waiter)
-      case 'x': return this.engine.originOf(this.settleId)?.[0] ?? 0;
-      case 'y': return this.engine.originOf(this.settleId)?.[1] ?? 0;
+      // a character's position is its idle pose's stored position (e.g. CWS1 puts the tray on the waiter),
+      // plus however far it has been moved since
+      case 'x': return (this.engine.originOf(this.settleId)?.[0] ?? 0) + this.view.x;
+      case 'y': return (this.engine.originOf(this.settleId)?.[1] ?? 0) + this.view.y;
       default: return super.getProp(name, key);
     }
   }
@@ -204,6 +205,17 @@ export class RCharacter extends DisplayObject {
         return;
       case 'settleposeid':
         void this.loadSettlePose(toNumber(value));
+        return;
+      // Every clip is drawn at its own stored screen position, so the view only
+      // carries the shift from there: setting x puts the idle pose's stored
+      // position at x, the inverse of reading it. OWS4 stands its two mice at
+      // the end of each sentence this way; taking x as a plain offset added the
+      // pose's own position again and put them some 500px off the right edge.
+      case 'x':
+        this.view.x = toInt(value) - (this.engine.originOf(this.settleId)?.[0] ?? 0);
+        return;
+      case 'y':
+        this.view.y = toInt(value) - (this.engine.originOf(this.settleId)?.[1] ?? 0);
         return;
       default:
         super.setProp(name, key, value);

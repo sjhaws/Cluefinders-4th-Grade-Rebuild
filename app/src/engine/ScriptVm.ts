@@ -70,6 +70,16 @@ function isNumeric(v: Value | undefined): boolean {
   return typeof v === 'string' && /^\s*-?\d+(\.\d+)?\s*$/.test(v);
 }
 
+/**
+ * A coordinate, size or z handed to an engine object. The EXE reads those with
+ * atoi (VA 0x49c068): digits up to the first non-digit, so a fraction is simply
+ * dropped -- 289.5 is 289, -6.5 is -6. Scripts centre things with /2, which is
+ * real division, so this is what keeps OWS4's blocks and words on whole pixels.
+ */
+export function toInt(v: Value | undefined): number {
+  return Math.trunc(toNumber(v));
+}
+
 export function toNumber(v: Value | undefined): number {
   if (typeof v === 'number') return v;
   if (typeof v === 'string') {

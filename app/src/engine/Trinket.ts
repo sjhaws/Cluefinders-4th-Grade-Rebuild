@@ -5,13 +5,19 @@ import type { GameEngine } from './GameEngine';
 
 /**
  * A group of display objects that move together (the CWS4 package with its
- * labels, the Oasis boat with the kids aboard). `addTrinket "name"[, zOffset]`;
- * setting x/y moves every member by the change, z restacks them.
+ * labels, the Oasis boat with the kids aboard). `addTrinket "name"[, zOffset[, tag]]`;
+ * setting x/y moves every member by the change, z restacks them, and
+ * `removeTrinkets tag` lets go of just the members added with that tag.
+ *
+ * Its x/y is the top-left of all its members together. In the EXE the members
+ * are its children (addTrinket VA 0x415688 calls addChild 0x414439 with the
+ * zOffset and tag), and a display object's rect is the union of its
+ * children's, remade on every add. OWS4 relies on it: it starts a sentence at
+ * `-sentenceWidth` and stops it at `kBoxX`, the first box's left edge, while
+ * the group's first member is the mouse pulling at the other end.
  */
 export class OMMultiTrinket extends ScriptObject {
-  private members: { name: string; dz: number }[] = [];
-  private x = 0;
-  private y = 0;
+  private members: { name: string; dz: number; tag: number }[] = [];
   private z = 0;
 
   constructor(engine: GameEngine) {
@@ -27,10 +33,23 @@ export class OMMultiTrinket extends ScriptObject {
     return out;
   }
 
+  /** Left and top of the members together; a member whose image hasn't loaded counts as its position. */
+  private corner(): [number, number] {
+    let left = Infinity;
+    let top = Infinity;
+    for (const { obj } of this.objects()) {
+      const b = obj.view.getBounds();
+      const loaded = Number.isFinite(b.minX) && b.maxX > b.minX;
+      left = Math.min(left, loaded ? b.minX : obj.view.x);
+      top = Math.min(top, loaded ? b.minY : obj.view.y);
+    }
+    return [Number.isFinite(left) ? left : 0, Number.isFinite(top) ? top : 0];
+  }
+
   getProp(name: string, key: Value | undefined): Value {
     switch (name.toLowerCase()) {
-      case 'x': return this.x;
-      case 'y': return this.y;
+      case 'x': return Math.round(this.corner()[0]);
+      case 'y': return Math.round(this.corner()[1]);
       case 'z': return this.z;
       case 'width':
       case 'height': {
@@ -48,15 +67,13 @@ export class OMMultiTrinket extends ScriptObject {
   setProp(name: string, key: Value | undefined, value: Value): void {
     switch (name.toLowerCase()) {
       case 'x': {
-        const dx = toNumber(value) - this.x;
+        const dx = toNumber(value) - this.corner()[0];
         for (const { obj } of this.objects()) obj.view.x += dx;
-        this.x = toNumber(value);
         return;
       }
       case 'y': {
-        const dy = toNumber(value) - this.y;
+        const dy = toNumber(value) - this.corner()[1];
         for (const { obj } of this.objects()) obj.view.y += dy;
-        this.y = toNumber(value);
         return;
       }
       case 'z':
@@ -76,21 +93,26 @@ export class OMMultiTrinket extends ScriptObject {
     switch (method.toLowerCase()) {
       case 'addtrinket': {
         const name = toText(args[0]);
-        const obj = this.engine.lookupVar(name);
-        if (this.members.length === 0 && obj instanceof DisplayObject) {
-          // the group's position is its first member's
-          this.x = obj.view.x;
-          this.y = obj.view.y;
-        }
-        this.members.push({ name, dz: toNumber(args[1] ?? 0) });
+        this.members.push({ name, dz: toNumber(args[1] ?? 0), tag: toNumber(args[2] ?? 0) });
         return 0;
       }
-      case 'removetrinkets':
-        this.members = [];
+      case 'removetrinkets': {
+        // OWS4 tags its running mice 1 and swaps them for pulling mice halfway
+        // in with `removeTrinkets 1`; the boxes and words must stay in the group,
+        // or they stop where the swap happens while the mice carry on.
+        if (args[0] === undefined) {
+          this.members = [];
+        } else {
+          const tag = toNumber(args[0]);
+          this.members = this.members.filter((m) => m.tag !== tag);
+        }
         return 0;
+      }
       case 'offset': // move by dx, dy (OMA's catapult)
-        this.setProp('x', undefined, this.x + toNumber(args[0]));
-        this.setProp('y', undefined, this.y + toNumber(args[1]));
+        for (const { obj } of this.objects()) {
+          obj.view.x += toNumber(args[0]);
+          obj.view.y += toNumber(args[1]);
+        }
         return 0;
       default:
         return super.send(method, args);

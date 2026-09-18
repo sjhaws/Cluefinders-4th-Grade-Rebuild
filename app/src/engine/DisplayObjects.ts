@@ -3,7 +3,7 @@ import { AseqAnimation } from '../AseqAnimation';
 import type { LoadedAseq } from '../ResourceManager';
 import type { SequenceEntry } from '../types';
 import type { Value } from './ScriptVm';
-import { toNumber, toText, truthy } from './ScriptVm';
+import { toInt, toNumber, toText, truthy } from './ScriptVm';
 import { DisplayObject } from './ScriptObject';
 import type { GameEngine } from './GameEngine';
 import { BitmapLabel, bitmapFonts, type BitmapFontData } from './BitmapFont';
@@ -68,6 +68,8 @@ export class RAnimation extends DisplayObject {
   private frameNotification = false;
   private playWhenLoaded = false;
   private pausedMidway = false;
+  /** Positioned in the constructor; the image's own position only applies when it wasn't. */
+  private placed = false;
   /** PWS2 recolours its chalk alphabet between crosswords (replacePaletteEntry). */
   private baseFrames: Texture[] = [];
   private readonly swaps = new PaletteSwaps();
@@ -79,11 +81,17 @@ export class RAnimation extends DisplayObject {
     super(engine, 'RAnimation');
     this.movable = true; // scripts switch this off for scenery
     this.aoid = toNumber(args.length < 3 ? args[0] : args[2]);
-    // position known up front so scripts can read x/y before the image loads
-    const origin = args.length < 3 ? engine.originOf(this.aoid) : null;
-    if (origin) this.view.position.set(origin[0], origin[1]);
-    if (args.length < 3) void this.init(USE_AO_COORDS, USE_AO_COORDS, this.aoid);
-    else void this.init(toNumber(args[0]), toNumber(args[1]), this.aoid);
+    // The position is known up front, so scripts can read x/y -- and move it --
+    // before the image loads: OWS4 builds its word boxes and slides them into
+    // place in a group straight away, and a position set only once the image
+    // arrived would undo the slide and leave each box behind its word.
+    const given = args.length >= 3 && toNumber(args[0]) !== USE_AO_COORDS;
+    const at = given ? [toInt(args[0]), toInt(args[1])] : engine.originOf(this.aoid);
+    if (at) {
+      this.view.position.set(at[0], at[1]);
+      this.placed = true;
+    }
+    void this.init(this.aoid);
   }
 
   getProp(name: string, key: Value | undefined): Value {
@@ -156,7 +164,7 @@ export class RAnimation extends DisplayObject {
     super.destroy();
   }
 
-  private async init(x: number, y: number, aoid: number) {
+  private async init(aoid: number) {
     const loaded = await this.engine.loadAseq(aoid);
     if (!loaded || this.destroyed) return;
     this.baseFrames = loaded.frames;
@@ -180,8 +188,10 @@ export class RAnimation extends DisplayObject {
     this.anim.setList(sequenceList(loaded));
     if (this.pendingFrame !== null) this.anim.showFrame(this.pendingFrame);
     this.view.addChild(this.anim);
-    const [px, py] = x === USE_AO_COORDS ? aoPosition(loaded) : [x, y];
-    this.view.position.set(px, py);
+    if (!this.placed) {
+      const [px, py] = aoPosition(loaded);
+      this.view.position.set(px, py);
+    }
   }
 
   send(method: string, args: Value[]): Value {
@@ -319,7 +329,7 @@ export class RText extends DisplayObject {
     this.centred = args.length === 5 && truthy(args[4]);
     if (this.centred) this.label.anchor.set(0.5);
     this.view.addChild(this.label, this.bitmap);
-    this.view.position.set(toNumber(args[2]), toNumber(args[3]));
+    this.view.position.set(toInt(args[2]), toInt(args[3]));
     if (args.length >= 7 && toNumber(args[4]) > 0 && truthy(args[6])) {
       this.wrapWidth = toNumber(args[4]);
       this.label.style.wordWrap = true;
@@ -434,11 +444,11 @@ export class RText extends DisplayObject {
 export class RHotSpot extends DisplayObject {
   constructor(engine: GameEngine, args: Value[]) {
     super(engine, 'RHotSpot');
-    const [x1, y1, x2, y2] = args.map(toNumber);
+    const [x1, y1, x2, y2] = args.map(toInt);
     const area = new Graphics().rect(0, 0, Math.max(1, x2 - x1), Math.max(1, y2 - y1)).fill({ color: 0, alpha: 0.001 });
     this.view.addChild(area);
     this.view.position.set(x1, y1);
-    if (args.length > 4) this.view.zIndex = toNumber(args[4]);
+    if (args.length > 4) this.view.zIndex = toInt(args[4]);
   }
 
   send(method: string, args: Value[]): Value {
