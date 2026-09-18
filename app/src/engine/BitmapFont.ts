@@ -22,6 +22,23 @@ export interface BitmapFontData {
 }
 
 /**
+ * The strike indexes its glyphs by Mac OS Roman byte -- these are Mac fonts --
+ * while a script's text arrives as Unicode, because the extractor decodes .MPS
+ * strings as Mac OS Roman (see mps.py). The two agree below 128 and nowhere
+ * above it: CWS1's "60 \u00f7 6 = ?" holds U+00F7 for a glyph stored at 0xD6.
+ */
+const MAC_ROMAN_HIGH = '\u00c4\u00c5\u00c7\u00c9\u00d1\u00d6\u00dc\u00e1\u00e0\u00e2\u00e4\u00e3\u00e5\u00e7\u00e9\u00e8\u00ea\u00eb\u00ed\u00ec\u00ee\u00ef\u00f1\u00f3\u00f2\u00f4\u00f6\u00f5\u00fa\u00f9\u00fb\u00fc\u2020\u00b0\u00a2\u00a3\u00a7\u2022\u00b6\u00df\u00ae\u00a9\u2122\u00b4\u00a8\u2260\u00c6\u00d8\u221e\u00b1\u2264\u2265\u00a5\u00b5\u2202\u2211\u220f\u03c0\u222b\u00aa\u00ba\u03a9\u00e6\u00f8\u00bf\u00a1\u00ac\u221a\u0192\u2248\u2206\u00ab\u00bb\u2026\u00a0\u00c0\u00c3\u00d5\u0152\u0153\u2013\u2014\u201c\u201d\u2018\u2019\u00f7\u25ca\u00ff\u0178\u2044\u20ac\u2039\u203a\ufb01\ufb02\u2021\u00b7\u201a\u201e\u2030\u00c2\u00ca\u00c1\u00cb\u00c8\u00cd\u00ce\u00cf\u00cc\u00d3\u00d4\uf8ff\u00d2\u00da\u00db\u00d9\u0131\u02c6\u02dc\u00af\u02d8\u02d9\u02da\u00b8\u02dd\u02db\u02c7';
+const TO_MAC_ROMAN = new Map<number, number>();
+for (let i = 0; i < MAC_ROMAN_HIGH.length; i++) TO_MAC_ROMAN.set(MAC_ROMAN_HIGH.charCodeAt(i), 128 + i);
+
+/** The strike's index for a character, or -1 when this font has no glyph for it. */
+export function macRomanCode(ch: string): number {
+  const code = ch.charCodeAt(0);
+  if (code < 128) return code;
+  return TO_MAC_ROMAN.get(code) ?? -1;
+}
+
+/**
  * The game's own bitmap fonts, extracted from FONT.RSC (see extractor/nfnt.py).
  * Each font is one atlas image holding every glyph side by side, so a glyph is
  * a rectangle in it; the atlas is white on transparent and gets tinted to the
@@ -112,7 +129,7 @@ export class BitmapFontSet {
   measure(font: BitmapFontData, text: string): number {
     let width = 0;
     for (const ch of text) {
-      const rect = font.glyphs[String(ch.charCodeAt(0))];
+      const rect = font.glyphs[String(macRomanCode(ch))];
       if (rect) width += rect[3];
     }
     return width;
@@ -205,7 +222,7 @@ export class BitmapLabel extends Container {
     for (const line of lines) {
       let pen = this.centred ? -bitmapFonts.measure(font, line) / 2 : 0;
       for (const ch of line) {
-        const code = ch.charCodeAt(0);
+        const code = macRomanCode(ch);
         const rect = font.glyphs[String(code)];
         if (!rect) continue;
         const texture = bitmapFonts.glyphTexture(font, code);

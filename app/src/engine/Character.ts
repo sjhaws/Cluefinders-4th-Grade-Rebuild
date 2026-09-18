@@ -31,6 +31,8 @@ interface ClipEvents {
 export class RCharacter extends DisplayObject {
   private settlePose: LoadedAseq | null = null;
   private settleId = 0;
+  /** Showing the idle pose, rather than a held animation frame or speech. */
+  private settled = false;
   private clip: AseqAnimation | null = null;
   private busy = false;
   private paused = false;
@@ -55,6 +57,7 @@ export class RCharacter extends DisplayObject {
   }
 
   private showClip(loaded: LoadedAseq, list: SequenceEntry[], loop: boolean, events: ClipEvents = {}): AseqAnimation {
+    this.settled = loaded === this.settlePose;
     this.clip?.destroy();
     const anim = new AseqAnimation(loaded.frames, events);
     anim.loop = loop;
@@ -172,7 +175,11 @@ export class RCharacter extends DisplayObject {
     const delay = (g.minMs + Math.random() * Math.max(0, g.maxMs - g.minMs)) / this.engine.timeScale;
     g.timer = setTimeout(() => {
       if (this.destroyed || !this.fidgets.has(group)) return;
-      if (!this.busy && !this.paused && this.view.visible && g.ids.length) {
+      // Only an idle character fidgets. A character told to hold an animation's
+      // last frame -- how every script walks one out of the scene -- is left
+      // wherever that frame put it, and a fidget would draw it back at its idle
+      // position, so the kids would pop back into the frame they just left.
+      if (this.settled && !this.busy && !this.paused && this.view.visible && g.ids.length) {
         void this.playAnim(g.ids[Math.floor(Math.random() * g.ids.length)]);
       }
       this.scheduleFidget(group);

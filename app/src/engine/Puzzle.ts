@@ -111,6 +111,8 @@ export class RAnswer extends DisplayObject {
   /** isUsed: placed in a container. Deleting the container doesn't clear it (OWS2 keeps a finished sentence's words). */
   used = false;
   anchored = false;
+  /** What its z was before a container raised it, so leaving one puts it back. */
+  raisedFrom: number | null = null;
   /** A hot point (e.g. a push pin's tip) is where the answer lands instead of its middle. */
   usesHotPoint = false;
   hotPointX = 0;
@@ -418,8 +420,9 @@ export class RDoubleGraphicTextAnswer extends RAnswer {
   private readonly graphic2 = new Sprite();
   private readonly label1: AnswerLabel;
   private readonly label2: AnswerLabel;
+  /** Each box's place within the answer, and its own size: the text is centred on it, as a single box's is. */
+  private readonly offset1: [number, number];
   private readonly offset2: [number, number];
-  /** The two boxes' own sizes: the text is centred on each, as a single box's is. */
   private readonly box1: [number, number];
   private readonly box2: [number, number];
   private colorIndex: number | null = null;
@@ -427,22 +430,30 @@ export class RDoubleGraphicTextAnswer extends RAnswer {
 
   constructor(engine: GameEngine, args: Value[]) {
     const [x1, y1, g1, , x2, y2, g2, , z] = args.map((a) => toNumber(a));
-    super(engine, 'RDoubleGraphicTextAnswer', [x1, y1, z, g1], args[9], args[10]);
-    this.offset2 = [x2 - x1, y2 - y1];
+    // The answer sits at the top-left of the two boxes together, not at the
+    // first one: the EXE's constructor (VA 0x42374f) hands the RAnswer base
+    // Point(min(x1, x2), min(y1, y2)). It matters because the second line has
+    // wrapped back to the left margin, so it starts well left of the first --
+    // CWS3 puts it 204 and more to the left.
+    const originX = Math.min(x1, x2);
+    const originY = Math.min(y1, y2);
+    super(engine, 'RDoubleGraphicTextAnswer', [originX, originY, z, g1], args[9], args[10]);
+    this.offset1 = [x1 - originX, y1 - originY];
+    this.offset2 = [x2 - originX, y2 - originY];
     this.label1 = new AnswerLabel(engine, toText(args[3] ?? ''));
     this.label2 = new AnswerLabel(engine, toText(args[7] ?? ''));
+    this.graphic.position.set(this.offset1[0], this.offset1[1]);
     this.graphic2.position.set(this.offset2[0], this.offset2[1]);
     this.view.addChild(this.graphic2, this.label1, this.label2);
     this.box1 = [this.size[0], this.size[1]];
     this.box2 = engine.frameSize(g2) ?? [0, 0];
-    // The second line wraps back to the left margin, so it starts well LEFT of
-    // the first (CWS3 offsets it by -204 and more) and this reaches no further
-    // right than the first box. The answer's rect therefore covers the first box
-    // and the second line's depth, not the ground the second box stands on; the
-    // second box is still drawn and hit-tested, as a child of the view.
+    // ...and its size is the two boxes' union, because the EXE keeps a display
+    // object's rect as the union of its children's and remakes it whenever one
+    // is added (addChild VA 0x414851 -> 0x415f7d). One box always starts at the
+    // origin on each axis, so the union is just the further of the two edges.
     this.size = [
-      Math.max(this.box1[0], this.offset2[0] + this.box2[0]),
-      Math.max(this.box1[1], this.offset2[1] + this.box2[1]),
+      Math.max(this.offset1[0] + this.box1[0], this.offset2[0] + this.box2[0]),
+      Math.max(this.offset1[1] + this.box1[1], this.offset2[1] + this.box2[1]),
     ];
     void engine.loadAseq(g2).then((loaded) => {
       if (loaded && !this.destroyed) this.graphic2.texture = loaded.frames[0];
@@ -451,13 +462,18 @@ export class RDoubleGraphicTextAnswer extends RAnswer {
     this.unsubscribe = engine.onPalette(() => this.restyle());
   }
 
-  /** Each line is centred on its own box, exactly as a single box's text is. */
+  /**
+   * Each line is centred on its own box, exactly as a single box's text is,
+   * then nudged by its offset -- which starts at 0, as the EXE's constructor
+   * zeroes all four (they live at `+0x144`, `+0x148`, `+0x14c` and `+0x150`).
+   * CWS3, the only script that makes these, sets all four either way.
+   */
   protected layoutContent(): void {
     if (!this.label1) return;
-    const n = (key: string) => toNumber(this.props.get(key) ?? 2);
+    const n = (key: string) => toNumber(this.props.get(key) ?? 0);
     this.label1.place(
-      Math.round(this.box1[0] / 2 + n('text1offsetx')),
-      Math.round(this.box1[1] / 2 + n('text1offsety')),
+      Math.round(this.offset1[0] + this.box1[0] / 2 + n('text1offsetx')),
+      Math.round(this.offset1[1] + this.box1[1] / 2 + n('text1offsety')),
       true
     );
     this.label2.place(
@@ -589,7 +605,23 @@ export class RValueContainer extends DisplayObject {
     if (!this.answers.includes(answer)) this.answers.push(answer);
     answer.container = this;
     answer.used = true;
+    this.raise(answer);
     this.layout();
+  }
+
+  /**
+   * What a container holds draws above it. That is what a drop area -- which is
+   * invisible -- has a z for at all: CWS3 leaves its word boxes at 2000 and puts
+   * the container at 2024, two above the sled, so a phrase dropped on the sled
+   * rides away on top of it instead of behind its deck; CWS1 has its cups at 10
+   * and the tray at 28. Only ever a raise: PWS2 gives its letter tiles a z per
+   * row, above every container already, and must keep its own order.
+   */
+  private raise(answer: RAnswer): void {
+    const above = this.view.zIndex + 1;
+    if (answer.view.zIndex >= above) return;
+    if (answer.raisedFrom === null) answer.raisedFrom = answer.view.zIndex;
+    answer.view.zIndex = above;
   }
 
   remove(answer: RAnswer): void {
@@ -598,6 +630,10 @@ export class RValueContainer extends DisplayObject {
     if (answer.container === this) {
       answer.container = null;
       answer.used = false;
+    }
+    if (answer.raisedFrom !== null) {
+      answer.view.zIndex = answer.raisedFrom;
+      answer.raisedFrom = null;
     }
     this.flyOver.delete(answer);
     this.layout();

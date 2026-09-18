@@ -202,6 +202,66 @@ in the style flag, which is what identifies it as bold:
 COMMON.RSC ones (20 is both a font and the open backpack), so fonts are
 addressed through their own index, never through the shared ASEQ id map.
 
+## The strikes are indexed by Mac OS Roman byte
+
+`FONT.RSC` holds Mac fonts, so a strike's glyphs are numbered by **Mac OS Roman
+byte**, not Unicode. `mps.py` decodes script strings as Mac OS Roman, so by the
+time text reaches the engine it is Unicode, and the two only agree below 128.
+
+CWS1's "60 ÷ 6 = ?" is the case that showed it: the division sign is U+00F7,
+while the glyph sits at 0xD6 (214), so the lookup missed and the character
+silently vanished -- the board read "60  6 = ?". Anything above 127 was
+affected: ≤ ≥ ≠ • ° – and the curly quotes.
+
+Proof of the encoding, rather than inference: glyphs 174, 176, 178, 213, 214,
+215, 216 render as Æ ∞ ≤ ’ ÷ ◊ ÿ -- the Mac OS Roman characters for
+those bytes, not Latin-1's ® ° ² Õ Ö × Ø.
+
+`BitmapFont.ts` therefore maps each character back to its Mac OS Roman byte
+(`macRomanCode`) before indexing the strike. Mac OS Roman has no ×, so a
+multiplication sign has no glyph and never did.
+
+## Display objects: position, rect and `RDoubleGraphicTextAnswer`
+
+Every display object keeps a rect at `+0x48`; the virtual at vtable `+0x44`
+just returns `&this->rect` (VA `0x4169f0`), and `setX` / `setY` / `moveTo`
+(`+0x4c`, `+0x54`, `+0x5c`) work out a delta from `rect.left` / `rect.top` and
+call `moveBy` (`+0xcc`). So an object's position *is* its rect's top-left.
+
+The rect is **the union of the object's children's rects**, remade from
+scratch every time one is added: `addChild` (`0x414439`) ends by calling
+`0x415f7d`, which walks the child list at `+0xc8`, starts from an empty rect,
+unions each child's `getRect()` and stores the result. Nothing else sizes an
+answer -- `RGraphicAnswer` (`0x429dc5`) and `RDoubleGraphicTextAnswer`
+(`0x42372d`) both hand their base only a point and a z, then add sprites.
+
+`RAnswer` keeps four inset margins at `+0xfc`/`+0x100`/`+0x104`/`+0x108`
+(`extraBottom`, `extraLeft`, `extraRight`, `extraTop`), all zeroed by its
+constructor (`0x41bbad`) and applied by `0x41c0c3`, which returns the rect
+inset by them -- the script-visible `extraLeft` and friends.
+
+`RDoubleGraphicTextAnswer(Point(x1,y1), graphic1, text1, Point(x2,y2),
+graphic2, text2, z, attribute, value)` therefore:
+
+- sits at **`(min(x1, x2), min(y1, y2))`** -- its constructor hands the base
+  the smaller of each coordinate (`0x42374f`), not the first box's corner.
+  This matters because the second line has wrapped back to the left margin, so
+  it starts well left of the first: CWS3 offsets it by 204 and more.
+- is **as big as the two boxes together**, by the addChild rule above.
+- **centres each line's text on its own box**: for each text it reads the
+  box's left and top (`+0x50`, `+0x58`), takes half the box's width and height
+  from its rect, and builds the text at that point (`0x4238f4` and `0x423a16`)
+  -- exactly what a single box's text does, so the same `kBoxTextOffset` means
+  the same thing in both.
+
+It stores the two points at `+0x130` and `+0x138`, the four text offsets at
+`+0x144`, `+0x148`, `+0x14c` and `+0x150` (their getters are `0x4251ca`,
+`0x4251e8`, `0x425206`; the constructor zeroes that whole range, so every
+offset defaults to 0), the attribute string at `+0x124` and the value at
+`+0x128`. Its four children are added with z offsets
+1..4 -- box, box, text, text -- so each text draws just above its own box, and
+`graphic1OffsetZ` shifts the first pair.
+
 ## `OMASolved` is never set: a bug in the game's own scripts
 
 `gPort.OMASolved` is read by the six Oasis location scripts (OLOC02..OLOC08) and
