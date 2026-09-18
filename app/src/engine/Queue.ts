@@ -93,7 +93,7 @@ export function makeAction(engine: GameEngine, first: Value, args: Value[]): Que
         else engine.warn(`PropertyAction: ${toText(args[0])} is not an object`);
         setTimeout(done, 0);
       });
-    case 'characteranimaction':
+    case 'characteranimaction': // "name", animID[, repeat[, visibleAfter[, wait]]]
       return characterAction(engine, bound,(c) =>
         c.playAnim(toNumber(args[1]), args[2] === undefined ? 1 : toNumber(args[2]), args[3] === undefined || truthy(args[3]))
       );

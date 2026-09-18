@@ -325,3 +325,17 @@ From the earlier live sessions — still accurate:
 - Static analysis of the generic `Resource` class (vtable `0x4dd258`, load
   method `FUN_00463eb2`, factories `FUN_00473b3c`/`FUN_00456ab0`): loading is
   type-agnostic, so it never led to the decoder.
+
+## CharacterAnimAction's last argument is "visible afterwards"
+
+`CharacterAnimAction "name", animID[, repeat[, visibleAfter[, wait]]]` (factory
+0x40bbf4, constructor 0x40bafc): the fourth argument is stored on the action at
++0x20 (default 1 when omitted) and handed to RCharacter's play method (0x41fb92),
+which keeps it at character +0xf8. When the animation ends (0x41f540, and the
+stop path at 0x4210c9) the character drops the animation's child, shows its idle
+pose (child 1) and, if +0xf8 is 0, calls its own setVisible(0) (vtable +0x74;
+RCharacter's override is 0x4210e0, +0x78 is getVisible). Nothing holds the last
+frame. All 220 walk-outs pass 0 and walk-ins pass 1: CBA1's kids vanish into the
+jeep (its drive-out animation draws them) and `eNewPuzzle` makes them visible
+again at their spots after the garage movie. The fifth argument is the action's
+wait flag (base constructor 0x401109).

@@ -32,7 +32,6 @@ export class RCharacter extends DisplayObject {
   private settlePose: LoadedAseq | null = null;
   private settleId = 0;
   /** Showing the idle pose, rather than a held animation frame or speech. */
-  private settled = false;
   private clip: AseqAnimation | null = null;
   private busy = false;
   private paused = false;
@@ -57,7 +56,6 @@ export class RCharacter extends DisplayObject {
   }
 
   private showClip(loaded: LoadedAseq, list: SequenceEntry[], loop: boolean, events: ClipEvents = {}): AseqAnimation {
-    this.settled = loaded === this.settlePose;
     this.clip?.destroy();
     const anim = new AseqAnimation(loaded.frames, events);
     anim.loop = loop;
@@ -80,8 +78,16 @@ export class RCharacter extends DisplayObject {
     this.cancelActivity?.();
   }
 
-  /** Plays an animation `repeat` times, then settles (or holds the last frame). */
-  playAnim(id: number, repeat = 1, settle = true): Promise<void> {
+  /**
+   * Plays an animation `repeat` times, then goes back to the idle pose -- hidden when
+   * `visibleAfter` is false. That is CharacterAnimAction's fourth argument (default 1): the
+   * EXE keeps it at +0xf8 and, as the animation ends (0x41f540), drops the clip, shows the
+   * idle pose and hides the character if it is 0. So a walk-out ends with the character
+   * gone, not held on its last frame: CBA1's kids climb into a jeep and vanish, and the
+   * jeep's drive-out animation, which draws them, carries them off; back from the garage,
+   * `visible` brings them back at their spots.
+   */
+  playAnim(id: number, repeat = 1, visibleAfter = true): Promise<void> {
     this.interrupt();
     return new Promise((resolve) => {
       this.busy = true;
@@ -91,7 +97,8 @@ export class RCharacter extends DisplayObject {
         over = true;
         this.cancelActivity = null;
         this.busy = false;
-        if (settle) queueMicrotask(() => !this.busy && this.showSettle());
+        if (!visibleAfter) this.view.visible = false;
+        queueMicrotask(() => !this.busy && this.showSettle());
         resolve();
       };
       this.cancelActivity = finish;
@@ -175,11 +182,9 @@ export class RCharacter extends DisplayObject {
     const delay = (g.minMs + Math.random() * Math.max(0, g.maxMs - g.minMs)) / this.engine.timeScale;
     g.timer = setTimeout(() => {
       if (this.destroyed || !this.fidgets.has(group)) return;
-      // Only an idle character fidgets. A character told to hold an animation's
-      // last frame -- how every script walks one out of the scene -- is left
-      // wherever that frame put it, and a fidget would draw it back at its idle
-      // position, so the kids would pop back into the frame they just left.
-      if (this.settled && !this.busy && !this.paused && this.view.visible && g.ids.length) {
+      // Only an idle, visible character fidgets: a walk-out ends with the character
+      // hidden (see playAnim), and a fidget would draw it back at its idle spot.
+      if (!this.busy && !this.paused && this.view.visible && g.ids.length) {
         void this.playAnim(g.ids[Math.floor(Math.random() * g.ids.length)]);
       }
       this.scheduleFidget(group);
