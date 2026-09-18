@@ -95,7 +95,11 @@ starts there instead of STARTUP. `?turbo=8` fast-forwards the game (animations,
 queue delays and sounds run 8 times faster) for testing long stretches.
 `?webfonts` draws text with web stand-ins instead of the game's own bitmap
 fonts, to compare the two. Player saves live in the browser's
-localStorage. Movies play from `output/video` (a card stands in for any that
+localStorage; when a player signs in, the game asks the browser to keep them
+(`navigator.storage.persist()`) rather than clear them when space runs short.
+Chrome decides by itself (it tends to say yes to sites a player visits often
+or bookmarks), Firefox asks the player once, and Safari may still clear them
+after 7 days without a visit. Movies play from `output/video` (a card stands in for any that
 aren't converted); clicking a movie skips it.
 
 `?browser` opens the asset browser (`src/browser/AssetBrowser.ts`): pick a

@@ -140,6 +140,25 @@ function store(key: string, value: unknown): void {
   }
 }
 
+let keepSavesAsked = false;
+
+/**
+ * Asks the browser to keep the saves rather than clear them when it runs
+ * short of space (Chrome decides by itself; Firefox asks the player once).
+ * Asked once a session, when a player signs in.
+ */
+function keepSaves(): void {
+  if (keepSavesAsked) return;
+  keepSavesAsked = true;
+  const storage = navigator.storage;
+  if (!storage?.persist) return;
+  storage.persisted()
+    .then((kept) => kept || storage.persist())
+    .catch(() => {
+      /* not granted: saves stay, but the browser may clear them */
+    });
+}
+
 function toStored(v: Value): Stored {
   return typeof v === 'number' ? v : toText(v);
 }
@@ -423,6 +442,7 @@ export class WorldState {
   activate(nameOrIndex: string): void {
     if (nameOrIndex.startsWith('#')) {
       this.active = this.players[toNumber(nameOrIndex.slice(1))] ?? null;
+      if (this.active) keepSaves();
       return;
     }
     const lower = nameOrIndex.toLowerCase();
@@ -433,6 +453,7 @@ export class WorldState {
       store(PLAYERS_KEY, this.players);
     }
     this.active = player;
+    keepSaves();
   }
 
   remove(name: string): void {
