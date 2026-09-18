@@ -10,7 +10,7 @@ built from your original CD files.
 |---|---|
 | `.RSC` container format (NE resource tables) | **Solved** |
 | `RESOURCE.MAP` / `AUDIO.MAP` catalog parsing | **Solved** |
-| Audio extraction (WAVE resources + BGMUSIC tracks) | **Solved** — raw RIFF/WAVE, no decoding needed |
+| Audio extraction (WAVE resources + BGMUSIC tracks) | **Solved** — raw RIFF/WAVE (8-bit mono 22 kHz), encoded to MP3 for the web: 185 MB → 61 MB, and browsers decode each one to exactly the original's samples |
 | Video conversion (Smacker → MP4) | **Solved** — all 23 movies via ffmpeg (H.264 + AAC, plays in every browser incl. iOS Safari) |
 | ASEQ image/animation pixel format | **Solved** — 3,129 of 3,138 resources, 20,945 frames |
 | Colour palettes | **Solved** — all 3,129 image resources in real colour, from 47 captured scene palettes. The last six (CLOC07, CLOC09, CLOC13, PBA, PLOC3, PWS1) were read off screenshots of the running game rather than its memory: `extractor/palette_from_screenshot.py` |
@@ -31,7 +31,7 @@ extractor/            Python asset-extraction pipeline (offline, run once)
   nfnt.py                NFNT bitmap font decoder (FONT.RSC)
   extract_fonts.py       NFNT -> glyph atlas PNG + metrics index.json
   extract_images.py      ASEQ -> RGBA PNG sprite sheets + aseq_index.json
-  extract_audio.py       WAVE resources -> .wav files
+  extract_audio.py       WAVE resources -> .mp3 files (needs ffmpeg)
   extract_video.py       Smacker -> MP4 conversion
   build_manifest.py      Combines everything into manifest.json
   mps.py                 Compiled game script (.MPS) parser
@@ -48,7 +48,7 @@ app/                  Runtime web app (Vite + TypeScript + PixiJS)
 
 ## Running the extraction pipeline
 
-Requires Python 3 with Pillow and numpy; video conversion also needs ffmpeg.
+Requires Python 3 with Pillow and numpy; audio and video conversion also need ffmpeg.
 `GAME` is the folder containing `4THADV32.EXE`.
 
 ```bash
@@ -105,11 +105,16 @@ pauses, → steps.
 
 `app/public/assets` is a symlink to `../../output`, so re-running the
 extractor updates the app with no copying. `npm run build` copies the assets
-into `dist/` (~250 MB).
+into `dist/` (~200 MB).
 
 ## Deploying
 
 The app builds to fully static files (`app/dist/`), so any static host works.
+Production builds stamp every game file's URL with `?v=` and a hash of all the
+game files (`app/vite.config.ts`), so `app/public/_headers` can tell Netlify to
+let browsers cache everything under `/assets/` for a year: a returning player
+downloads nothing again until the files change, and then the new hash fetches
+fresh copies.
 The extracted assets are The Learning Company's copyrighted game content: keep
 a deployment private, or have the app extract assets from the player's own CD
 files in the browser.

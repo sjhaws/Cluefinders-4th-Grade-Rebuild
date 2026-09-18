@@ -27,7 +27,7 @@ def main():
     resource_map = parse_map_file(str(rsc_dir / "RESOURCE.MAP"))
     audio_map = parse_map_file(str(rsc_dir / "AUDIO.MAP"))
 
-    audio_files = {p.stem: p.name for p in (out_dir / "audio").glob("*.wav")} \
+    audio_files = {p.stem: p.name for p in (out_dir / "audio").glob("*.mp3")} \
         if (out_dir / "audio").exists() else {}
     # keyed by lower-case stem: scripts name movies like "MVTitle.smk"
     video_files = {p.stem.lower(): p.name for p in (out_dir / "video").glob("*.mp4")} \

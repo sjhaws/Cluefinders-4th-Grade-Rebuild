@@ -2,6 +2,16 @@ import { Assets, Rectangle, Texture } from 'pixi.js';
 import type { AseqResourceEntry, GameManifest, SequenceDoc } from './types';
 
 const ASSET_BASE = '/assets/';
+/**
+ * Production builds stamp every game file's URL with a hash of all the game
+ * files, so browsers may cache them for good (public/_headers) and still
+ * fetch fresh copies after the files change.
+ */
+const VERSION = __ASSET_VERSION__ ? `?v=${__ASSET_VERSION__}` : '';
+
+function assetUrl(path: string): string {
+  return `${ASSET_BASE}${path}${VERSION}`;
+}
 
 export interface LoadedAseq {
   entry: AseqResourceEntry;
@@ -25,7 +35,7 @@ export class ResourceManager {
   private aseqCache = new Map<string, Promise<LoadedAseq>>();
   private aseqById = new Map<number, AseqResourceEntry>();
 
-  async load(manifestUrl = `${ASSET_BASE}manifest.json`): Promise<void> {
+  async load(manifestUrl = assetUrl('manifest.json')): Promise<void> {
     const res = await fetch(manifestUrl);
     if (!res.ok) {
       throw new Error(`Failed to load manifest: ${res.status} ${res.statusText}`);
@@ -38,7 +48,7 @@ export class ResourceManager {
       const bundle = key.slice(0, split);
       const id = Number(key.slice(split + 1));
       if (!Number.isFinite(id)) continue;
-      const url = `${ASSET_BASE}audio/${filename}`;
+      const url = assetUrl(`audio/${filename}`);
       this.soundUrlById.set(id, url);
       const list = this.soundsByBundle.get(bundle) ?? [];
       list.push({ id, url });
@@ -58,24 +68,24 @@ export class ResourceManager {
   }
 
   getScriptUrl(name: string): string {
-    return `${ASSET_BASE}scripts/${name}.json`;
+    return assetUrl(`scripts/${name}.json`);
   }
 
   getPaletteIndexUrl(): string {
-    return `${ASSET_BASE}palettes/index.json`;
+    return assetUrl('palettes/index.json');
   }
 
   getPaletteUrl(name: string): string {
-    return `${ASSET_BASE}palettes/${name}.pal`;
+    return assetUrl(`palettes/${name}.pal`);
   }
 
   getFontIndexUrl(): string {
-    return `${ASSET_BASE}fonts/index.json`;
+    return assetUrl('fonts/index.json');
   }
 
   /** FONT.RSC ids clash with COMMON.RSC ones, so fonts live under their own path. */
   getFontAtlasUrl(id: number): string {
-    return `${ASSET_BASE}fonts/${id}.png`;
+    return assetUrl(`fonts/${id}.png`);
   }
 
   bundleNames(): string[] {
@@ -99,13 +109,13 @@ export class ResourceManager {
   }
 
   getImageUrl(path: string): string {
-    return `${ASSET_BASE}images/${path}`;
+    return assetUrl(`images/${path}`);
   }
 
   getVideoUrl(name: string): string | undefined {
     // scripts name movies like "MVTitle.smk"; the manifest is keyed by lower-case stem
     const filename = this.manifest.video_files[name.toLowerCase().replace(/\.smk$/, '')];
-    return filename ? `${ASSET_BASE}video/${filename}` : undefined;
+    return filename ? assetUrl(`video/${filename}`) : undefined;
   }
 
   loadAseq(entry: AseqResourceEntry): Promise<LoadedAseq> {

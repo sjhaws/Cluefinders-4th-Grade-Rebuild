@@ -1,0 +1,6 @@
+# Netlify response headers. Everything under /assets/ is safe to cache for good:
+# game files are fetched with ?v=<hash of all game files> (vite.config.ts), and
+# Vite's own bundles have hashed names. index.html keeps Netlify's default
+# (always revalidate), so a new deploy's hash reaches players straight away.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
