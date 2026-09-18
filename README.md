@@ -11,7 +11,7 @@ built from your original CD files.
 | `.RSC` container format (NE resource tables) | **Solved** |
 | `RESOURCE.MAP` / `AUDIO.MAP` catalog parsing | **Solved** |
 | Audio extraction (WAVE resources + BGMUSIC tracks) | **Solved** — raw RIFF/WAVE (8-bit mono 22 kHz), encoded to MP3 for the web: 185 MB → 61 MB, and browsers decode each one to exactly the original's samples |
-| Video conversion (Smacker → MP4) | **Solved** — all 23 movies via ffmpeg (H.264 + AAC, plays in every browser incl. iOS Safari) |
+| Video conversion (Smacker → MP4) | **Solved** — all 23 movies via ffmpeg (H.264 + AAC, plays in every browser incl. iOS Safari), tagged with their colour space (BT.601 matrix, limited range) so browsers don't guess. The engine draws each frame into the game canvas rather than laying a `<video>` over it: Chrome composited the overlay separately and could switch how it converted and scaled it mid-movie, a slight fade every couple of seconds |
 | ASEQ image/animation pixel format | **Solved** — 3,129 of 3,138 resources, 20,945 frames |
 | Colour palettes | **Solved** — all 3,129 image resources in real colour, from 47 captured scene palettes. The last six (CLOC07, CLOC09, CLOC13, PBA, PLOC3, PWS1) were read off screenshots of the running game rather than its memory: `extractor/palette_from_screenshot.py` |
 | ASEQ sequence records (frame placement/timing) | **Solved** — frame order, per-frame offsets, sound cues; ~115 ms per tick |

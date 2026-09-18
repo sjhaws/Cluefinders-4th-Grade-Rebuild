@@ -116,12 +116,10 @@ export class GameEngine implements ScriptHost {
     this.scene = new SceneState(this);
   }
 
-  /** The element holding the canvas; DOM overlays (movies) are positioned inside it. */
-  overlayRoot: HTMLElement | null = null;
+  /** Movies draw here, above the fade: a script may fade the scene out before one plays. */
+  readonly movieLayer = new Container();
 
   async mount(root: HTMLElement): Promise<void> {
-    this.overlayRoot = root;
-    root.style.position = 'relative';
     // The original draws on a whole-pixel grid. Scripts centre things with
     // halves (OWS4 puts each word at its box's middle, x.5), and a sprite drawn
     // at half a pixel is smeared across two -- its bitmap glyphs turn fuzzy.
@@ -132,7 +130,7 @@ export class GameEngine implements ScriptHost {
     this.fade.alpha = 0;
     this.notice.anchor.set(0.5);
     this.notice.position.set(STAGE_W / 2, STAGE_H / 2);
-    this.app.stage.addChild(this.background, this.sceneRoot, this.fade, this.notice);
+    this.app.stage.addChild(this.background, this.sceneRoot, this.fade, this.movieLayer, this.notice);
     try {
       this.paletteNames = await (await fetch(this.resources.getPaletteIndexUrl())).json();
     } catch {

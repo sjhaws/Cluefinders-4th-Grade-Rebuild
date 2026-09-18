@@ -6,6 +6,12 @@ playback, using ffmpeg's built-in Smacker demuxer/decoder. MP4 plays in
 every current browser, including Safari on iOS; the movies are 640x480 at
 8 fps with 22 kHz mono audio, so the files stay small.
 
+Each file is tagged with its colour space: the BT.601 limited-range matrix
+ffmpeg converts with, on sRGB primaries and transfer (the palette art's own).
+Untagged, Chrome guessed -- BT.601 when copying a frame to a canvas, maybe
+BT.709 elsewhere -- and a guess that changes mid-movie shifts greens and
+yellows by some 5 levels.
+
 Usage:
     python3 extract_video.py <game_dir> <output_dir>
 
@@ -23,7 +29,9 @@ def convert_one(smk_path: Path, out_dir: Path, crf: int = 20) -> bool:
     cmd = [
         "ffmpeg", "-y", "-loglevel", "error", "-i", str(smk_path),
         "-c:v", "libx264", "-crf", str(crf), "-preset", "slow", "-tune", "animation",
-        "-pix_fmt", "yuv420p",
+        "-vf", "scale=out_color_matrix=bt601:out_range=tv", "-pix_fmt", "yuv420p",
+        # tag the stream's header (libx264 drops primaries and transfer given as options)
+        "-bsf:v", "h264_metadata=colour_primaries=1:transfer_characteristics=13:matrix_coefficients=6:video_full_range_flag=0",
         "-c:a", "aac", "-b:a", "96k", "-ar", "44100",
         "-movflags", "+faststart",
         str(out_path),
