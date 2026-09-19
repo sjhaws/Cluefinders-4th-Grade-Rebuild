@@ -118,8 +118,14 @@ export class GameEngine implements ScriptHost {
 
   /** Movies draw here, above the fade: a script may fade the scene out before one plays. */
   readonly movieLayer = new Container();
+  /** The element holding the canvas; the sign-in's hidden text box is laid over the canvas inside it. */
+  overlayRoot: HTMLElement | null = null;
+  /** How the player last pressed on the game: 'mouse', 'touch' or 'pen'. */
+  lastPointerType = 'mouse';
 
   async mount(root: HTMLElement): Promise<void> {
+    this.overlayRoot = root;
+    root.style.position = 'relative';
     // The original draws on a whole-pixel grid. Scripts centre things with
     // halves (OWS4 puts each word at its box's middle, x.5), and a sprite drawn
     // at half a pixel is smeared across two -- its bitmap glyphs turn fuzzy.
@@ -486,6 +492,7 @@ export class GameEngine implements ScriptHost {
   private wireInput() {
     const canvas = this.app.canvas;
     canvas.addEventListener('pointerdown', (e) => {
+      this.lastPointerType = e.pointerType || 'mouse';
       const [x, y] = this.stagePoint(e);
       const target = this.hitTest(x, y);
       this.pressed = target;
@@ -515,10 +522,15 @@ export class GameEngine implements ScriptHost {
       const key = keyName(e);
       if (!key) return;
       e.preventDefault();
-      if (key === ' ') this.fireScene('spacebarPressed');
-      if (key === 'Return') this.fireScene('returnPressed');
-      for (const listener of [...this.keyListeners]) listener(key);
+      this.pressKey(key);
     });
+  }
+
+  /** A key press as the scripts see it ("a", "Return", "Backspace", ...), from the keyboard or the sign-in's text box. */
+  pressKey(key: string): void {
+    if (key === ' ') this.fireScene('spacebarPressed');
+    if (key === 'Return') this.fireScene('returnPressed');
+    for (const listener of [...this.keyListeners]) listener(key);
   }
 }
 

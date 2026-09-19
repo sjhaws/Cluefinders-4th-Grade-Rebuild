@@ -5,6 +5,7 @@ import { DisplayObject } from './ScriptObject';
 import type { GameEngine } from './GameEngine';
 import { fontFor } from './DisplayObjects';
 import { BitmapLabel, bitmapFonts, type BitmapFontData } from './BitmapFont';
+import { TouchKeyboard } from './TouchKeyboard';
 
 const MAX_ENTRIES = 50;
 const MAX_NAME_LENGTH = 24;
@@ -32,6 +33,9 @@ export class RSelList extends DisplayObject {
   private readonly background = new Graphics();
   private readonly rows = new Container();
   private readonly unsubscribe: () => void;
+  /** A phone's or tablet's on-screen keyboard, brought up for a new player's name. */
+  private readonly keyboard: TouchKeyboard;
+  private openKeyboardOnRelease = false;
 
   constructor(engine: GameEngine, args: Value[]) {
     super(engine, 'RSelList');
@@ -39,6 +43,12 @@ export class RSelList extends DisplayObject {
     this.width = toNumber(args[2]);
     this.height = toNumber(args[3]);
     this.view.addChild(this.background, this.rows);
+    this.keyboard = new TouchKeyboard(
+      engine,
+      { x: this.view.x, y: this.view.y, width: this.width, height: this.height },
+      () => this.typed,
+      MAX_NAME_LENGTH
+    );
     this.unsubscribe = engine.onPalette(() => this.render());
     // The font index arrives from a promise; redraw in the game's own face once it has.
     void bitmapFonts.ensureLoaded(engine.resources).then(() => this.render());
@@ -116,6 +126,7 @@ export class RSelList extends DisplayObject {
   send(method: string, args: Value[]): Value {
     const result = this.handle(method, args);
     this.render();
+    this.keyboard.sync();
     return result;
   }
 
@@ -146,6 +157,7 @@ export class RSelList extends DisplayObject {
         this.typed = '';
         this.highlight = -1;
         this.awaitingName = true;
+        this.keyboard.open(); // New Player Sign-In was just tapped: bring up the keyboard for the name
         return 0;
       case 'movehighlightup': this.moveHighlight(-1); return 0;
       case 'movehighlightdown': this.moveHighlight(1); return 0;
@@ -181,10 +193,18 @@ export class RSelList extends DisplayObject {
       this.typed = '';
       this.highlight = row;
       this.render();
+      this.keyboard.sync();
+      this.keyboard.close();
+    } else {
+      // the new name's line: tapping it brings the keyboard back
+      this.openKeyboardOnRelease = this.awaitingName || this.isNew;
     }
   }
 
-  onPointerUp(): void {}
+  onPointerUp(): void {
+    if (this.openKeyboardOnRelease) this.keyboard.open();
+    this.openKeyboardOnRelease = false;
+  }
 
   onDoubleClick(_x: number, y: number): void {
     const row = this.rowAt(y);
@@ -245,6 +265,7 @@ export class RSelList extends DisplayObject {
   destroy(): void {
     if (this.destroyed) return;
     this.unsubscribe();
+    this.keyboard.destroy();
     super.destroy();
   }
 }

@@ -99,7 +99,11 @@ localStorage; when a player signs in, the game asks the browser to keep them
 (`navigator.storage.persist()`) rather than clear them when space runs short.
 Chrome decides by itself (it tends to say yes to sites a player visits often
 or bookmarks), Firefox asks the player once, and Safari may still clear them
-after 7 days without a visit. Movies play from `output/video` (a card stands in for any that
+after 7 days without a visit. On a phone or tablet, tapping New Player Sign-In (or
+the new name's line) brings up the on-screen keyboard: an invisible text box
+over the list takes the focus (`src/engine/TouchKeyboard.ts`) and what's typed
+reaches the game as key presses, autocorrect and Backspace included; its Go key
+signs in. Mouse players never see it. Movies play from `output/video` (a card stands in for any that
 aren't converted); clicking a movie skips it.
 
 `?browser` opens the asset browser (`src/browser/AssetBrowser.ts`): pick a
