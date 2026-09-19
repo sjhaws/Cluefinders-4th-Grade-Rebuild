@@ -3,10 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ClueFinders 4th Grade Adventures — Asset Browser</title>
+    <title>ClueFinders 4th Grade Adventures</title>
+    <!-- Add to Home Screen: opens full screen and sideways, with the title logo as its icon -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#111111" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="apple-mobile-web-app-title" content="ClueFinders 4" />
     <style>
       :root { color-scheme: dark; }
       html, body { margin: 0; height: 100%; background: #111; color: #ddd; font: 13px/1.4 system-ui, sans-serif; }
+      /* no double-tap zoom on the page's buttons (the canvas already takes its own touches) */
+      html { touch-action: manipulation; }
       #app { height: 100%; }
       .fatal { color: #fbb; padding: 20px; white-space: pre-wrap; }
       .browser { display: grid; grid-template-columns: 170px 1fr; height: 100%; }
@@ -33,13 +43,26 @@
       .thumb { transform-origin: 0 0; image-rendering: pixelated; }
       .meta { font-size: 11px; margin-top: 4px; }
       .bad { color: #e99; }
-      .game { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px; box-sizing: border-box; height: 100%; overflow: auto; }
-      .game-stage canvas { display: block; width: min(960px, 100%); height: auto; image-rendering: pixelated; border: 1px solid #333; }
-      .game-stage { width: min(960px, 100%); }
+      .game { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px; box-sizing: border-box; height: 100%; overflow: auto;
+        /* long presses and taps belong to the game: no text selection, callout menu or grey tap flash */
+        -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+        /* height taken by everything but the game: padding, gaps, the bar and the log */
+        --chrome: 104px; }
+      .game-stage canvas { display: block; width: calc(100% - 2px); height: auto; image-rendering: pixelated; border: 1px solid #333; }
+      /* as wide as fits, and no taller than the screen (a phone held sideways is short) */
+      .game-stage { width: min(960px, 100%, (100vh - var(--chrome)) * 4 / 3); width: min(960px, 100%, (100dvh - var(--chrome)) * 4 / 3); }
+      .rotate-hint { display: none; color: #cbd5e1; background: #26303d; border-radius: 6px; padding: 8px 12px; text-align: center; }
+      @media (orientation: portrait) and (pointer: coarse) { .rotate-hint { display: block; } }
+      /* short screens: once the game starts, give it all the height */
+      @media (max-height: 600px) {
+        .game { padding: 4px; gap: 4px; --chrome: 10px; }
+        .game:has(#game-start) { --chrome: 48px; }
+        .game-bar:not(:has(#game-start)), .game-log { display: none; }
+      }
       .game-bar { display: flex; gap: 12px; align-items: center; color: #9ab; }
       .game-bar button { background: #26303d; color: #fff; border: 1px solid #3a4a5d; border-radius: 4px; padding: 5px 14px; font: inherit; cursor: pointer; }
       .game-bar a { color: #7fa7d9; }
-      .game-log { width: min(960px, 100%); color: #9ab; }
+      .game-log { width: min(960px, 100%); color: #9ab; -webkit-user-select: text; user-select: text; }
       .game-log pre { max-height: 180px; overflow: auto; font-size: 11px; white-space: pre-wrap; }
     </style>
   </head>

@@ -17,6 +17,7 @@ import { WorldState } from './WorldState';
 import { CLASSES } from './classes';
 import { RSmackerMovie, TempAnimation, aoPosition } from './DisplayObjects';
 import { STAGE_H, STAGE_W } from './constants';
+import { GameSound, Media } from './Media';
 
 const FADE_MS = 400;
 const MAX_LOG = 300;
@@ -27,7 +28,7 @@ export class SceneState {
     ['isbackgroundmusicenabled', 1],
     ['backgroundmusicvolume', 50],
   ]);
-  private music: HTMLAudioElement | null = null;
+  private music: GameSound | null = null;
   private suspensions = 0;
 
   constructor(private readonly engine: GameEngine) {}
@@ -66,7 +67,7 @@ export class SceneState {
     }
     if (!this.music || !this.music.src.endsWith(url)) {
       this.music?.pause();
-      this.music = new Audio(url);
+      this.music = this.engine.media.sound(url);
       this.music.loop = true;
     }
     this.music.volume = Math.min(1, Math.max(0, toNumber(this.get('backgroundmusicvolume')) / 100));
@@ -95,8 +96,8 @@ export class GameEngine implements ScriptHost {
   private readonly objects = new Set<ScriptObject>();
   private readonly keyListeners = new Set<(key: string) => void>();
   private readonly paletteListeners = new Set<() => void>();
-  private readonly sounds = new Set<HTMLAudioElement>();
-  private readonly soundTags = new Map<number, HTMLAudioElement>();
+  private readonly sounds = new Set<GameSound>();
+  private readonly soundTags = new Map<number, GameSound>();
   private nextSoundTag = 1;
   private vm: ScriptVm | null = null;
   private palette: Uint8Array | null = null;
@@ -116,6 +117,8 @@ export class GameEngine implements ScriptHost {
     this.scene = new SceneState(this);
   }
 
+  /** Sound and the movie player, unlocked by the Start tap (see Media). */
+  readonly media = new Media();
   /** Movies draw here, above the fade: a script may fade the scene out before one plays. */
   readonly movieLayer = new Container();
   /** The element holding the canvas; the sign-in's hidden text box is laid over the canvas inside it. */
@@ -354,14 +357,14 @@ export class GameEngine implements ScriptHost {
     }
   }
 
-  playSound(id: number, onEnded?: () => void): HTMLAudioElement | null {
+  playSound(id: number, onEnded?: () => void): GameSound | null {
     const url = this.resources.getSoundUrl(id);
     if (!url) {
       this.warn(`sound ${id} not found`);
       if (onEnded) setTimeout(onEnded, 0);
       return null;
     }
-    const audio = new Audio(url);
+    const audio = this.media.sound(url);
     const finish = () => {
       this.sounds.delete(audio);
       onEnded?.();
@@ -373,7 +376,7 @@ export class GameEngine implements ScriptHost {
     return audio;
   }
 
-  playAudio(audio: HTMLAudioElement): void {
+  playAudio(audio: GameSound): void {
     audio.playbackRate = Math.min(16, this.timeScale); // browsers cap the rate at 16
     audio.play().catch((err: DOMException) => {
       // Autoplay blocked: 'ended' would never fire and queues would stall, so
@@ -491,28 +494,39 @@ export class GameEngine implements ScriptHost {
 
   private wireInput() {
     const canvas = this.app.canvas;
+    // One finger plays: a second touch while one is down (isPrimary false) is ignored, so it
+    // can't steal a piece being dragged.
+    let last: [number, number] = [0, 0];
     canvas.addEventListener('pointerdown', (e) => {
+      if (!e.isPrimary) return;
       this.lastPointerType = e.pointerType || 'mouse';
-      const [x, y] = this.stagePoint(e);
+      this.media.resumeAfterInterruption();
+      const [x, y] = (last = this.stagePoint(e));
       const target = this.hitTest(x, y);
       this.pressed = target;
       if (target) target.onPointerDown(x, y);
       else this.fireScene('backgroundClicked');
     });
-    window.addEventListener('pointerup', (e) => {
+    const release = (e: PointerEvent, cancelled: boolean) => {
+      if (!e.isPrimary) return;
       const target = this.pressed;
       this.pressed = null;
       if (!target || target.destroyed) return;
-      const [x, y] = this.stagePoint(e);
+      // a touch the system took over (a notification, an edge swipe) lets go where the finger last was
+      const [x, y] = cancelled ? last : this.stagePoint(e);
       this.dropped = target;
       target.onPointerUp(x, y, target.containsPoint(x, y));
-    });
+    };
+    window.addEventListener('pointerup', (e) => release(e, false));
+    window.addEventListener('pointercancel', (e) => release(e, true));
     window.addEventListener('pointermove', (e) => {
       const target = this.pressed;
-      if (!target || target.destroyed) return;
-      const [x, y] = this.stagePoint(e);
+      if (!e.isPrimary || !target || target.destroyed) return;
+      const [x, y] = (last = this.stagePoint(e));
       target.onPointerMove(x, y);
     });
+    // a long press is the game's (it deletes a name on the sign-in list), not the browser's menu
+    canvas.addEventListener('contextmenu', (e) => e.preventDefault());
     canvas.addEventListener('dblclick', (e) => {
       const [x, y] = this.stagePoint(e);
       this.hitTest(x, y)?.onDoubleClick(x, y);

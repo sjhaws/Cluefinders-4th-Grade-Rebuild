@@ -115,6 +115,27 @@ pauses, → steps.
 extractor updates the app with no copying. `npm run build` copies the assets
 into `dist/` (~200 MB).
 
+## Phones and tablets
+
+- **Fits the screen:** the game is as big as fits both the width and the height
+  (a phone held sideways is short); on screens under 600px tall the status line
+  and engine log hide once the game starts. Held upright on a touch screen, a
+  note suggests turning the device sideways.
+- **Sound on iPhone/iPad:** Safari only starts sound from inside a tap, and the
+  game starts most sounds from timers. Sounds and music play through one Web
+  Audio context and movies through one shared `<video>` (`src/engine/Media.ts`),
+  both unlocked by the Start tap (the video by playing `public/silence.mp4`). Sound
+  ignores the ring/silent switch, as the movies do, and wakes again on the next
+  tap after a call or the app going to the background. A sound that still can't
+  play ends after its length, so queues never stall.
+- **Touch:** one finger plays (a second touch can't steal a dragged piece); a touch
+  the system cancels lets go where the finger last was; no text-selection callout,
+  tap flash or double-tap zoom. Holding a finger on a sign-in name deletes that
+  player (the keyboard's Ctrl-R), through the game's own confirmation. New Player
+  Sign-In brings up the on-screen keyboard (`src/engine/TouchKeyboard.ts`).
+- **Home screen:** `public/manifest.webmanifest`, icons made from the title logo,
+  and iOS meta tags let "Add to Home Screen" open the game full screen and sideways.
+
 ## Deploying
 
 The app builds to fully static files (`app/dist/`), so any static host works.

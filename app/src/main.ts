@@ -4,6 +4,7 @@ import { GameEngine } from './engine/GameEngine';
 
 const GAME_TEMPLATE = `
 <div class="game">
+  <div class="rotate-hint">Turn your device sideways for a bigger game.</div>
   <div id="game-stage" class="game-stage"></div>
   <div class="game-bar">
     <button id="game-start">Start</button>
@@ -51,6 +52,7 @@ async function startGame(mount: HTMLElement, resources: ResourceManager, firstSc
 
   const start = document.getElementById('game-start') as HTMLButtonElement;
   start.addEventListener('click', () => {
+    engine.media.unlock(); // inside the tap: iPhones allow sound only from here on
     start.remove();
     void engine.boot(firstScript);
   }, { once: true });

@@ -1,4 +1,4 @@
-import { Container, Graphics, Sprite, Text, Texture, VideoSource } from 'pixi.js';
+import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 import { AseqAnimation } from '../AseqAnimation';
 import type { LoadedAseq } from '../ResourceManager';
 import type { SequenceEntry } from '../types';
@@ -9,6 +9,7 @@ import type { GameEngine } from './GameEngine';
 import { BitmapLabel, bitmapFonts, type BitmapFontData } from './BitmapFont';
 import { PaletteSwaps, RecoloredFrames } from './PaletteSwap';
 import { STAGE_H, STAGE_W } from './constants';
+import type { VideoOwner } from './Media';
 
 /** Scripts pass this for x and y to use the position stored with the image. */
 export const USE_AO_COORDS = 11111;
@@ -514,24 +515,22 @@ export class TempAnimation extends DisplayObject {
 }
 
 const MOVIE_PLACEHOLDER_MS = 1500;
-/** Lets a movie upload a frame only when the video has a new one. */
-const HAS_VIDEO_FRAME_CALLBACK = typeof HTMLVideoElement !== 'undefined' && 'requestVideoFrameCallback' in HTMLVideoElement.prototype;
 
 /**
  * A Smacker movie, converted to MP4 by extract_video.py:
- * `RSmackerMovie name[, x, y, bufferSize]`. A <video> element decodes it and
- * plays its sound, and each new frame is drawn into the game's canvas like any
- * other image. (Laid over the canvas as its own element, Chrome composited it
- * separately and could change how it converted and scaled it partway through,
- * which showed as the picture fading slightly every couple of seconds.)
+ * `RSmackerMovie name[, x, y, bufferSize]`. It plays in the engine's one
+ * movie player (Media: a <video> the Start tap unlocks, so iPhones play the
+ * movies with sound), and each new frame is drawn into the game's canvas like
+ * any other image. (Laid over the canvas as its own element, Chrome composited
+ * it separately and could change how it converted and scaled it partway
+ * through, which showed as the picture fading slightly every couple of seconds.)
  * `start` plays it and fires `finished` at the end; clicks fire `mouseDown`,
  * which scripts use to skip. A movie without a converted file shows a card.
  */
-export class RSmackerMovie extends DisplayObject {
+export class RSmackerMovie extends DisplayObject implements VideoOwner {
   private readonly name: string;
-  private video: HTMLVideoElement | null = null;
-  private source: VideoSource | null = null;
-  private frames: Texture | null = null;
+  private readonly url: string | undefined;
+  private screen: Sprite | null = null;
   private timer: ReturnType<typeof setTimeout> | undefined;
   private onDone: (() => void) | null = null;
   private started = false;
@@ -546,8 +545,8 @@ export class RSmackerMovie extends DisplayObject {
     this.view.visible = false;
     // black backdrop: covers the scene while the video loads
     this.view.addChild(new Graphics().rect(0, 0, STAGE_W, STAGE_H).fill(0x000000));
-    const url = engine.resources.getVideoUrl(this.name);
-    if (!url) {
+    this.url = engine.resources.getVideoUrl(this.name);
+    if (!this.url) {
       const caption = new Text({
         text: `Movie ${this.name}\n(not converted yet — click to skip)`,
         style: { fill: 0x9aa4b2, fontFamily: 'Verdana, sans-serif', fontSize: 14, align: 'center' },
@@ -557,47 +556,28 @@ export class RSmackerMovie extends DisplayObject {
       this.view.addChild(caption);
       return;
     }
-    const video = document.createElement('video');
-    video.preload = 'auto';
-    video.playsInline = true;
-    video.src = url;
-    video.addEventListener('ended', () => this.finish());
-    video.addEventListener('error', () => {
-      if (this.video !== video) return; // destroy() clears the source, which also raises 'error'
-      engine.warn(`movie ${this.name} failed to load`);
-      this.finish();
-    });
-    video.addEventListener('loadeddata', () => this.showFrames(video), { once: true });
-    this.video = video;
+    engine.media.claimVideo(this, this.url); // starts loading it
   }
 
-  /**
-   * Draws the video once its first frame is in, scaled nearest-neighbour as the rest of the
-   * game is. Pixi's own video loading is left off: it reloads the element, cancelling a `start`
-   * that came first.
-   */
-  private showFrames(video: HTMLVideoElement) {
-    if (this.video !== video) return;
-    const source = new VideoSource({
-      resource: video, autoLoad: false, autoPlay: false, scaleMode: 'nearest',
-      width: video.videoWidth, height: video.videoHeight,
-    });
-    this.source = source;
-    this.frames = new Texture({ source });
-    this.view.addChild(new Sprite(this.frames));
-    source.update();
-    if (!HAS_VIDEO_FRAME_CALLBACK) return; // tick() uploads instead
-    const upload = () => {
-      if (this.video !== video) return;
-      source.update();
-      video.requestVideoFrameCallback(upload);
-    };
-    video.requestVideoFrameCallback(upload);
+  videoReady(): void {
+    if (this.destroyed || this.screen) return;
+    // nearest-neighbour scaled, as the rest of the game draws
+    this.screen = new Sprite(this.engine.media.videoFrames);
+    this.view.addChild(this.screen);
   }
 
-  tick(deltaMs: number): void {
-    super.tick(deltaMs);
-    if (!HAS_VIDEO_FRAME_CALLBACK && this.video && !this.video.paused) this.source?.update();
+  videoEnded(): void {
+    this.finish();
+  }
+
+  videoFailed(): void {
+    this.engine.warn(`movie ${this.name} failed to load`);
+    this.finish();
+  }
+
+  videoLost(): void {
+    this.screen?.destroy();
+    this.screen = null;
   }
 
   /** For MovieAction: plays, finishes at the end or on a click, then removes itself. Returns a cancel function. */
@@ -619,7 +599,7 @@ export class RSmackerMovie extends DisplayObject {
   private finish() {
     if (this.over || this.destroyed) return;
     this.over = true;
-    this.video?.pause();
+    if (this.engine.media.ownsVideo(this)) this.engine.media.video.pause();
     this.suspendMusic(false);
     const done = this.onDone;
     if (done) {
@@ -633,9 +613,9 @@ export class RSmackerMovie extends DisplayObject {
 
   private play(video: HTMLVideoElement) {
     video.play().catch((err: DOMException) => {
-      if (this.destroyed || this.video !== video) return;
+      if (this.destroyed || !this.engine.media.ownsVideo(this)) return;
       if (err?.name === 'NotAllowedError') {
-        // sound blocked until the page has had a click: play muted rather than not at all
+        // sound blocked until the page has had a tap: play muted rather than not at all
         video.muted = true;
         video.play().catch(() => this.finish());
       } else if (err?.name !== 'AbortError') {
@@ -655,10 +635,11 @@ export class RSmackerMovie extends DisplayObject {
         this.view.visible = true;
         this.over = false;
         this.suspendMusic(true);
-        if (this.video) {
-          if (this.started) this.video.currentTime = 0;
+        if (this.url) {
+          const video = this.engine.media.claimVideo(this, this.url);
+          if (this.started) video.currentTime = 0;
           this.started = true;
-          this.play(this.video);
+          this.play(video);
         } else {
           clearTimeout(this.timer);
           this.timer = setTimeout(() => this.finish(), MOVIE_PLACEHOLDER_MS);
@@ -666,28 +647,25 @@ export class RSmackerMovie extends DisplayObject {
         return 0;
       case 'stop':
         clearTimeout(this.timer);
-        this.video?.pause();
+        if (this.engine.media.ownsVideo(this)) this.engine.media.video.pause();
         return 0;
       default:
         return super.send(method, args);
     }
   }
 
+  tick(deltaMs: number): void {
+    super.tick(deltaMs);
+    if (this.engine.media.ownsVideo(this)) this.engine.media.updateVideoFrame();
+  }
+
   destroy(): void {
     if (this.destroyed) return;
     clearTimeout(this.timer);
     this.suspendMusic(false);
-    const video = this.video;
-    this.video = null;
-    if (video) {
-      video.pause();
-      video.removeAttribute('src');
-      video.load(); // releases the media resource
-    }
-    this.frames?.destroy();
-    this.frames = null;
-    this.source?.destroy();
-    this.source = null;
+    this.engine.media.releaseVideo(this);
+    this.screen?.destroy(); // the frames texture is the player's, not this movie's
+    this.screen = null;
     super.destroy();
   }
 }

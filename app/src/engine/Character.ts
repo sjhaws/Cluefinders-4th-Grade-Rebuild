@@ -5,6 +5,7 @@ import type { Value } from './ScriptVm';
 import { toInt, toNumber, truthy } from './ScriptVm';
 import { DisplayObject } from './ScriptObject';
 import type { GameEngine } from './GameEngine';
+import type { GameSound } from './Media';
 import { aoPosition, sequenceList } from './DisplayObjects';
 
 interface FidgetGroup {
@@ -38,7 +39,7 @@ export class RCharacter extends DisplayObject {
   private animateSettled = false;
   private readonly fidgets = new Map<number, FidgetGroup>();
   private readonly speechAnims: Promise<LoadedAseq | null>[] = [];
-  private audio: HTMLAudioElement | null = null;
+  private audio: GameSound | null = null;
   private cancelActivity: (() => void) | null = null;
 
   constructor(engine: GameEngine, args: Value[]) {

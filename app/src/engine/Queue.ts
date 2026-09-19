@@ -2,6 +2,7 @@ import type { Value } from './ScriptVm';
 import { isEngineObject, toNumber, toText, truthy } from './ScriptVm';
 import { ScriptObject } from './ScriptObject';
 import type { GameEngine } from './GameEngine';
+import type { GameSound } from './Media';
 import { RCharacter } from './Character';
 import { RAnimation } from './DisplayObjects';
 import { RMap } from './Map';
@@ -43,7 +44,7 @@ class TaskAction implements QueueAction {
 }
 
 class SoundAction implements QueueAction {
-  private audio: HTMLAudioElement | null = null;
+  private audio: GameSound | null = null;
   constructor(private readonly engine: GameEngine, private readonly id: number) {}
   start(done: () => void) {
     this.audio = this.engine.playSound(this.id, done);

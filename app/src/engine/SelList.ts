@@ -9,6 +9,8 @@ import { TouchKeyboard } from './TouchKeyboard';
 
 const MAX_ENTRIES = 50;
 const MAX_NAME_LENGTH = 24;
+/** How long a finger rests on a name before it counts as "delete this player". */
+const LONG_PRESS_MS = 700;
 /** addChar results, as the sign-in script checks them. */
 const ADD_OK = 0;
 const ADD_REJECTED = 1;
@@ -36,6 +38,7 @@ export class RSelList extends DisplayObject {
   /** A phone's or tablet's on-screen keyboard, brought up for a new player's name. */
   private readonly keyboard: TouchKeyboard;
   private openKeyboardOnRelease = false;
+  private longPress: { timer: ReturnType<typeof setTimeout>; y: number } | null = null;
 
   constructor(engine: GameEngine, args: Value[]) {
     super(engine, 'RSelList');
@@ -195,13 +198,28 @@ export class RSelList extends DisplayObject {
       this.render();
       this.keyboard.sync();
       this.keyboard.close();
+      // Deleting a player is Ctrl-R on the keyboard (the script then asks to confirm); on a
+      // touch screen, holding a finger on the name does the same.
+      if (this.engine.lastPointerType !== 'mouse') {
+        this.longPress = { timer: setTimeout(() => this.engine.pressKey('Ctrl-R'), LONG_PRESS_MS), y };
+      }
     } else {
       // the new name's line: tapping it brings the keyboard back
       this.openKeyboardOnRelease = this.awaitingName || this.isNew;
     }
   }
 
+  onPointerMove(_x: number, y: number): void {
+    if (this.longPress && Math.abs(y - this.longPress.y) > this.lineHeight / 2) this.cancelLongPress();
+  }
+
+  private cancelLongPress() {
+    if (this.longPress) clearTimeout(this.longPress.timer);
+    this.longPress = null;
+  }
+
   onPointerUp(): void {
+    this.cancelLongPress();
     if (this.openKeyboardOnRelease) this.keyboard.open();
     this.openKeyboardOnRelease = false;
   }
@@ -265,6 +283,7 @@ export class RSelList extends DisplayObject {
   destroy(): void {
     if (this.destroyed) return;
     this.unsubscribe();
+    this.cancelLongPress();
     this.keyboard.destroy();
     super.destroy();
   }

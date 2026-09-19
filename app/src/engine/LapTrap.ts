@@ -3,6 +3,7 @@ import type { Value } from './ScriptVm';
 import { toNumber, toText, truthy } from './ScriptVm';
 import { DisplayObject } from './ScriptObject';
 import type { GameEngine } from './GameEngine';
+import type { GameSound } from './Media';
 import type { LoadedAseq } from '../ResourceManager';
 import type { SequenceDoc } from '../types';
 import { familyForFontName } from './DisplayObjects';
@@ -150,7 +151,7 @@ export class RLapTrap extends DisplayObject {
   private buttons: Button[] = [];
   private pressed: Button | null = null;
   private pageToken = 0;
-  private speech: HTMLAudioElement | null = null;
+  private speech: GameSound | null = null;
   /** The activity the LapTrap was opened from (scripts pass gCurLocation). */
   private readonly currentActivity: string | null;
   /** Progress rows whose level was changed while the page is open: no more warnings for them. */
