@@ -60,15 +60,12 @@
         .game > .game-bar, .game > .game-log { display: none; }
       }
       .game-bar { display: flex; gap: 12px; align-items: center; color: #9ab; }
-      /* before the game starts: Start (and, on touch screens, full screen) on the black game window */
+      /* before the game starts: Start on the black game window (on touch screens it also goes full screen) */
       .start-screen { position: absolute; z-index: 1; left: 50%; top: 50%; transform: translate(-50%, -50%);
         display: flex; flex-direction: column; align-items: center; gap: 12px; width: max-content; max-width: 90%; }
       .start-button { font: 700 22px/1 system-ui, sans-serif; color: #fff; background: #2f6fd6; border: 0; border-radius: 10px;
         padding: 16px 44px; cursor: pointer; box-shadow: 0 6px 24px rgb(0 0 0 / 0.5); }
       .start-button:hover { background: #3b7be6; }
-      /* touch screens: a sideways phone is still short while the browser shows its address bar */
-      .fullscreen-button { font: 600 15px/1 system-ui, sans-serif; color: #fff; background: rgb(255 255 255 / 0.1);
-        border: 1px solid rgb(255 255 255 / 0.4); border-radius: 8px; padding: 10px 18px; cursor: pointer; }
       .homescreen-hint { color: #cbd5e1; font-size: 12px; text-align: center; max-width: 260px; }
       /* while playing: back to full screen, in the screen's corner, clear of the game */
       .fullscreen-corner { position: fixed; z-index: 2; right: 8px; bottom: 8px; width: 40px; height: 40px; padding: 0;

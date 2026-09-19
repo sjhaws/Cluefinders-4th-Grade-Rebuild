@@ -121,11 +121,10 @@ into `dist/` (~200 MB).
   the Start button sits on the game window itself, and on screens under 600px
   tall the status line and engine log are hidden.
 - **Full screen:** a phone held sideways is still short while the browser shows
-  its address bar, so on touch screens a **Play full screen** button sits under
-  Start on the game window (`offerFullScreen` in `src/main.ts`). One tap starts
-  the game, goes full screen and, on Android, locks the screen sideways
-  (browsers allow both only from a tap, and the lock only once full screen);
-  iPads rotate by hand. After leaving full screen, a small button in the
+  its address bar, so on touch screens **Start** also goes full screen and, on
+  Android, locks the screen sideways (`offerFullScreen` in `src/main.ts`;
+  browsers allow both only from a tap, and the lock only once full screen);
+  iPads rotate by hand. On a computer, Start just starts. After leaving full screen, a small button in the
   screen's bottom-right corner (clear of the game, which has buttons in its own
   corners) goes back. iPhones can't put a page full screen, so they get a tip to
   Add to Home Screen instead. None of this shows once the game runs from the

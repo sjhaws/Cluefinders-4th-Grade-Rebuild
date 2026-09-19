@@ -7,7 +7,6 @@ const GAME_TEMPLATE = `
   <div id="game-stage" class="game-stage">
     <div id="game-start-screen" class="start-screen">
       <button id="game-start" class="start-button">Start</button>
-      <button id="game-fullscreen" class="fullscreen-button" hidden>Play full screen</button>
       <div id="game-homescreen-hint" class="homescreen-hint" hidden>For a bigger game, tap Share, then Add to Home Screen.</div>
     </div>
   </div>
@@ -63,28 +62,31 @@ async function startGame(mount: HTMLElement, resources: ResourceManager, firstSc
     started = true;
     engine.media.unlock(); // inside the tap: iPhones allow sound only from here on
     document.getElementById('game-start-screen')!.remove();
-    fullScreen?.gameStarted();
     void engine.boot(firstScript);
   };
-  const fullScreen = offerFullScreen(start);
-  document.getElementById('game-start')!.addEventListener('click', start);
+  const fullScreen = offerFullScreen();
+  document.getElementById('game-start')!.addEventListener('click', () => {
+    start(); // first: it wakes the sound, which needs the tap; going full screen uses the tap up
+    // the corner button waits until full screen has come (or been refused), so it doesn't flash up first
+    if (fullScreen) void enterFullScreen().then(() => fullScreen.gameStarted());
+  });
 }
 
 type WebkitDocument = Document & { webkitFullscreenEnabled?: boolean; webkitFullscreenElement?: Element | null };
 type WebkitElement = HTMLElement & { webkitRequestFullscreen?: () => void };
 
 /**
- * On a touch screen, full screen and sideways: with the browser's address bar
- * showing, a phone held sideways leaves the game little height. Under Start, a
- * Play full screen button starts the game full screen; once it's running, a
- * small button in the screen's corner (outside the game, which has buttons of
- * its own in its corners) gets back to full screen after leaving it. Browsers
- * only go full screen from a tap, and only lock the screen sideways once full
- * screen (Android; iPads rotate by hand). iPhones can't put a page full screen
- * at all, so they get a tip to add the game to the Home Screen, which opens it
- * without the address bar (see manifest.webmanifest).
+ * On a touch screen, Start also goes full screen and sideways: with the
+ * browser's address bar showing, a phone held sideways leaves the game little
+ * height. Once the game runs, a small button in the screen's corner (outside
+ * the game, which has buttons of its own in its corners) gets back to full
+ * screen after leaving it. Browsers only go full screen from a tap, and only
+ * lock the screen sideways once full screen (Android; iPads rotate by hand).
+ * iPhones can't put a page full screen at all, so they get a tip to add the
+ * game to the Home Screen, which opens it without the address bar (see
+ * manifest.webmanifest). Returns null where Start shouldn't go full screen.
  */
-function offerFullScreen(start: () => void): { gameStarted(): void } | null {
+function offerFullScreen(): { gameStarted(): void } | null {
   const doc = document as WebkitDocument;
   const installed =
     matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches ||
@@ -94,21 +96,11 @@ function offerFullScreen(start: () => void): { gameStarted(): void } | null {
     document.getElementById('game-homescreen-hint')!.hidden = false;
     return null;
   }
-  const button = document.getElementById('game-fullscreen') as HTMLButtonElement;
   const corner = document.getElementById('game-fullscreen-corner') as HTMLButtonElement;
   let started = false;
-  const sync = () => {
-    const full = Boolean(doc.fullscreenElement || doc.webkitFullscreenElement);
-    button.hidden = full;
-    corner.hidden = full || !started;
-  };
-  sync();
+  const sync = () => (corner.hidden = !started || Boolean(doc.fullscreenElement || doc.webkitFullscreenElement));
   document.addEventListener('fullscreenchange', sync);
   document.addEventListener('webkitfullscreenchange', sync);
-  button.addEventListener('click', () => {
-    start(); // first: it wakes the sound, which needs the tap; going full screen uses the tap up
-    void enterFullScreen();
-  });
   corner.addEventListener('click', () => void enterFullScreen());
   return {
     gameStarted() {
