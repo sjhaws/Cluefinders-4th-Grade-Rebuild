@@ -19,6 +19,11 @@ import { RSmackerMovie, TempAnimation, aoPosition } from './DisplayObjects';
 import { STAGE_H, STAGE_W } from './constants';
 import { GameSound, Media } from './Media';
 
+/** Images load in the background this long after a scene starts, and this many at a time. */
+const PREFETCH_DELAY_MS = 400;
+const PREFETCH_WORKERS = 2;
+/** A breather between images, so decoding a scene's worth of them doesn't hold up the game. */
+const PREFETCH_GAP_MS = 20;
 const FADE_MS = 400;
 const MAX_LOG = 300;
 
@@ -107,6 +112,8 @@ export class GameEngine implements ScriptHost {
   private dropped: DisplayObject | null = null;
   private fadeTarget = 0;
   private sceneToken = 0;
+  /** Counts script switches, so a scene's background loading stops when it is left. */
+  private scriptRun = 0;
   readonly log: string[] = [];
   /** Default sounds for puzzle answers (SetAnswerPickUpSound and friends). */
   readonly answerSounds = { pickup: 0, gohome: 0, snap: 0 };
@@ -172,6 +179,8 @@ export class GameEngine implements ScriptHost {
   callGlobal(name: string, args: Value[]): Value {
     switch (name.toLowerCase()) {
       case 'cachedll':
+        this.prefetch(toText(args[0]).replace(/\.(rsc|dll)$/i, '').toLowerCase());
+        return 0;
       case 'uncachedll':
       case 'uncachealldlls':
       case 'activatedll':
@@ -393,6 +402,7 @@ export class GameEngine implements ScriptHost {
 
   private async switchScript(fileName: string) {
     const name = fileName.replace(/\.mps$/i, '').toUpperCase();
+    const run = ++this.scriptRun;
     this.vm?.halt();
     this.vm = null;
     this.pressed = null;
@@ -420,6 +430,35 @@ export class GameEngine implements ScriptHost {
       this.warn(`${name} failed: ${err}`);
       console.error(err);
     }
+    // the rest of the scene's images, once it has drawn what it needs first
+    setTimeout(() => run === this.scriptRun && this.prefetch(name.toLowerCase()), PREFETCH_DELAY_MS);
+  }
+
+  /**
+   * Fetches a scene's images in the background, as the original's `CacheDLL` reads a
+   * resource file before the scene needs it. Without them in hand, an animation that
+   * arrives late leaves the character standing wherever it was -- at its idle spot
+   * while its walk-in is still on its way.
+   */
+  private prefetch(prefix: string): void {
+    const run = this.scriptRun;
+    const entries = this.resources
+      .bundleNames()
+      .filter((bundle) => bundle.startsWith(prefix))
+      .flatMap((bundle) => this.resources.listAseqForBundle(bundle))
+      .filter((entry) => entry.decoded);
+    let next = 0;
+    const worker = async () => {
+      while (next < entries.length && run === this.scriptRun) {
+        try {
+          await this.resources.loadAseq(entries[next++]);
+        } catch {
+          /* a miss here just means it loads when the scene asks for it */
+        }
+        await new Promise((resolve) => setTimeout(resolve, PREFETCH_GAP_MS));
+      }
+    };
+    for (let i = 0; i < PREFETCH_WORKERS; i++) void worker();
   }
 
   private async setScene(id: number) {

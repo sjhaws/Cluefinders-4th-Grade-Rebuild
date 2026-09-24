@@ -1,4 +1,7 @@
 import { AseqAnimation, SEQ_RESOURCE } from '../AseqAnimation';
+
+/** How long a character holds an animation's end before falling back to its idle pose. */
+const SETTLE_GRACE_MS = 120;
 import type { LoadedAseq } from '../ResourceManager';
 import type { SequenceEntry } from '../types';
 import type { Value } from './ScriptVm';
@@ -41,6 +44,7 @@ export class RCharacter extends DisplayObject {
   private readonly fidgets = new Map<number, FidgetGroup>();
   private readonly speechAnims: Promise<LoadedAseq | null>[] = [];
   private audio: GameSound | null = null;
+  private settleTimer: ReturnType<typeof setTimeout> | undefined;
   private cancelActivity: (() => void) | null = null;
 
   constructor(engine: GameEngine, args: Value[]) {
@@ -58,6 +62,7 @@ export class RCharacter extends DisplayObject {
   }
 
   private showClip(loaded: LoadedAseq, list: SequenceEntry[], loop: boolean, events: ClipEvents = {}): AseqAnimation {
+    clearTimeout(this.settleTimer);
     this.clip?.destroy();
     const anim = new AseqAnimation(loaded.frames, {
       ...events,
@@ -81,6 +86,18 @@ export class RCharacter extends DisplayObject {
     if (this.settlePose && !this.destroyed) {
       this.showClip(this.settlePose, sequenceList(this.settlePose), this.animateSettled);
     }
+  }
+
+  /**
+   * Back to the idle pose, but not this instant: a script often follows one animation
+   * straight with another, and the original starts it in the same frame, so the idle
+   * pose is never drawn between them. Here the next animation's images may take a
+   * moment to arrive, and without this wait the character blinks back to its idle
+   * spot in between -- mid stride, on the other side of the scene.
+   */
+  private settleSoon() {
+    clearTimeout(this.settleTimer);
+    this.settleTimer = setTimeout(() => !this.busy && this.showSettle(), SETTLE_GRACE_MS);
   }
 
   /** Stops the current animation or speech; its promise resolves. */
@@ -108,7 +125,7 @@ export class RCharacter extends DisplayObject {
         this.cancelActivity = null;
         this.busy = false;
         if (!visibleAfter) this.view.visible = false;
-        queueMicrotask(() => !this.busy && this.showSettle());
+        this.settleSoon();
         resolve();
       };
       this.cancelActivity = finish;
@@ -146,7 +163,7 @@ export class RCharacter extends DisplayObject {
         this.audio?.pause();
         this.audio = null;
         this.busy = false;
-        queueMicrotask(() => !this.busy && this.showSettle());
+        this.settleSoon();
         resolve();
       };
       const startSound = () => {
@@ -291,6 +308,7 @@ export class RCharacter extends DisplayObject {
 
   destroy(): void {
     if (this.destroyed) return;
+    clearTimeout(this.settleTimer);
     this.interrupt();
     for (const g of this.fidgets.values()) clearTimeout(g.timer);
     this.fidgets.clear();
