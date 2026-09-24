@@ -17,7 +17,8 @@ interface FidgetGroup {
 
 interface ClipEvents {
   onEnd?: () => void;
-  onResource?: (id: number) => void;
+  /** A sound cue in the sequence; true when the caller has dealt with it (a line of speech). */
+  onResource?: (id: number) => boolean;
 }
 
 /**
@@ -58,7 +59,15 @@ export class RCharacter extends DisplayObject {
 
   private showClip(loaded: LoadedAseq, list: SequenceEntry[], loop: boolean, events: ClipEvents = {}): AseqAnimation {
     this.clip?.destroy();
-    const anim = new AseqAnimation(loaded.frames, events);
+    const anim = new AseqAnimation(loaded.frames, {
+      ...events,
+      // A sequence's sound cues play as it runs, as they do for any other animation: Owen's
+      // fidget grunts, the coffee-shop waiter clinks the cups away. Only a line of speech is
+      // the caller's own, started at its cue so the mouth keeps up.
+      onResource: (id) => {
+        if (!events.onResource?.(id)) this.engine.playSound(id);
+      },
+    });
     anim.loop = loop;
     const [x, y] = aoPosition(loaded);
     anim.position.set(x, y);
@@ -159,7 +168,11 @@ export class RCharacter extends DisplayObject {
           );
           if (loaded && list) {
             this.showClip(loaded, list, false, {
-              onResource: (id) => id === soundId && startSound(),
+              onResource: (id) => {
+                if (id !== soundId) return false;
+                startSound();
+                return true;
+              },
               onEnd: () => {
                 listDone = true;
                 startSound();
